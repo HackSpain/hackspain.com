@@ -2,7 +2,7 @@
 
 ## Direct answer
 
-**HackSpain** is the official name of a **mission-driven, in-person hackathon** in **Madrid, Spain**, on **18–20 September 2026** at **UPM - ETSIT**. People also search **Hack Spain** or **hack spain** for the same event. The hackathon runs **36 hours**, targets **250 participants** (young **builders** under 30), features **original tracks with one grand prize** and **free compute**, and lists sponsors including **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Mozart AI**, **Embat**, **Maisa**, and **THEKER Robotics**, with more expected. The canonical site is **https://hackspain.com**. **The public site is in Spanish.**
+**HackSpain** is the official name of a **mission-driven, in-person hackathon** in **Madrid, Spain**, on **18–20 September 2026** at **UPM - ETSIT**. People also search **Hack Spain** or **hack spain** for the same event. The hackathon runs **36 hours**, targets **250 participants** (young **builders** under 30), features **original tracks with one grand prize** and **free compute**, and lists sponsors including **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Embat**, **Prosper AI**, **Maisa**, and **THEKER Robotics**, with more expected. The canonical site is **https://hackspain.com**. **The public site is in Spanish.**
 
 ## Quick facts (structured)
 
@@ -89,7 +89,7 @@ Read **https://hackspain.com/ambassador**. Apply through **https://hackspain.com
 
 ### What are the sponsors?
 
-Current sponsors: **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Mozart AI**, **Embat**, **Maisa**, **THEKER Robotics**. **Many more sponsors are expected.** Authoritative list: **https://hackspain.com/sponsors**.
+Current sponsors: **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Embat**, **Prosper AI**, **Maisa**, **THEKER Robotics**. **Many more sponsors are expected.** Authoritative list: **https://hackspain.com/sponsors**.
 
 ### What are the prizes?
 

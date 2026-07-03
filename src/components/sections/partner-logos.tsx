@@ -9,8 +9,8 @@ import {
   happyrobotLogo,
   // kfundLogo,
   maisaLogo,
-  // mozartLogo,
   onecoworkLogo,
+  prosperAiLogo,
   theckerLogo,
 } from "../theme/assets";
 import { P } from "../ui/panel";
@@ -30,20 +30,25 @@ const LARGE_LOGO_SIZE = "h-[44cqh]";
 const CURSOR_LOGO_SIZE = "h-[54cqh]";
 /** Maisa wordmark needs extra height to read at parity with other marks. */
 const MAISA_LOGO_SIZE = "h-[52cqh]";
+/** Prosper AI wordmark reads small at the default height. */
+const PROSPER_AI_LOGO_SIZE = "h-[36cqh]";
 
 const LARGE_GRID_HEIGHT = "h-[clamp(2.1rem,10.5vw,4rem)]";
 const DEFAULT_GRID_HEIGHT = "h-[clamp(1.75rem,9vw,3.25rem)]";
 const CURSOR_GRID_HEIGHT = "h-[clamp(2.5rem,12.5vw,4.75rem)]";
 const MAISA_GRID_HEIGHT = "h-[clamp(2.45rem,12vw,4.6rem)]";
+const PROSPER_AI_GRID_HEIGHT = "h-[clamp(1.95rem,9.75vw,3.55rem)]";
 const LARGE_REEL_HEIGHT = "h-[clamp(1.4rem,6.75vw,2.35rem)]";
 const DEFAULT_REEL_HEIGHT = "h-[clamp(1.1rem,5.5vw,1.85rem)]";
 const CURSOR_REEL_HEIGHT = "h-[clamp(1.65rem,8vw,2.75rem)]";
 const MAISA_REEL_HEIGHT = "h-[clamp(1.6rem,7.75vw,2.7rem)]";
+const PROSPER_AI_REEL_HEIGHT = "h-[clamp(1.25rem,6.25vw,2.05rem)]";
 
 // OneCoWork is squarer/wider than wordmarks; Cursor and Maisa need an extra step up.
 const LARGE_PARTNER_SRC = new Set([onecoworkLogo.src]);
 const CURSOR_PARTNER_SRC = new Set([cursorLogo.src]);
 const MAISA_PARTNER_SRC = new Set([maisaLogo.src]);
+const PROSPER_AI_PARTNER_SRC = new Set([prosperAiLogo.src]);
 
 function partnerGridHeight(src: string): string {
   if (CURSOR_PARTNER_SRC.has(src)) {
@@ -51,6 +56,9 @@ function partnerGridHeight(src: string): string {
   }
   if (MAISA_PARTNER_SRC.has(src)) {
     return MAISA_GRID_HEIGHT;
+  }
+  if (PROSPER_AI_PARTNER_SRC.has(src)) {
+    return PROSPER_AI_GRID_HEIGHT;
   }
   if (LARGE_PARTNER_SRC.has(src)) {
     return LARGE_GRID_HEIGHT;
@@ -64,6 +72,9 @@ function partnerReelHeight(src: string): string {
   }
   if (MAISA_PARTNER_SRC.has(src)) {
     return MAISA_REEL_HEIGHT;
+  }
+  if (PROSPER_AI_PARTNER_SRC.has(src)) {
+    return PROSPER_AI_REEL_HEIGHT;
   }
   if (LARGE_PARTNER_SRC.has(src)) {
     return LARGE_REEL_HEIGHT;
@@ -99,11 +110,6 @@ const PARTNERS: Partner[] = [
   //   src: kfundLogo.src,
   // },
   { alt: "Exa — partner de HackSpain", size: LOGO_SIZE, src: exaLogo.src },
-  // {
-  //   alt: "Mozart AI — partner de HackSpain",
-  //   size: LOGO_SIZE,
-  //   src: mozartLogo.src,
-  // },
   {
     alt: "OneCoWork — partner de HackSpain",
     size: LARGE_LOGO_SIZE,
@@ -118,6 +124,11 @@ const PARTNERS: Partner[] = [
     alt: "THEKER Robotics — partner de HackSpain",
     size: LOGO_SIZE,
     src: theckerLogo.src,
+  },
+  {
+    alt: "Prosper AI — partner de HackSpain",
+    size: PROSPER_AI_LOGO_SIZE,
+    src: prosperAiLogo.src,
   },
   {
     alt: "Maisa — partner de HackSpain",
