@@ -74,6 +74,39 @@ const faqJson = JSON.stringify(jsonLdFaq());
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style is:inline>
+      .skip-link {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        white-space: nowrap;
+        border-width: 0;
+        clip: rect(0, 0, 0, 0);
+      }
+      .skip-link:focus {
+        position: fixed;
+        top: 0.75rem;
+        left: 0.75rem;
+        z-index: 100;
+        width: auto;
+        height: auto;
+        padding: 0.5rem 0.75rem;
+        margin: 0;
+        overflow: visible;
+        font-weight: 800;
+        color: var(--color-hs-ink, #2a170f);
+        white-space: normal;
+        text-decoration: none;
+        outline: 2px solid var(--color-hs-ink, #2a170f);
+        outline-offset: 2px;
+        background: var(--color-hs-gold, #eab619);
+        border-radius: 0.25rem;
+        clip: auto;
+      }
+    </style>
     <link rel="icon" type="image/png" href="/hs-icon.png" sizes="1024x1024">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
     <link rel="manifest" href="/site.webmanifest">
@@ -211,36 +244,5 @@ const faqJson = JSON.stringify(jsonLdFaq());
       transparent 1px,
       transparent 4px
     );
-  }
-  .skip-link {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    white-space: nowrap;
-    border-width: 0;
-    clip: rect(0, 0, 0, 0);
-  }
-  .skip-link:focus {
-    position: fixed;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 100;
-    width: auto;
-    height: auto;
-    padding: 0.5rem 0.75rem;
-    margin: 0;
-    overflow: visible;
-    font-weight: 800;
-    color: var(--color-hs-ink);
-    white-space: normal;
-    text-decoration: none;
-    outline: 2px solid var(--color-hs-ink);
-    outline-offset: 2px;
-    background: var(--color-hs-gold);
-    border-radius: 0.25rem;
-    clip: auto;
   }
 </style>
