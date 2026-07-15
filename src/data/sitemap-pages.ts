@@ -18,7 +18,7 @@ export function getAllSitemapPageUrls(): string[] {
   const raw = [
     o,
     ...SECTIONS.map((s) => `${o}/${s}`),
-    `${o}/pre-signup`,
+    `${o}/signup`,
     `${o}/ambassador`,
     `${o}/privacy`,
   ];

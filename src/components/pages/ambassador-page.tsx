@@ -20,7 +20,7 @@ const PERKS = [
 
 export function AmbassadorPage() {
   const profile = useLayoutProfile();
-  const signupHref = useReferralAwareHref("/pre-signup");
+  const signupHref = useReferralAwareHref("/signup");
 
   return (
     <div className="relative z-0 min-h-dvh w-full">

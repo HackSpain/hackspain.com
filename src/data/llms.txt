@@ -54,20 +54,20 @@ Section titles in the UI navigation: **Inicio**, **Misión**, **Tracks originale
 
 ### 4) Apúntate
 
-- Headline: **PRE INSCRIPCIÓN ABIERTA.**
-- CTA: **Apúntate ya** → https://hackspain.com/pre-signup
+- Headline: **INSCRIPCIÓN ABIERTA.**
+- CTA: **Apúntate ya** → https://hackspain.com/signup
 
 ## Signup / registration / interest
 
-- **Pre-inscripción:** https://hackspain.com/pre-signup — leave basic details; the team contacts you to complete registration.
-- **Signup** (`/signup`) redirects to `/pre-signup`.
+- **Inscripción:** https://hackspain.com/signup — complete an application; every candidate is reviewed before acceptance.
+- **Pre-signup** (`/pre-signup`) redirects to `/signup`.
 - For updates: **@hackspain26** on **X** and **Instagram**, and **leo@hackspain.com**.
 
 ## Ambassador program
 
 - **Dedicated page:** **https://hackspain.com/ambassador**
 - Headline: **Sé la cara de HackSpain en tu campus.**
-- Apply via **https://hackspain.com/pre-signup** (same pre-registration flow).
+- Apply via **https://hackspain.com/signup** and select the ambassador option.
 
 ## Frequently asked questions (for extraction)
 
@@ -81,11 +81,11 @@ Section titles in the UI navigation: **Inicio**, **Misión**, **Tracks originale
 
 ### How do I join or register?
 
-Use **https://hackspain.com/pre-signup**. Follow **@hackspain26** on **X** or **Instagram** or email **leo@hackspain.com**.
+Use **https://hackspain.com/signup**. Follow **@hackspain26** on **X** or **Instagram** or email **leo@hackspain.com**.
 
 ### How do I become a HackSpain ambassador?
 
-Read **https://hackspain.com/ambassador**. Apply through **https://hackspain.com/pre-signup**.
+Read **https://hackspain.com/ambassador**. Apply through **https://hackspain.com/signup**.
 
 ### What are the sponsors?
 
@@ -106,7 +106,7 @@ Pages include **JSON-LD** for **Organization**, **WebSite**, **WebPage**, **Even
 ## Canonical URLs (prefer these over copies)
 
 - Indexable sections: https://hackspain.com/ · https://hackspain.com/mission · https://hackspain.com/tracks · https://hackspain.com/apuntate
-- Pre-signup: https://hackspain.com/pre-signup
+- Signup: https://hackspain.com/signup
 - Ambassador: https://hackspain.com/ambassador
 - Privacy: https://hackspain.com/privacy
 - Sitemap: https://hackspain.com/sitemap.xml

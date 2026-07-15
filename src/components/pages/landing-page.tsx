@@ -78,7 +78,7 @@ export function LandingPage({ initialSection = 0 }: Props) {
 
   const artboard = useMemo(() => artboardFor(profile), [profile]);
   const cells = useMemo(() => cellsForProfile(profile), [profile]);
-  const signupHref = useReferralAwareHref("/pre-signup");
+  const signupHref = useReferralAwareHref("/signup");
 
   const sections = useMemo(
     () =>

@@ -39,9 +39,9 @@ const PAGES: PageSeo[] = [
     ogImageAlt: "HackSpain 2026 — tracks originales, 1 gran premio",
   },
   {
-    title: "Pre inscripción abierta | HackSpain 2026",
-    description: "Pre inscripción abierta para HackSpain 2026. Apúntate ya.",
-    ogImageAlt: "HackSpain 2026 — pre inscripción abierta",
+    title: "Inscripción abierta | HackSpain 2026",
+    description: "Inscripción abierta para HackSpain 2026. Envía tu solicitud.",
+    ogImageAlt: "HackSpain 2026 — inscripción abierta",
   },
 ];
 
@@ -55,20 +55,9 @@ export const SIGNUP_KEYWORDS =
 export function signupSeo(): PageSeo {
   return {
     title: "Apúntate al hackathon | HackSpain 2026",
-    description: "Cuéntanos quién eres — te avisamos sobre HackSpain 2026.",
-    ogImageAlt: "HackSpain 2026 — apúntate al hackathon",
-  };
-}
-
-export const PRE_SIGNUP_KEYWORDS =
-  "pre-inscripción HackSpain, lista de espera hackathon España, hackathon Madrid 2026, registro previo";
-
-export function preSignupSeo(): PageSeo {
-  return {
-    title: "Pre-inscripción | HackSpain 2026",
     description:
-      "Déjanos tus datos básicos — te avisamos para completar la inscripción a HackSpain 2026.",
-    ogImageAlt: "HackSpain 2026 — pre-inscripción",
+      "Completa tu solicitud para HackSpain 2026. Revisamos cada candidatura antes de confirmar la plaza.",
+    ogImageAlt: "HackSpain 2026 — apúntate al hackathon",
   };
 }
 
@@ -103,7 +92,7 @@ const KEYWORDS_BY_SECTION = [
   "MADRID 2026, 18 al 20 de Septiembre, 250 participantes",
   "España tiene talento, talento tech joven, 36 horas",
   "tracks originales, gran premio, compute gratis, startups España",
-  "pre inscripción abierta, apúntate HackSpain",
+  "inscripción abierta, apúntate HackSpain",
 ];
 
 export function keywordsForSectionIndex(i: number): string {
@@ -238,7 +227,7 @@ export function jsonLdFaq() {
         name: "¿Cómo me apunto o me registro en HackSpain?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Deja tus datos en hackspain.com/pre-signup (pre-inscripción). También puedes seguir @hackspain26 en X e Instagram o escribir a leo@hackspain.com.",
+          text: "Completa tu solicitud en hackspain.com/signup. Revisamos cada candidatura antes de confirmar la plaza. También puedes seguir @hackspain26 en X e Instagram o escribir a leo@hackspain.com.",
         },
       },
       {
@@ -246,7 +235,7 @@ export function jsonLdFaq() {
         name: "¿Cómo puedo ser embajador o embajadora de HackSpain?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Lee el programa en hackspain.com/ambassador. Para apuntarte deja tus datos en hackspain.com/pre-signup y te avisaremos cuando abramos la inscripción completa.",
+          text: "Lee el programa en hackspain.com/ambassador. Puedes solicitar plaza y marcar que quieres participar como embajador o embajadora en hackspain.com/signup.",
         },
       },
       {

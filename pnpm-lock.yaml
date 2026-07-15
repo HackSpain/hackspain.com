@@ -17,12 +17,6 @@ importers:
       '@neondatabase/serverless':
         specifier: ^1.0.2
         version: 1.1.0
-      '@react-email/components':
-        specifier: ^1.0.12
-        version: 1.0.12(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@react-email/render':
-        specifier: ^2.0.8
-        version: 2.0.8(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@sentry/astro':
         specifier: ^10.51.0
         version: 10.53.1(astro@6.3.7(@types/node@25.9.1)(@vercel/functions@3.6.0(@aws-sdk/credential-provider-web-identity@3.972.13))(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(tsx@4.22.3)(yaml@2.9.0))(rollup@4.60.4)

@@ -11,7 +11,7 @@ Public marketing site for [HackSpain](https://hackspain.com) — Hack Spain 2026
 | **Hosting** | [Vercel](https://vercel.com/) via `@astrojs/vercel` |
 | **Data** | [PostgreSQL](https://www.postgresql.org/) ([Neon](https://neon.tech/)) with [Drizzle ORM](https://orm.drizzle.team/) |
 | **Forms & validation** | [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/) |
-| **Email** | [React Email](https://react.email/) + Nodemailer (SMTP) |
+| **Email** | Nodemailer (SMTP), plain text |
 | **Background jobs** | [Workflow](https://useworkflow.dev/) (`workflow/astro`) for follow-up flows |
 | **Observability** | [Sentry](https://sentry.io/), [@vercel/analytics](https://vercel.com/docs/analytics), [@vercel/speed-insights](https://vercel.com/docs/speed-insights) |
 | **Bot protection** | [BotID](https://botid.vercel.app/) on signup endpoints |
@@ -59,6 +59,13 @@ Schema and client live in `src/db/`. Drizzle Kit is configured in `drizzle.confi
 | `pnpm db:migrate` | Run migrations |
 | `pnpm db:push` | Push schema (useful in development) |
 
+## Signup workflow
+
+The public application form lives at `/signup`. New applications are stored as
+pending until they are reviewed. The accepted-candidate email reads its private
+community link from `WHATSAPP_COMMUNITY_URL`, and pre-signup invitation links
+use `SITE_URL` as their public origin.
+
 ## Project layout
 
 ```text
@@ -66,10 +73,8 @@ src/
 ├── components/     # React islands (pages, mosaic, UI, sections)
 ├── data/           # SEO copy, site metadata, llms.txt source
 ├── db/             # Drizzle client and schema
-├── emails/         # React Email templates
 ├── layouts/        # Astro layouts
 ├── lib/            # Shared server and client utilities
 ├── pages/          # File-based routes
 └── workflows/      # Workflow definitions (e.g. pre-signup follow-up)
 ```
-

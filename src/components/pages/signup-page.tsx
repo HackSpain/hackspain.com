@@ -18,10 +18,17 @@ import {
 import { HACKSPAIN_SOCIAL_URLS } from "../../data/landing-meta";
 import { getStoredReferralCode } from "../../lib/referral-code";
 import {
+  cleanProfilePasteText,
+  DIETARY_RESTRICTION_IDS,
+  DIETARY_RESTRICTION_OPTIONS,
+  type DietaryRestrictionId,
   HEARD_FROM_OPTIONS,
   HEARD_FROM_SOURCE_IDS,
   type HeardFromSourceId,
   normalizeSocialUrl,
+  OCCUPATION_STATUS_IDS,
+  OCCUPATION_STATUS_OPTIONS,
+  type OccupationStatusId,
   parseSignupBodyClient,
 } from "../../lib/signup-validation";
 import { FormField, Input, SocialPrefixInput, Textarea } from "../form";
@@ -38,6 +45,7 @@ const ASCII_LEFT_ARROW_PREFIX_RE = /^←\s*/;
 const LINE_BREAK_SPLIT_RE = /\r?\n/;
 
 type FlowStatus = "idle" | "success" | "error" | "alreadyApplied";
+type PrefillStatus = "idle" | "loading" | "loaded" | "error";
 
 function readAppliedFlag(): boolean {
   if (typeof window === "undefined") {
@@ -58,13 +66,19 @@ interface StoredFields {
   achievements: string;
   ambassadorMotivation: string;
   ambassadorStudyWhere: string;
+  dietaryDetails: string;
+  dietaryRestrictions: DietaryRestrictionId[];
   email: string;
+  employer: string;
   freeTime: string;
   fullName: string;
   githubUrl: string;
   heardFromOther: string;
   heardFromSource: HeardFromSourceId | "";
   linkedinUrl: string;
+  occupationStatus: OccupationStatusId | "";
+  studyInstitution: string;
+  teamName: string;
   wantsAmbassador: boolean;
   webUrl: string;
   xUrl: string;
@@ -79,6 +93,12 @@ const EMPTY_FIELDS: StoredFields = {
   webUrl: "",
   achievements: "",
   freeTime: "",
+  dietaryRestrictions: [],
+  dietaryDetails: "",
+  occupationStatus: "",
+  studyInstitution: "",
+  employer: "",
+  teamName: "",
   wantsAmbassador: false,
   ambassadorMotivation: "",
   ambassadorStudyWhere: "",
@@ -100,6 +120,20 @@ function readStoredFields(): StoredFields {
       typeof o[k] === "string" ? (o[k] as string) : "";
     const wantsAmbassador =
       o.wantsAmbassador === true || o.wantsAmbassador === "true";
+    const dietaryIds = DIETARY_RESTRICTION_IDS as readonly string[];
+    const dietaryRestrictions = Array.isArray(o.dietaryRestrictions)
+      ? o.dietaryRestrictions.filter(
+          (value): value is DietaryRestrictionId =>
+            typeof value === "string" && dietaryIds.includes(value)
+        )
+      : [];
+    const occupationIds = OCCUPATION_STATUS_IDS as readonly string[];
+    const occupationRaw =
+      typeof o.occupationStatus === "string" ? o.occupationStatus.trim() : "";
+    const occupationStatus: OccupationStatusId | "" =
+      occupationRaw && occupationIds.includes(occupationRaw)
+        ? (occupationRaw as OccupationStatusId)
+        : "";
     const ids = HEARD_FROM_SOURCE_IDS as readonly string[];
     const sourceRaw =
       typeof o.heardFromSource === "string" ? o.heardFromSource.trim() : "";
@@ -130,6 +164,12 @@ function readStoredFields(): StoredFields {
       webUrl: s("webUrl"),
       achievements: s("achievements"),
       freeTime: s("freeTime"),
+      dietaryRestrictions,
+      dietaryDetails: s("dietaryDetails"),
+      occupationStatus,
+      studyInstitution: s("studyInstitution"),
+      employer: s("employer"),
+      teamName: s("teamName"),
       wantsAmbassador,
       ambassadorMotivation: s("ambassadorMotivation"),
       ambassadorStudyWhere: s("ambassadorStudyWhere"),
@@ -157,6 +197,23 @@ function clearStoredFields() {
   }
 }
 
+function invitationTokenFromLocation(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  return hashParams.get("token")?.trim() ?? "";
+}
+
+interface SignupPrefillFields {
+  email: string;
+  fullName: string;
+  githubUrl: string;
+  linkedinUrl: string;
+  webUrl: string;
+  xUrl: string;
+}
+
 const X_PREFIX = "x.com/";
 const LINKEDIN_PREFIX = "linkedin.com/in/";
 const GITHUB_PREFIX = "github.com/";
@@ -166,7 +223,8 @@ const cellLeftSm = `${cellBase} sm:border-r-[3px]`;
 
 const t = {
   title: "Apúntate al hackathon",
-  subtitle: "Cuéntanos quién eres — te avisamos sobre HackSpain 2026.",
+  subtitle:
+    "Cuéntanos quién eres. Revisamos cada solicitud antes de confirmar la plaza.",
   backHome: "← Inicio",
   fullName: "Nombre completo",
   email: "Email",
@@ -186,9 +244,20 @@ const t = {
   freeTime: "Fuera del cole / curro",
   freeTimeHint:
     "Hobbies, clubes, asociaciones, side projects, cómo desconectas — lo que te represente.",
+  dietaryRestrictions: "Restricciones alimentarias",
+  dietaryRestrictionsHint: "Puedes marcar varias opciones.",
+  dietaryDetails: "Detalles de alergias o restricciones",
+  dietaryDetailsHint:
+    "Cuéntanos cualquier detalle que debamos conocer para organizar las comidas.",
+  occupationStatus: "¿Estudias o trabajas?",
+  studyInstitution: "Universidad o centro",
+  employer: "Empresa u organización",
+  teamName: "Equipo al que te unes",
+  teamNameHint:
+    "Escribe el nombre del equipo. Si todavía no tienes uno, indica “Sin equipo”.",
   heardFrom: "¿Cómo nos has conocido?",
   heardFromOtherPlaceholder: "Cuéntanos cómo nos encontraste…",
-  submit: "Enviar",
+  submit: "Enviar solicitud",
   submitting: "Enviando…",
   applicationReceived:
     "¡Gracias! Hemos recibido tu solicitud. Espera nuestra respuesta por correo; te escribiremos en cuanto podamos.",
@@ -206,6 +275,11 @@ const t = {
     "Ya hay una solicitud con este correo. Si necesitas cambiar algo, escríbenos o usa otro email.",
   errorAccessDenied:
     "No hemos podido verificar la solicitud. Recarga la página e inténtalo de nuevo, o usa un navegador normal con JavaScript activado.",
+  errorInvitation:
+    "El enlace personal no es válido o ya no está disponible. Puedes completar el formulario manualmente.",
+  prefillLoading: "Estamos recuperando los datos de tu pre-inscripción…",
+  prefillLoaded:
+    "Hemos completado los datos de tu pre-inscripción. Revisa la información y termina la solicitud.",
   ambassadorCheckboxBefore: "Quiero participar como ",
   ambassadorCheckboxLink: "embajador/a",
   ambassadorCheckboxAfter: "",
@@ -216,11 +290,26 @@ const t = {
   ambassadorStudyHint:
     "Universidad, bootcamp, centro u organización — lo que encaje.",
   errorFullName: "Indica tu nombre completo.",
+  errorOccupationStatus:
+    "Indica si estudias, trabajas o estás en otra situación.",
+  errorStudyInstitution: "Indica tu universidad o centro de estudios.",
+  errorEmployer: "Indica tu empresa u organización.",
+  errorTeamName: "Indica el equipo al que te unes o escribe “Sin equipo”.",
   legalSubmitNoticeBefore: "Al enviar este formulario aceptas nuestra ",
   legalPrivacyLinkLabel: "política de privacidad",
   legalSubmitNoticeAfter:
     ", incluida la comunicación de tus datos a patrocinadores oficiales de HackSpain según se indica allí.",
 } as const;
+
+function prefillMessageForStatus(status: PrefillStatus): string {
+  if (status === "loading") {
+    return t.prefillLoading;
+  }
+  if (status === "loaded") {
+    return t.prefillLoaded;
+  }
+  return t.errorInvitation;
+}
 
 function ambassadorQueryEnabled(): boolean {
   if (typeof window === "undefined") {
@@ -242,6 +331,7 @@ export function SignupPage() {
     useForm<StoredFields>({ defaultValues: { ...EMPTY_FIELDS } });
   const { isSubmitting } = formState;
   const heardFromSource = watch("heardFromSource");
+  const occupationStatus = watch("occupationStatus");
   const wantsAmbassador = watch("wantsAmbassador");
 
   const [attentionTarget, setAttentionTarget] = useState<SignupAttention>(null);
@@ -249,13 +339,76 @@ export function SignupPage() {
   const ambassadorSectionRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<FlowStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [invitationToken, setInvitationToken] = useState("");
+  const [prefillStatus, setPrefillStatus] = useState<PrefillStatus>("idle");
 
   useLayoutEffect(() => {
-    if (readAppliedFlag()) {
+    if (!invitationTokenFromLocation() && readAppliedFlag()) {
       setStatus("alreadyApplied");
       return;
     }
     reset(readStoredFields());
+  }, [reset]);
+
+  useEffect(() => {
+    const token = invitationTokenFromLocation();
+    if (!token) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadPrefill = async (): Promise<void> => {
+      setPrefillStatus("loading");
+      try {
+        const response = await fetch("/api/signup-prefill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+          signal: controller.signal,
+        });
+        const responseBody = (await response.json().catch(() => ({}))) as {
+          data?: SignupPrefillFields;
+          error?: string;
+        };
+        if (controller.signal.aborted) {
+          return;
+        }
+        if (response.status === 410) {
+          setStatus("alreadyApplied");
+          setPrefillStatus("idle");
+          return;
+        }
+        if (!(response.ok && responseBody.data)) {
+          setPrefillStatus("error");
+          return;
+        }
+
+        const prefill = responseBody.data;
+        reset({
+          ...readStoredFields(),
+          email: prefill.email,
+          fullName: prefill.fullName,
+          githubUrl: cleanProfilePasteText(prefill.githubUrl, "github"),
+          linkedinUrl: cleanProfilePasteText(prefill.linkedinUrl, "linkedin"),
+          webUrl: prefill.webUrl,
+          xUrl: cleanProfilePasteText(prefill.xUrl, "x"),
+        });
+        setInvitationToken(token);
+        setPrefillStatus("loaded");
+
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.hash = "";
+        window.history.replaceState(null, "", cleanUrl);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setPrefillStatus("error");
+          captureException(error);
+        }
+      }
+    };
+
+    loadPrefill();
+    return () => controller.abort();
   }, [reset]);
 
   const watched = useWatch({ control });
@@ -343,6 +496,9 @@ export function SignupPage() {
     if (referralCode) {
       Object.assign(payload, { referralCode });
     }
+    if (invitationToken) {
+      Object.assign(payload, { invitationToken });
+    }
     const parsed = parseSignupBodyClient(payload);
     if (!parsed.ok) {
       addBreadcrumb({
@@ -380,6 +536,14 @@ export function SignupPage() {
         setErrorMessage(t.errorInvalidEmail);
       } else if (parsed.code === "fullName") {
         setErrorMessage(t.errorFullName);
+      } else if (parsed.code === "occupation_status") {
+        setErrorMessage(t.errorOccupationStatus);
+      } else if (parsed.code === "study_institution") {
+        setErrorMessage(t.errorStudyInstitution);
+      } else if (parsed.code === "employer") {
+        setErrorMessage(t.errorEmployer);
+      } else if (parsed.code === "team_name") {
+        setErrorMessage(t.errorTeamName);
       } else {
         setErrorMessage(t.errorGeneric);
       }
@@ -409,8 +573,13 @@ export function SignupPage() {
         setStatus("success");
         return;
       }
+      const isInvitationError =
+        resJson.error === "invalid_invitation" ||
+        resJson.error === "invitation_used" ||
+        resJson.error === "invitation_email_mismatch";
       const isDuplicateEmail =
-        res.status === 409 || resJson.error === "duplicate_email";
+        resJson.error === "duplicate_email" ||
+        (res.status === 409 && !isInvitationError);
       if (isDuplicateEmail) {
         addBreadcrumb({
           category: "http",
@@ -436,6 +605,7 @@ export function SignupPage() {
           scope.setContext("form", {
             wantsAmbassador: data.wantsAmbassador,
             heardFrom: data.heardFromSource,
+            occupationStatus: data.occupationStatus,
           });
           captureMessage(
             `Signup: API rejected ${res.status}${resJson.error ? ` (${resJson.error})` : ""}`,
@@ -445,9 +615,9 @@ export function SignupPage() {
       }
       if (res.status === 403) {
         setErrorMessage(t.errorAccessDenied);
-      } else if (res.status === 409) {
-        setErrorMessage(t.errorDuplicateEmail);
-      } else if (resJson.error === "duplicate_email") {
+      } else if (isInvitationError) {
+        setErrorMessage(t.errorInvitation);
+      } else if (res.status === 409 || resJson.error === "duplicate_email") {
         setErrorMessage(t.errorDuplicateEmail);
       } else if (resJson.error === "social_required") {
         setErrorMessage(t.errorSocialRequired);
@@ -463,6 +633,14 @@ export function SignupPage() {
         return;
       } else if (resJson.error === "fullName_required") {
         setErrorMessage(t.errorFullName);
+      } else if (resJson.error === "occupation_status_required") {
+        setErrorMessage(t.errorOccupationStatus);
+      } else if (resJson.error === "study_institution_required") {
+        setErrorMessage(t.errorStudyInstitution);
+      } else if (resJson.error === "employer_required") {
+        setErrorMessage(t.errorEmployer);
+      } else if (resJson.error === "team_name_required") {
+        setErrorMessage(t.errorTeamName);
       } else if (resJson.error === "heard_from_other_required") {
         setStatus("error");
         pulseAttention("heard");
@@ -571,6 +749,18 @@ export function SignupPage() {
                 className="flex flex-col gap-0 border-hs-ink border-t-[3px]"
                 onSubmit={handleSubmit(onSubmitForm)}
               >
+                {prefillStatus === "idle" ? null : (
+                  <div
+                    className={`border-hs-ink border-b-[3px] px-4 py-3 font-bold font-sans text-sm sm:text-base ${
+                      prefillStatus === "error"
+                        ? "bg-hs-red/20"
+                        : "bg-hs-teal/20"
+                    }`}
+                    role={prefillStatus === "error" ? "alert" : "status"}
+                  >
+                    {prefillMessageForStatus(prefillStatus)}
+                  </div>
+                )}
                 <div className="grid gap-0 sm:grid-cols-2">
                   <FormField
                     className={cellLeftSm}
@@ -592,6 +782,7 @@ export function SignupPage() {
                   >
                     <Input
                       autoComplete="email"
+                      readOnly={prefillStatus === "loaded"}
                       required
                       type="email"
                       {...register("email")}
@@ -745,6 +936,191 @@ export function SignupPage() {
                     rows={5}
                     {...register("freeTime")}
                   />
+                </FormField>
+
+                <div className={cellBase}>
+                  <fieldset className="min-w-0 border-0 p-0">
+                    <legend className="font-bungee text-hs-ink text-sm tracking-wide">
+                      {t.dietaryRestrictions}
+                    </legend>
+                    <p className="mt-1 font-sans text-hs-brown text-sm leading-snug sm:text-[0.95rem]">
+                      {t.dietaryRestrictionsHint}
+                    </p>
+                    <Controller
+                      control={control}
+                      name="dietaryRestrictions"
+                      render={({ field }) => (
+                        <div className="mt-3 grid grid-cols-2 gap-1.5 md:grid-cols-4 min-[520px]:grid-cols-3">
+                          {DIETARY_RESTRICTION_OPTIONS.map((option) => {
+                            const checked = field.value.includes(option.id);
+                            return (
+                              <label
+                                className="flex cursor-pointer items-start gap-1.5 rounded-sm border-[3px] border-hs-ink bg-hs-paper px-2 py-1.5 shadow-[2px_2px_0_0_var(--color-hs-ink)] transition-[background-color,box-shadow] hover:bg-hs-sand/40 has-[:focus-visible]:border-hs-navy has-[:checked]:bg-hs-gold/35"
+                                htmlFor={`signup-dietary-${option.id}`}
+                                key={option.id}
+                              >
+                                <div className="relative mt-px h-4 w-4 shrink-0">
+                                  <input
+                                    checked={checked}
+                                    className="peer absolute inset-0 z-10 h-4 w-4 cursor-pointer appearance-none opacity-0"
+                                    id={`signup-dietary-${option.id}`}
+                                    name={field.name}
+                                    onBlur={field.onBlur}
+                                    onChange={(event) => {
+                                      const next = event.target.checked
+                                        ? [...field.value, option.id]
+                                        : field.value.filter(
+                                            (value) => value !== option.id
+                                          );
+                                      field.onChange(next);
+                                    }}
+                                    type="checkbox"
+                                  />
+                                  <div
+                                    aria-hidden
+                                    className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border-2 border-hs-ink bg-hs-paper peer-checked:bg-hs-gold [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100"
+                                  >
+                                    <svg
+                                      fill="none"
+                                      height="10"
+                                      viewBox="0 0 10 10"
+                                      width="10"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <title>Marca de verificación</title>
+                                      <path
+                                        d="M1.5 5.1 3.8 7.4 8.5 2.5"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.8"
+                                      />
+                                    </svg>
+                                  </div>
+                                </div>
+                                <span className="min-w-0 font-sans font-semibold text-hs-ink text-xs leading-tight sm:text-sm">
+                                  {option.label}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    />
+                  </fieldset>
+                </div>
+
+                <FormField
+                  className={cellBase}
+                  hint={t.dietaryDetailsHint}
+                  id="signup-dietary-details"
+                  label={t.dietaryDetails}
+                >
+                  <Textarea
+                    className="min-h-[90px] resize-y"
+                    rows={3}
+                    {...register("dietaryDetails")}
+                  />
+                </FormField>
+
+                <div className={cellBase}>
+                  <fieldset className="min-w-0 border-0 p-0">
+                    <legend className="font-bungee text-hs-ink text-sm tracking-wide">
+                      {t.occupationStatus} *
+                    </legend>
+                    <div className="mt-3 grid grid-cols-3 gap-1.5">
+                      {OCCUPATION_STATUS_OPTIONS.map((option) => (
+                        <label
+                          className="flex cursor-pointer items-center gap-2 rounded-sm border-[3px] border-hs-ink bg-hs-paper px-3 py-2 shadow-[2px_2px_0_0_var(--color-hs-ink)] hover:bg-hs-sand/40 has-[:focus-visible]:border-hs-navy has-[:checked]:bg-hs-gold/35"
+                          htmlFor={`signup-occupation-${option.id}`}
+                          key={option.id}
+                        >
+                          <input
+                            className="h-4 w-4 accent-hs-gold"
+                            id={`signup-occupation-${option.id}`}
+                            required
+                            type="radio"
+                            value={option.id}
+                            {...register("occupationStatus", {
+                              onChange: (event) => {
+                                const value = event.target.value;
+                                if (value !== "student") {
+                                  setValue("studyInstitution", "", {
+                                    shouldDirty: true,
+                                  });
+                                }
+                                if (value !== "working") {
+                                  setValue("employer", "", {
+                                    shouldDirty: true,
+                                  });
+                                }
+                              },
+                            })}
+                          />
+                          <span className="font-sans font-semibold text-hs-ink text-sm">
+                            {option.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {occupationStatus === "student" ? (
+                    <motion.div
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      initial={{ opacity: 0, height: 0 }}
+                      key="signup-study-institution"
+                      transition={{ duration: 0.24 }}
+                    >
+                      <FormField
+                        className={cellBase}
+                        id="signup-study-institution"
+                        label={t.studyInstitution}
+                        required
+                      >
+                        <Input
+                          autoComplete="organization"
+                          required
+                          {...register("studyInstitution")}
+                        />
+                      </FormField>
+                    </motion.div>
+                  ) : null}
+                  {occupationStatus === "working" ? (
+                    <motion.div
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      initial={{ opacity: 0, height: 0 }}
+                      key="signup-employer"
+                      transition={{ duration: 0.24 }}
+                    >
+                      <FormField
+                        className={cellBase}
+                        id="signup-employer"
+                        label={t.employer}
+                        required
+                      >
+                        <Input
+                          autoComplete="organization"
+                          required
+                          {...register("employer")}
+                        />
+                      </FormField>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+
+                <FormField
+                  className={cellBase}
+                  hint={t.teamNameHint}
+                  id="signup-team-name"
+                  label={t.teamName}
+                  required
+                >
+                  <Input required {...register("teamName")} />
                 </FormField>
 
                 <div

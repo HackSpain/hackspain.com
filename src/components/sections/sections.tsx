@@ -220,7 +220,7 @@ function TracksInfoModal() {
 }
 
 export function buildSections(
-  signupHref = "/pre-signup"
+  signupHref = "/signup"
 ): Record<string, React.ReactNode>[] {
   return [
     {
@@ -396,7 +396,7 @@ export function buildSections(
         <P bg="bg-hs-navy">
           <p className={`${LBL} text-hs-gold`}>HACKSPAIN 2026</p>
           <h2 className={`text-center ${MOSAIC_HERO_LG} text-hs-paper`}>
-            PRE INSCRIPCIÓN
+            INSCRIPCIÓN
             <br />
             <span className="text-hs-gold">ABIERTA</span>
           </h2>
@@ -563,7 +563,7 @@ function orn(
  * cards. Keyed by the compact cell ids: `hero`, `b1`, `b2`, `foot`.
  */
 export function buildSectionsCompact(
-  signupHref = "/pre-signup"
+  signupHref = "/signup"
 ): Record<string, React.ReactNode>[] {
   const foot = compactFooter();
 
@@ -772,7 +772,7 @@ export function buildSectionsCompact(
           <h2
             className={`text-center ${CH} text-[clamp(2rem,9vw,3.4rem)] text-hs-paper`}
           >
-            PRE INSCRIPCIÓN <span className="text-hs-gold">ABIERTA</span>
+            INSCRIPCIÓN <span className="text-hs-gold">ABIERTA</span>
           </h2>
         </P>
       ),

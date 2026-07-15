@@ -1,4 +1,8 @@
-import { formatHeardFromStored } from "./signup-validation";
+import {
+  formatDietaryRestrictions,
+  formatHeardFromStored,
+  formatOccupationStatus,
+} from "./signup-validation";
 
 const DISCORD_WEBHOOK_PREFIXES = [
   "https://discord.com/api/webhooks/",
@@ -110,12 +114,18 @@ export interface SignupDiscordPayload {
   achievements: string;
   ambassadorMotivation: string;
   ambassadorStudyWhere: string;
+  dietaryDetails: string;
+  dietaryRestrictions: string[];
   email: string;
+  employer: string;
   freeTime: string;
   fullName: string;
   githubUrl: string;
   heardFrom: string;
   linkedinUrl: string;
+  occupationStatus: string;
+  studyInstitution: string;
+  teamName: string;
   wantsAmbassador: boolean;
   webUrl: string;
   xUrl: string;
@@ -158,6 +168,39 @@ export async function notifyDiscordNewSignup(
         name: "Free time / hobbies",
         value: fieldVal(data.freeTime, max),
         inline: false,
+      },
+      {
+        name: "Dietary restrictions",
+        value: fieldVal(
+          formatDietaryRestrictions(data.dietaryRestrictions),
+          max
+        ),
+        inline: false,
+      },
+      {
+        name: "Dietary details",
+        value: fieldVal(data.dietaryDetails, max),
+        inline: false,
+      },
+      {
+        name: "Studies or works",
+        value: fieldVal(formatOccupationStatus(data.occupationStatus), max),
+        inline: true,
+      },
+      {
+        name: "University / centre",
+        value: fieldVal(data.studyInstitution, max),
+        inline: true,
+      },
+      {
+        name: "Company / organisation",
+        value: fieldVal(data.employer, max),
+        inline: true,
+      },
+      {
+        name: "Team",
+        value: fieldVal(data.teamName, max),
+        inline: true,
       },
       {
         name: "Ambassador interest",

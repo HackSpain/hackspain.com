@@ -1,35 +1,5 @@
 ---
-export const prerender = true;
+export const prerender = false;
 
-import SignupNavbar from "../components/nav/signup-navbar.astro";
-import { PreSignupPage } from "../components/pages";
-import { PRE_SIGNUP_KEYWORDS, preSignupSeo } from "../data/landing-meta";
-import Layout from "../layouts/layout.astro";
-
-const seo = preSignupSeo();
+return Astro.redirect("/signup", 308);
 ---
-
-<Layout
-  sectionIndex={0}
-  allowScroll
-  title={seo.title}
-  description={seo.description}
-  ogImageAlt={seo.ogImageAlt}
-  canonicalPathOverride="/pre-signup"
-  keywordsOverride={PRE_SIGNUP_KEYWORDS}
->
-  <main id="main" class="relative min-h-dvh w-full overflow-hidden">
-    <div
-      class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_15%_20%,rgba(234,182,25,0.22),transparent),radial-gradient(ellipse_55%_50%_at_90%_75%,rgba(53,133,138,0.14),transparent),radial-gradient(ellipse_100%_80%_at_50%_100%,rgba(232,220,196,0.65),transparent),linear-gradient(115deg,var(--color-hs-paper)0%,var(--color-hs-sand)38%,var(--color-hs-paper)72%,var(--color-hs-sand)100%)]"
-      aria-hidden="true"
-    />
-    <div
-      class="pointer-events-none absolute inset-0 hs-grain opacity-90"
-      aria-hidden="true"
-    />
-    <div class="relative z-10 mx-auto max-w-6xl px-0 pt-0 sm:px-4 sm:pt-10">
-      <SignupNavbar />
-    </div>
-    <PreSignupPage client:load />
-  </main>
-</Layout>

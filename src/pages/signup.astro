@@ -1,6 +1,27 @@
 ---
-export const prerender = false;
+export const prerender = true;
 
-return Astro.redirect("/pre-signup", 307);
+import SignupNavbar from "../components/nav/signup-navbar.astro";
+import { SignupPage } from "../components/pages";
+import { SIGNUP_KEYWORDS, signupSeo } from "../data/landing-meta";
+import Layout from "../layouts/layout.astro";
+
+const seo = signupSeo();
 ---
 
+<Layout
+  sectionIndex={0}
+  allowScroll
+  title={seo.title}
+  description={seo.description}
+  ogImageAlt={seo.ogImageAlt}
+  canonicalPathOverride="/signup"
+  keywordsOverride={SIGNUP_KEYWORDS}
+>
+  <main id="main" class="relative min-h-dvh w-full overflow-hidden">
+    <div class="relative z-10 mx-auto max-w-6xl px-0 pt-0 sm:px-4 sm:pt-10">
+      <SignupNavbar />
+    </div>
+    <SignupPage client:load />
+  </main>
+</Layout>

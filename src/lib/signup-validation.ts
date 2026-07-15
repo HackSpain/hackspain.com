@@ -37,6 +37,64 @@ export const HEARD_FROM_OPTIONS: readonly {
   { id: "other", label: "Otro" },
 ] as const;
 
+export const DIETARY_RESTRICTION_IDS = [
+  "vegetarian",
+  "vegan",
+  "gluten_free",
+  "lactose_free",
+  "halal",
+  "kosher",
+  "allergies",
+  "other",
+] as const;
+
+export type DietaryRestrictionId = (typeof DIETARY_RESTRICTION_IDS)[number];
+
+export const DIETARY_RESTRICTION_OPTIONS: readonly {
+  id: DietaryRestrictionId;
+  label: string;
+}[] = [
+  { id: "vegetarian", label: "Vegetariana" },
+  { id: "vegan", label: "Vegana" },
+  { id: "gluten_free", label: "Sin gluten" },
+  { id: "lactose_free", label: "Sin lactosa" },
+  { id: "halal", label: "Halal" },
+  { id: "kosher", label: "Kosher" },
+  { id: "allergies", label: "Alergias" },
+  { id: "other", label: "Otra" },
+] as const;
+
+export const OCCUPATION_STATUS_IDS = ["student", "working", "other"] as const;
+
+export type OccupationStatusId = (typeof OCCUPATION_STATUS_IDS)[number];
+
+export const OCCUPATION_STATUS_OPTIONS: readonly {
+  id: OccupationStatusId;
+  label: string;
+}[] = [
+  { id: "student", label: "Estudiante" },
+  { id: "working", label: "Trabajo" },
+  { id: "other", label: "Otro" },
+] as const;
+
+export function formatDietaryRestrictions(
+  restrictions: readonly string[]
+): string {
+  return restrictions
+    .map(
+      (restriction) =>
+        DIETARY_RESTRICTION_OPTIONS.find(({ id }) => id === restriction)
+          ?.label ?? restriction
+    )
+    .join(", ");
+}
+
+export function formatOccupationStatus(status: string): string {
+  return (
+    OCCUPATION_STATUS_OPTIONS.find(({ id }) => id === status)?.label ?? status
+  );
+}
+
 export function formatHeardFromStored(stored: string): string {
   if (!stored) {
     return "";
@@ -50,6 +108,8 @@ export function formatHeardFromStored(stored: string): string {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const PROTOCOL_FULL_URI_START_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
 const HOSTNAME_CHARS_ONLY_RE = /^[a-z0-9.-]+$/i;
@@ -345,6 +405,56 @@ const signupBodySchema = z
       .string()
       .max(SIGNUP_MAX.longText)
       .transform((s) => s.trim()),
+    dietaryRestrictions: z.preprocess(
+      (value) => (Array.isArray(value) ? value : []),
+      z
+        .array(z.enum(DIETARY_RESTRICTION_IDS))
+        .max(DIETARY_RESTRICTION_IDS.length)
+        .transform((values) => [...new Set(values)])
+    ),
+    dietaryDetails: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.longText)
+        .transform((value) => value.trim())
+    ),
+    occupationStatus: z.preprocess(
+      (value) => (typeof value === "string" ? value.trim() : ""),
+      z
+        .string()
+        .min(1, { message: "occupation_status_required" })
+        .refine(
+          (value) =>
+            (OCCUPATION_STATUS_IDS as readonly string[]).includes(value),
+          { message: "occupation_status_invalid" }
+        )
+        .transform((value) => value as OccupationStatusId)
+    ),
+    studyInstitution: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.name)
+        .transform((value) => value.trim())
+    ),
+    employer: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.name)
+        .transform((value) => value.trim())
+    ),
+    teamName: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.name)
+        .transform((value) => value.trim())
+        .refine((value) => value.length > 0, {
+          message: "team_name_required",
+        })
+    ),
     wantsAmbassador: z.boolean().optional().default(false),
     ambassadorMotivation: z
       .string()
@@ -373,6 +483,15 @@ const signupBodySchema = z
         .transform((s) => s.trim())
     ),
     referralCode: referralCodeField,
+    invitationToken: z.preprocess(
+      (value) => (typeof value === "string" ? value.trim() : ""),
+      z
+        .string()
+        .max(64)
+        .refine((value) => value === "" || UUID_RE.test(value), {
+          message: "invalid_invitation",
+        })
+    ),
   })
   .superRefine((data, ctx) => {
     const has =
@@ -402,6 +521,23 @@ const signupBodySchema = z
           path: ["ambassadorStudyWhere"],
         });
       }
+    }
+    if (
+      data.occupationStatus === "student" &&
+      data.studyInstitution.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "study_institution_required",
+        path: ["studyInstitution"],
+      });
+    }
+    if (data.occupationStatus === "working" && data.employer.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "employer_required",
+        path: ["employer"],
+      });
     }
     if (data.heardFromSource === "other" && data.heardFromOther.length === 0) {
       ctx.addIssue({
@@ -445,6 +581,21 @@ export function parseSignupBody(
   if (msg === "fullName_required") {
     return { ok: false, error: "fullName_required", status: 400 };
   }
+  if (
+    msg === "occupation_status_required" ||
+    msg === "occupation_status_invalid"
+  ) {
+    return { ok: false, error: "occupation_status_required", status: 400 };
+  }
+  if (msg === "study_institution_required") {
+    return { ok: false, error: "study_institution_required", status: 400 };
+  }
+  if (msg === "employer_required") {
+    return { ok: false, error: "employer_required", status: 400 };
+  }
+  if (msg === "team_name_required") {
+    return { ok: false, error: "team_name_required", status: 400 };
+  }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, error: "heard_from_required", status: 400 };
   }
@@ -456,6 +607,9 @@ export function parseSignupBody(
   }
   if (msg === "heard_from_other_required") {
     return { ok: false, error: "heard_from_other_required", status: 400 };
+  }
+  if (msg === "invalid_invitation") {
+    return { ok: false, error: "invalid_invitation", status: 400 };
   }
   return { ok: false, error: "invalid_request", status: 400 };
 }
@@ -520,37 +674,6 @@ export function parsePreSignupBody(
   return { ok: false, error: "invalid_request", status: 400 };
 }
 
-export function parsePreSignupBodyClient(body: unknown):
-  | { ok: true; data: PreSignupBodyParsed }
-  | {
-      ok: false;
-      code:
-        | "social_required"
-        | "invalid_social_url"
-        | "invalid_email"
-        | "fullName"
-        | "generic";
-    } {
-  const r = preSignupBodySchema.safeParse(body);
-  if (r.success) {
-    return { ok: true, data: r.data };
-  }
-  const msg = r.error.issues[0]?.message;
-  if (msg === "social_required") {
-    return { ok: false, code: "social_required" };
-  }
-  if (msg === "invalid_social_url") {
-    return { ok: false, code: "invalid_social_url" };
-  }
-  if (msg === "invalid_email") {
-    return { ok: false, code: "invalid_email" };
-  }
-  if (msg === "fullName_required") {
-    return { ok: false, code: "fullName" };
-  }
-  return { ok: false, code: "generic" };
-}
-
 export function parseSignupBodyClient(body: unknown):
   | { ok: true; data: SignupBodyParsed }
   | {
@@ -560,6 +683,10 @@ export function parseSignupBodyClient(body: unknown):
         | "invalid_social_url"
         | "invalid_email"
         | "fullName"
+        | "occupation_status"
+        | "study_institution"
+        | "employer"
+        | "team_name"
         | "ambassador_motivation"
         | "ambassador_study_where"
         | "heard_from"
@@ -582,6 +709,21 @@ export function parseSignupBodyClient(body: unknown):
   }
   if (msg === "fullName_required") {
     return { ok: false, code: "fullName" };
+  }
+  if (
+    msg === "occupation_status_required" ||
+    msg === "occupation_status_invalid"
+  ) {
+    return { ok: false, code: "occupation_status" };
+  }
+  if (msg === "study_institution_required") {
+    return { ok: false, code: "study_institution" };
+  }
+  if (msg === "employer_required") {
+    return { ok: false, code: "employer" };
+  }
+  if (msg === "team_name_required") {
+    return { ok: false, code: "team_name" };
   }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, code: "heard_from" };

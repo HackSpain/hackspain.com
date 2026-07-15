@@ -1,8 +1,9 @@
 import { captureException, captureMessage, withScope } from "@sentry/astro";
 import type { APIRoute } from "astro";
 import { checkBotId } from "botid/server";
+import { eq } from "drizzle-orm";
 import { getDb } from "../../db";
-import { hackathonSignups } from "../../db/schema";
+import { hackathonPreSignups, hackathonSignups } from "../../db/schema";
 import {
   notifyDiscordNewSignup,
   notifyDiscordSignupApiIssue,
@@ -214,11 +215,18 @@ export const POST: APIRoute = async ({ request }) => {
     webUrl,
     achievements,
     freeTime,
+    dietaryRestrictions,
+    dietaryDetails,
+    occupationStatus,
+    studyInstitution,
+    employer,
+    teamName,
     wantsAmbassador,
     ambassadorMotivation,
     ambassadorStudyWhere,
     heardFrom,
     referralCode,
+    invitationToken,
   } = parsed.data;
 
   const motivationDb = wantsAmbassador
@@ -226,8 +234,49 @@ export const POST: APIRoute = async ({ request }) => {
     : null;
   const studyDb = wantsAmbassador ? emptyToNull(ambassadorStudyWhere) : null;
 
+  let relatedPreSignupId: string | null = null;
+  let relatedPreSignupReferralCode: string | null = null;
+
   try {
     const db = getDb();
+
+    if (invitationToken) {
+      const [preSignup] = await db
+        .select({
+          email: hackathonPreSignups.email,
+          id: hackathonPreSignups.id,
+          referralCode: hackathonPreSignups.referralCode,
+          signupCompletedAt: hackathonPreSignups.signupCompletedAt,
+        })
+        .from(hackathonPreSignups)
+        .where(eq(hackathonPreSignups.signupToken, invitationToken))
+        .limit(1);
+      if (!preSignup) {
+        return Response.json({ error: "invalid_invitation" }, { status: 400 });
+      }
+      if (preSignup.signupCompletedAt) {
+        return Response.json({ error: "invitation_used" }, { status: 409 });
+      }
+      if (preSignup.email !== email) {
+        return Response.json(
+          { error: "invitation_email_mismatch" },
+          { status: 400 }
+        );
+      }
+      relatedPreSignupId = preSignup.id;
+      relatedPreSignupReferralCode = preSignup.referralCode;
+    } else {
+      const [preSignup] = await db
+        .select({
+          id: hackathonPreSignups.id,
+          referralCode: hackathonPreSignups.referralCode,
+        })
+        .from(hackathonPreSignups)
+        .where(eq(hackathonPreSignups.email, email))
+        .limit(1);
+      relatedPreSignupId = preSignup?.id ?? null;
+      relatedPreSignupReferralCode = preSignup?.referralCode ?? null;
+    }
 
     try {
       await db.insert(hackathonSignups).values({
@@ -239,11 +288,19 @@ export const POST: APIRoute = async ({ request }) => {
         webUrl: emptyToNull(webUrl),
         achievements: emptyToNull(achievements),
         freeTime: emptyToNull(freeTime),
+        dietaryRestrictions,
+        dietaryDetails: emptyToNull(dietaryDetails),
+        occupationStatus,
+        studyInstitution: emptyToNull(studyInstitution),
+        employer: emptyToNull(employer),
+        teamName,
         wantsAmbassador,
         ambassadorMotivation: motivationDb,
         ambassadorStudyWhere: studyDb,
         heardFrom: emptyToNull(heardFrom),
-        referralCode: emptyToNull(referralCode),
+        referralCode: emptyToNull(
+          referralCode || relatedPreSignupReferralCode || ""
+        ),
       });
     } catch (e: unknown) {
       if (isPostgresUniqueViolation(e)) {
@@ -270,6 +327,25 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json({ error: "save_failed" }, { status: 500 });
   }
 
+  if (relatedPreSignupId) {
+    try {
+      const db = getDb();
+      await db
+        .update(hackathonPreSignups)
+        .set({ signupCompletedAt: new Date() })
+        .where(eq(hackathonPreSignups.id, relatedPreSignupId));
+    } catch (e) {
+      console.error("[signup] Failed to mark pre-signup as completed:", e);
+      safeSentry(() => {
+        withScope((scope) => {
+          scope.setTag("api", "signup");
+          scope.setTag("outcome", "pre_signup_completion_mark_failed");
+          captureException(e);
+        });
+      });
+    }
+  }
+
   // Row persisted — ancillary failures must not change the HTTP outcome.
   try {
     await notifyDiscordNewSignup({
@@ -281,6 +357,12 @@ export const POST: APIRoute = async ({ request }) => {
       webUrl,
       achievements,
       freeTime,
+      dietaryRestrictions,
+      dietaryDetails,
+      occupationStatus,
+      studyInstitution,
+      employer,
+      teamName,
       wantsAmbassador,
       ambassadorMotivation: wantsAmbassador ? ambassadorMotivation : "",
       ambassadorStudyWhere: wantsAmbassador ? ambassadorStudyWhere : "",
