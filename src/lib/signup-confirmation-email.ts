@@ -84,6 +84,20 @@ function signupFormUrl(): string {
   return new URL("/signup", siteOriginFromRuntime()).toString();
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character] ?? character
+  );
+}
+
 function signupConfirmationText(
   input: Pick<ConfirmationEmailInput, "fullName" | "wantsAmbassador">
 ): string {
@@ -94,7 +108,7 @@ function signupConfirmationText(
 
   return `Hola ${firstName},
 
-¡Gracias por apuntarte a HackSpain 2026! Hemos recibido tu solicitud correctamente.
+Gracias por apuntarte a HackSpain 2026! Hemos recibido tu solicitud correctamente.
 
 Vamos a revisar cada candidatura personalmente. Cuando tengamos novedades sobre tu plaza, te escribiremos a este mismo correo.${ambassadorNote}
 
@@ -208,16 +222,30 @@ export async function sendPreSignupInvitationEmail(
 
   const organizerName = pickOrganizerName();
   const firstName = firstNameFrom(input.fullName);
+  const personalUrl = escapeHtml(input.signupUrl);
+  const shareUrl = signupFormUrl();
   const text = `Hola ${firstName},
 
 La inscripción a HackSpain 2026 ya está abierta. Entra desde tu enlace personal, completa los datos restantes y envía tu solicitud.
 
-${input.signupUrl}
+Tu enlace personal está en el botón "Haz click aquí" de este correo.
 
-Este enlace es único para ti, así que no lo compartas. Cuando termines, revisaremos tu solicitud y te escribiremos con la decisión.
+Este enlace es único para ti, así que no lo compartas.
+
+Si quieres compartir la inscripción con alguien que todavía no se había apuntado a la pre-inscripción, usa este enlace:
+${shareUrl}
+
+Cuando termines, revisaremos tu solicitud y te escribiremos con la decisión.
 
 Nos vemos dentro,
 ${organizerName} de HackSpain`;
+  const html = `<p>Hola ${escapeHtml(firstName)},</p>
+<p>La inscripción a HackSpain 2026 ya está abierta. Entra desde tu enlace personal, completa los datos restantes y envía tu solicitud.</p>
+<p><a href="${personalUrl}">Haz click aquí</a></p>
+<p>Este enlace es único para ti, así que no lo compartas.</p>
+<p>Si quieres compartir la inscripción con alguien que todavía no se había apuntado a la pre-inscripción, usa este enlace:<br><a href="${escapeHtml(shareUrl)}">${escapeHtml(shareUrl)}</a></p>
+<p>Cuando termines, revisaremos tu solicitud y te escribiremos con la decisión.</p>
+<p>Nos vemos dentro,<br>${escapeHtml(organizerName)} de HackSpain</p>`;
 
   try {
     const transporter = getTransporter(cfg);
@@ -229,6 +257,7 @@ ${organizerName} de HackSpain`;
       to: input.email,
       subject: "Completa tu inscripción — HackSpain 2026",
       text,
+      html,
       headers: {
         "X-Entity-Ref-ID": `hackspain-signup-invitation-${input.preSignupId}`,
       },
@@ -295,7 +324,7 @@ ${organizerName} de HackSpain`;
         address: cfg.fromAddress,
       },
       to: input.email,
-      subject: "¡Estás dentro! — HackSpain 2026",
+      subject: "Estás dentro! — HackSpain 2026",
       text,
       headers: {
         "X-Entity-Ref-ID": `hackspain-signup-approved-${input.signupId}`,
