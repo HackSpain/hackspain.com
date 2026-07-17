@@ -12,7 +12,7 @@ const SIGNUP_MAX = {
 
 export const HEARD_FROM_SOURCE_IDS = [
   "x",
-  "instagram",
+  "exponential",
   "linkedin",
   "friend",
   "school",
@@ -28,7 +28,7 @@ export const HEARD_FROM_OPTIONS: readonly {
   label: string;
 }[] = [
   { id: "x", label: "X (Twitter)" },
-  { id: "instagram", label: "Instagram" },
+  { id: "exponential", label: "Exponential" },
   { id: "linkedin", label: "LinkedIn" },
   { id: "friend", label: "Un amigo o compañero" },
   { id: "school", label: "Universidad, FP o bootcamp" },
@@ -104,6 +104,9 @@ export function formatHeardFromStored(storedValues: readonly string[]): string {
       if (stored.startsWith("other:")) {
         const detail = stored.slice(6).trim();
         return detail.length > 0 ? `Otro: ${detail}` : "Otro";
+      }
+      if (stored === "instagram") {
+        return "Instagram";
       }
       const row = HEARD_FROM_OPTIONS.find((option) => option.id === stored);
       return row?.label ?? stored;
