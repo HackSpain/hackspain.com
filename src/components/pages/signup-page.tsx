@@ -1112,40 +1112,76 @@ export function SignupPage() {
                       <legend className="sr-only">
                         {t.heardFrom} (obligatorio)
                       </legend>
-                      <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 min-[520px]:grid-cols-3">
-                        {HEARD_FROM_OPTIONS.map((opt) => (
-                          <label
-                            className="flex cursor-pointer items-start gap-1.5 rounded-sm border-[3px] border-hs-ink bg-hs-paper px-2 py-1.5 shadow-[2px_2px_0_0_var(--color-hs-ink)] transition-[background-color,box-shadow] hover:bg-hs-sand/40 has-[:focus-visible]:border-hs-navy has-[:checked]:bg-hs-gold/35"
-                            htmlFor={`signup-heard-from-${opt.id}`}
-                            key={opt.id}
-                          >
-                            <div className="relative mt-px h-4 w-4 shrink-0">
-                              <input
-                                className="h-4 w-4 cursor-pointer accent-hs-gold"
-                                id={`signup-heard-from-${opt.id}`}
-                                type="checkbox"
-                                value={opt.id}
-                                {...register("heardFromSources", {
-                                  onChange: (e) => {
-                                    setAttentionTarget(null);
-                                    if (
-                                      opt.id === "other" &&
-                                      !e.target.checked
-                                    ) {
-                                      setValue("heardFromOther", "", {
-                                        shouldDirty: true,
-                                      });
-                                    }
-                                  },
-                                })}
-                              />
-                            </div>
-                            <span className="min-w-0 font-sans font-semibold text-hs-ink text-xs leading-tight sm:text-sm">
-                              {opt.label}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+                      <Controller
+                        control={control}
+                        name="heardFromSources"
+                        render={({ field }) => (
+                          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 min-[520px]:grid-cols-3">
+                            {HEARD_FROM_OPTIONS.map((option) => {
+                              const checked = field.value.includes(option.id);
+                              return (
+                                <label
+                                  className="flex cursor-pointer items-start gap-1.5 rounded-sm border-[3px] border-hs-ink bg-hs-paper px-2 py-1.5 shadow-[2px_2px_0_0_var(--color-hs-ink)] transition-[background-color,box-shadow] hover:bg-hs-sand/40 has-[:focus-visible]:border-hs-navy has-[:checked]:bg-hs-gold/35"
+                                  htmlFor={`signup-heard-from-${option.id}`}
+                                  key={option.id}
+                                >
+                                  <div className="relative mt-px h-4 w-4 shrink-0">
+                                    <input
+                                      checked={checked}
+                                      className="peer absolute inset-0 z-10 h-4 w-4 cursor-pointer appearance-none opacity-0"
+                                      id={`signup-heard-from-${option.id}`}
+                                      name={field.name}
+                                      onBlur={field.onBlur}
+                                      onChange={(event) => {
+                                        const next = event.target.checked
+                                          ? [...field.value, option.id]
+                                          : field.value.filter(
+                                              (value) => value !== option.id
+                                            );
+                                        field.onChange(next);
+                                        setAttentionTarget(null);
+                                        if (
+                                          option.id === "other" &&
+                                          !event.target.checked
+                                        ) {
+                                          setValue("heardFromOther", "", {
+                                            shouldDirty: true,
+                                          });
+                                        }
+                                      }}
+                                      type="checkbox"
+                                    />
+                                    <div
+                                      aria-hidden
+                                      className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border-2 border-hs-ink bg-hs-paper peer-checked:bg-hs-gold [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100"
+                                    >
+                                      <svg
+                                        fill="none"
+                                        height="10"
+                                        viewBox="0 0 10 10"
+                                        width="10"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                      >
+                                        <title>Marca de verificación</title>
+                                        <path
+                                          d="M1.5 5.1 3.8 7.4 8.5 2.5"
+                                          stroke="currentColor"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth="1.8"
+                                        />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                  <span className="min-w-0 font-sans font-semibold text-hs-ink text-xs leading-tight sm:text-sm">
+                                    {option.label}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      />
                       {heardFromSources.includes("other") ? (
                         <div className="mt-3">
                           <Input
