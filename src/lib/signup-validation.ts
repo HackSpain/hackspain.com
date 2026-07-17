@@ -64,7 +64,7 @@ export const DIETARY_RESTRICTION_OPTIONS: readonly {
   { id: "other", label: "Otra" },
 ] as const;
 
-export const OCCUPATION_STATUS_IDS = ["student", "working", "other"] as const;
+export const OCCUPATION_STATUS_IDS = ["student", "working"] as const;
 
 export type OccupationStatusId = (typeof OCCUPATION_STATUS_IDS)[number];
 
@@ -74,7 +74,6 @@ export const OCCUPATION_STATUS_OPTIONS: readonly {
 }[] = [
   { id: "student", label: "Estudiante" },
   { id: "working", label: "Trabajo" },
-  { id: "other", label: "Otro" },
 ] as const;
 
 export function formatDietaryRestrictions(
@@ -89,22 +88,27 @@ export function formatDietaryRestrictions(
     .join(", ");
 }
 
-export function formatOccupationStatus(status: string): string {
-  return (
-    OCCUPATION_STATUS_OPTIONS.find(({ id }) => id === status)?.label ?? status
-  );
+export function formatOccupationStatuses(statuses: readonly string[]): string {
+  return statuses
+    .map(
+      (status) =>
+        OCCUPATION_STATUS_OPTIONS.find(({ id }) => id === status)?.label ??
+        status
+    )
+    .join(", ");
 }
 
-export function formatHeardFromStored(stored: string): string {
-  if (!stored) {
-    return "";
-  }
-  if (stored.startsWith("other:")) {
-    const detail = stored.slice(6).trim();
-    return detail.length > 0 ? `Otro: ${detail}` : "Otro";
-  }
-  const row = HEARD_FROM_OPTIONS.find((o) => o.id === stored);
-  return row?.label ?? stored;
+export function formatHeardFromStored(storedValues: readonly string[]): string {
+  return storedValues
+    .map((stored) => {
+      if (stored.startsWith("other:")) {
+        const detail = stored.slice(6).trim();
+        return detail.length > 0 ? `Otro: ${detail}` : "Otro";
+      }
+      const row = HEARD_FROM_OPTIONS.find((option) => option.id === stored);
+      return row?.label ?? stored;
+    })
+    .join(", ");
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -419,17 +423,12 @@ const signupBodySchema = z
         .max(SIGNUP_MAX.longText)
         .transform((value) => value.trim())
     ),
-    occupationStatus: z.preprocess(
-      (value) => (typeof value === "string" ? value.trim() : ""),
+    occupationStatuses: z.preprocess(
+      (value) => (Array.isArray(value) ? value : []),
       z
-        .string()
-        .min(1, { message: "occupation_status_required" })
-        .refine(
-          (value) =>
-            (OCCUPATION_STATUS_IDS as readonly string[]).includes(value),
-          { message: "occupation_status_invalid" }
-        )
-        .transform((value) => value as OccupationStatusId)
+        .array(z.enum(OCCUPATION_STATUS_IDS))
+        .max(OCCUPATION_STATUS_IDS.length)
+        .transform((values) => [...new Set(values)])
     ),
     studyInstitution: z.preprocess(
       (value) => (typeof value === "string" ? value : ""),
@@ -445,35 +444,18 @@ const signupBodySchema = z
         .max(SIGNUP_MAX.name)
         .transform((value) => value.trim())
     ),
-    teamName: z.preprocess(
-      (value) => (typeof value === "string" ? value : ""),
-      z
-        .string()
-        .max(SIGNUP_MAX.name)
-        .transform((value) => value.trim())
-        .refine((value) => value.length > 0, {
-          message: "team_name_required",
-        })
-    ),
     wantsAmbassador: z.boolean().optional().default(false),
     ambassadorMotivation: z
       .string()
       .max(SIGNUP_MAX.longText)
       .transform((s) => s.trim()),
-    ambassadorStudyWhere: z
-      .string()
-      .max(SIGNUP_MAX.longText)
-      .transform((s) => s.trim()),
-    heardFromSource: z.preprocess(
-      (v) => (typeof v === "string" ? v.trim() : ""),
+    heardFromSources: z.preprocess(
+      (value) => (Array.isArray(value) ? value : []),
       z
-        .string()
+        .array(z.enum(HEARD_FROM_SOURCE_IDS))
         .min(1, { message: "heard_from_required" })
-        .refine(
-          (s) => (HEARD_FROM_SOURCE_IDS as readonly string[]).includes(s),
-          { message: "heard_from_invalid" }
-        )
-        .transform((s) => s as HeardFromSourceId)
+        .max(HEARD_FROM_SOURCE_IDS.length)
+        .transform((values) => [...new Set(values)])
     ),
     heardFromOther: z.preprocess(
       (v) => (typeof v === "string" ? v : ""),
@@ -506,24 +488,15 @@ const signupBodySchema = z
         path: ["xUrl"],
       });
     }
-    if (data.wantsAmbassador) {
-      if (data.ambassadorMotivation.length === 0) {
-        ctx.addIssue({
-          code: "custom",
-          message: "ambassador_motivation_required",
-          path: ["ambassadorMotivation"],
-        });
-      }
-      if (data.ambassadorStudyWhere.length === 0) {
-        ctx.addIssue({
-          code: "custom",
-          message: "ambassador_study_where_required",
-          path: ["ambassadorStudyWhere"],
-        });
-      }
+    if (data.wantsAmbassador && data.ambassadorMotivation.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "ambassador_motivation_required",
+        path: ["ambassadorMotivation"],
+      });
     }
     if (
-      data.occupationStatus === "student" &&
+      data.occupationStatuses.includes("student") &&
       data.studyInstitution.length === 0
     ) {
       ctx.addIssue({
@@ -532,14 +505,20 @@ const signupBodySchema = z
         path: ["studyInstitution"],
       });
     }
-    if (data.occupationStatus === "working" && data.employer.length === 0) {
+    if (
+      data.occupationStatuses.includes("working") &&
+      data.employer.length === 0
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "employer_required",
         path: ["employer"],
       });
     }
-    if (data.heardFromSource === "other" && data.heardFromOther.length === 0) {
+    if (
+      data.heardFromSources.includes("other") &&
+      data.heardFromOther.length === 0
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "heard_from_other_required",
@@ -547,11 +526,10 @@ const signupBodySchema = z
       });
     }
   })
-  .transform(({ heardFromSource, heardFromOther, ...rest }) => {
-    const heardFrom =
-      heardFromSource === "other"
-        ? `other:${heardFromOther.trim()}`
-        : heardFromSource;
+  .transform(({ heardFromSources, heardFromOther, ...rest }) => {
+    const heardFrom = heardFromSources.map((source) =>
+      source === "other" ? `other:${heardFromOther.trim()}` : source
+    );
     return { ...rest, heardFrom };
   });
 
@@ -581,29 +559,17 @@ export function parseSignupBody(
   if (msg === "fullName_required") {
     return { ok: false, error: "fullName_required", status: 400 };
   }
-  if (
-    msg === "occupation_status_required" ||
-    msg === "occupation_status_invalid"
-  ) {
-    return { ok: false, error: "occupation_status_required", status: 400 };
-  }
   if (msg === "study_institution_required") {
     return { ok: false, error: "study_institution_required", status: 400 };
   }
   if (msg === "employer_required") {
     return { ok: false, error: "employer_required", status: 400 };
   }
-  if (msg === "team_name_required") {
-    return { ok: false, error: "team_name_required", status: 400 };
-  }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, error: "heard_from_required", status: 400 };
   }
   if (msg === "ambassador_motivation_required") {
     return { ok: false, error: "ambassador_motivation_required", status: 400 };
-  }
-  if (msg === "ambassador_study_where_required") {
-    return { ok: false, error: "ambassador_study_where_required", status: 400 };
   }
   if (msg === "heard_from_other_required") {
     return { ok: false, error: "heard_from_other_required", status: 400 };
@@ -683,12 +649,9 @@ export function parseSignupBodyClient(body: unknown):
         | "invalid_social_url"
         | "invalid_email"
         | "fullName"
-        | "occupation_status"
         | "study_institution"
         | "employer"
-        | "team_name"
         | "ambassador_motivation"
-        | "ambassador_study_where"
         | "heard_from"
         | "heard_from_other"
         | "generic";
@@ -710,29 +673,17 @@ export function parseSignupBodyClient(body: unknown):
   if (msg === "fullName_required") {
     return { ok: false, code: "fullName" };
   }
-  if (
-    msg === "occupation_status_required" ||
-    msg === "occupation_status_invalid"
-  ) {
-    return { ok: false, code: "occupation_status" };
-  }
   if (msg === "study_institution_required") {
     return { ok: false, code: "study_institution" };
   }
   if (msg === "employer_required") {
     return { ok: false, code: "employer" };
   }
-  if (msg === "team_name_required") {
-    return { ok: false, code: "team_name" };
-  }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, code: "heard_from" };
   }
   if (msg === "ambassador_motivation_required") {
     return { ok: false, code: "ambassador_motivation" };
-  }
-  if (msg === "ambassador_study_where_required") {
-    return { ok: false, code: "ambassador_study_where" };
   }
   if (msg === "heard_from_other_required") {
     return { ok: false, code: "heard_from_other" };

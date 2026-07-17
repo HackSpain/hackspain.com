@@ -217,13 +217,11 @@ export const POST: APIRoute = async ({ request }) => {
     freeTime,
     dietaryRestrictions,
     dietaryDetails,
-    occupationStatus,
+    occupationStatuses,
     studyInstitution,
     employer,
-    teamName,
     wantsAmbassador,
     ambassadorMotivation,
-    ambassadorStudyWhere,
     heardFrom,
     referralCode,
     invitationToken,
@@ -232,7 +230,6 @@ export const POST: APIRoute = async ({ request }) => {
   const motivationDb = wantsAmbassador
     ? emptyToNull(ambassadorMotivation)
     : null;
-  const studyDb = wantsAmbassador ? emptyToNull(ambassadorStudyWhere) : null;
 
   let relatedPreSignupId: string | null = null;
   let relatedPreSignupReferralCode: string | null = null;
@@ -290,14 +287,13 @@ export const POST: APIRoute = async ({ request }) => {
         freeTime: emptyToNull(freeTime),
         dietaryRestrictions,
         dietaryDetails: emptyToNull(dietaryDetails),
-        occupationStatus,
+        occupationStatuses,
         studyInstitution: emptyToNull(studyInstitution),
         employer: emptyToNull(employer),
-        teamName,
+        cameFromPreSignup: invitationToken.length > 0,
         wantsAmbassador,
         ambassadorMotivation: motivationDb,
-        ambassadorStudyWhere: studyDb,
-        heardFrom: emptyToNull(heardFrom),
+        heardFrom,
         referralCode: emptyToNull(
           referralCode || relatedPreSignupReferralCode || ""
         ),
@@ -359,13 +355,12 @@ export const POST: APIRoute = async ({ request }) => {
       freeTime,
       dietaryRestrictions,
       dietaryDetails,
-      occupationStatus,
+      occupationStatuses,
       studyInstitution,
       employer,
-      teamName,
+      cameFromPreSignup: invitationToken.length > 0,
       wantsAmbassador,
       ambassadorMotivation: wantsAmbassador ? ambassadorMotivation : "",
-      ambassadorStudyWhere: wantsAmbassador ? ambassadorStudyWhere : "",
       heardFrom,
     });
   } catch (e) {

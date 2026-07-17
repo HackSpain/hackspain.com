@@ -21,14 +21,23 @@ export const hackathonSignups = pgTable("hackathon_signups", {
     .default(sql`ARRAY[]::text[]`)
     .notNull(),
   dietaryDetails: text("dietary_details"),
-  occupationStatus: text("occupation_status").notNull(),
+  legacyOccupationStatus: text("occupation_status").default("").notNull(),
+  occupationStatuses: text("occupation_statuses")
+    .array()
+    .default(sql`ARRAY[]::text[]`)
+    .notNull(),
   studyInstitution: text("study_institution"),
   employer: text("employer"),
-  teamName: text("team_name").notNull(),
+  legacyTeamName: text("team_name").default("").notNull(),
+  cameFromPreSignup: boolean("came_from_pre_signup").default(false).notNull(),
   wantsAmbassador: boolean("wants_ambassador").default(false).notNull(),
   ambassadorMotivation: text("ambassador_motivation"),
-  ambassadorStudyWhere: text("ambassador_study_where"),
-  heardFrom: text("heard_from"),
+  legacyAmbassadorStudyWhere: text("ambassador_study_where"),
+  legacyHeardFrom: text("heard_from"),
+  heardFrom: text("heard_from_sources")
+    .array()
+    .default(sql`ARRAY[]::text[]`)
+    .notNull(),
   referralCode: text("referral_code"),
   approvalStatus: text("approval_status")
     .$type<SignupApprovalStatus>()

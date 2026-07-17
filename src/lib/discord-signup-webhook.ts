@@ -1,7 +1,7 @@
 import {
   formatDietaryRestrictions,
   formatHeardFromStored,
-  formatOccupationStatus,
+  formatOccupationStatuses,
 } from "./signup-validation";
 
 const DISCORD_WEBHOOK_PREFIXES = [
@@ -113,7 +113,7 @@ export async function notifyDiscordNewPreSignup(
 export interface SignupDiscordPayload {
   achievements: string;
   ambassadorMotivation: string;
-  ambassadorStudyWhere: string;
+  cameFromPreSignup: boolean;
   dietaryDetails: string;
   dietaryRestrictions: string[];
   email: string;
@@ -121,11 +121,10 @@ export interface SignupDiscordPayload {
   freeTime: string;
   fullName: string;
   githubUrl: string;
-  heardFrom: string;
+  heardFrom: string[];
   linkedinUrl: string;
-  occupationStatus: string;
+  occupationStatuses: string[];
   studyInstitution: string;
-  teamName: string;
   wantsAmbassador: boolean;
   webUrl: string;
   xUrl: string;
@@ -146,6 +145,11 @@ export async function notifyDiscordNewSignup(
     fields: [
       { name: "Name", value: fieldVal(data.fullName, max), inline: true },
       { name: "Email", value: fieldVal(data.email, max), inline: true },
+      {
+        name: "Came from pre-signup",
+        value: data.cameFromPreSignup ? "True" : "False",
+        inline: true,
+      },
       {
         name: "How they found us",
         value: fieldVal(formatHeardFromStored(data.heardFrom), max),
@@ -184,7 +188,7 @@ export async function notifyDiscordNewSignup(
       },
       {
         name: "Studies or works",
-        value: fieldVal(formatOccupationStatus(data.occupationStatus), max),
+        value: fieldVal(formatOccupationStatuses(data.occupationStatuses), max),
         inline: true,
       },
       {
@@ -198,11 +202,6 @@ export async function notifyDiscordNewSignup(
         inline: true,
       },
       {
-        name: "Team",
-        value: fieldVal(data.teamName, max),
-        inline: true,
-      },
-      {
         name: "Ambassador interest",
         value: data.wantsAmbassador ? "Yes" : "No",
         inline: true,
@@ -212,11 +211,6 @@ export async function notifyDiscordNewSignup(
             {
               name: "Why ambassador",
               value: fieldVal(data.ambassadorMotivation, max),
-              inline: false,
-            },
-            {
-              name: "Where they study",
-              value: fieldVal(data.ambassadorStudyWhere, max),
               inline: false,
             },
           ]

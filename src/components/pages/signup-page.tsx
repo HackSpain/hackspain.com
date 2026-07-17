@@ -65,7 +65,6 @@ function setAppliedFlag() {
 interface StoredFields {
   achievements: string;
   ambassadorMotivation: string;
-  ambassadorStudyWhere: string;
   dietaryDetails: string;
   dietaryRestrictions: DietaryRestrictionId[];
   email: string;
@@ -74,11 +73,10 @@ interface StoredFields {
   fullName: string;
   githubUrl: string;
   heardFromOther: string;
-  heardFromSource: HeardFromSourceId | "";
+  heardFromSources: HeardFromSourceId[];
   linkedinUrl: string;
-  occupationStatus: OccupationStatusId | "";
+  occupationStatuses: OccupationStatusId[];
   studyInstitution: string;
-  teamName: string;
   wantsAmbassador: boolean;
   webUrl: string;
   xUrl: string;
@@ -95,14 +93,12 @@ const EMPTY_FIELDS: StoredFields = {
   freeTime: "",
   dietaryRestrictions: [],
   dietaryDetails: "",
-  occupationStatus: "",
+  occupationStatuses: [],
   studyInstitution: "",
   employer: "",
-  teamName: "",
   wantsAmbassador: false,
   ambassadorMotivation: "",
-  ambassadorStudyWhere: "",
-  heardFromSource: "",
+  heardFromSources: [],
   heardFromOther: "",
 };
 
@@ -128,30 +124,38 @@ function readStoredFields(): StoredFields {
         )
       : [];
     const occupationIds = OCCUPATION_STATUS_IDS as readonly string[];
-    const occupationRaw =
-      typeof o.occupationStatus === "string" ? o.occupationStatus.trim() : "";
-    const occupationStatus: OccupationStatusId | "" =
-      occupationRaw && occupationIds.includes(occupationRaw)
-        ? (occupationRaw as OccupationStatusId)
-        : "";
+    let occupationValues: unknown[] = [];
+    if (Array.isArray(o.occupationStatuses)) {
+      occupationValues = o.occupationStatuses;
+    } else if (typeof o.occupationStatus === "string") {
+      occupationValues = [o.occupationStatus];
+    }
+    const occupationStatuses = occupationValues.filter(
+      (value): value is OccupationStatusId =>
+        typeof value === "string" && occupationIds.includes(value)
+    );
     const ids = HEARD_FROM_SOURCE_IDS as readonly string[];
-    const sourceRaw =
-      typeof o.heardFromSource === "string" ? o.heardFromSource.trim() : "";
-    let heardFromSource: HeardFromSourceId | "" =
-      sourceRaw !== "" && ids.includes(sourceRaw)
-        ? (sourceRaw as HeardFromSourceId)
-        : "";
+    let sourceValues: unknown[] = [];
+    if (Array.isArray(o.heardFromSources)) {
+      sourceValues = o.heardFromSources;
+    } else if (typeof o.heardFromSource === "string") {
+      sourceValues = [o.heardFromSource];
+    }
+    let heardFromSources = sourceValues.filter(
+      (value): value is HeardFromSourceId =>
+        typeof value === "string" && ids.includes(value)
+    );
     let heardFromOther =
       typeof o.heardFromOther === "string" ? o.heardFromOther : "";
     const legacy = typeof o.heardFrom === "string" ? o.heardFrom.trim() : "";
-    if (!heardFromSource && legacy) {
+    if (heardFromSources.length === 0 && legacy) {
       if (legacy.startsWith("other:")) {
-        heardFromSource = "other";
+        heardFromSources = ["other"];
         heardFromOther = legacy.slice(6).trim();
       } else if (ids.includes(legacy)) {
-        heardFromSource = legacy as HeardFromSourceId;
+        heardFromSources = [legacy as HeardFromSourceId];
       } else {
-        heardFromSource = "other";
+        heardFromSources = ["other"];
         heardFromOther = legacy;
       }
     }
@@ -166,14 +170,12 @@ function readStoredFields(): StoredFields {
       freeTime: s("freeTime"),
       dietaryRestrictions,
       dietaryDetails: s("dietaryDetails"),
-      occupationStatus,
+      occupationStatuses,
       studyInstitution: s("studyInstitution"),
       employer: s("employer"),
-      teamName: s("teamName"),
       wantsAmbassador,
       ambassadorMotivation: s("ambassadorMotivation"),
-      ambassadorStudyWhere: s("ambassadorStudyWhere"),
-      heardFromSource,
+      heardFromSources,
       heardFromOther,
     };
   } catch {
@@ -249,12 +251,9 @@ const t = {
   dietaryDetails: "Detalles de alergias o restricciones",
   dietaryDetailsHint:
     "Cuéntanos cualquier detalle que debamos conocer para organizar las comidas.",
-  occupationStatus: "¿Estudias o trabajas?",
+  occupationStatus: "¿Estudias / trabajas?",
   studyInstitution: "Universidad o centro",
   employer: "Empresa u organización",
-  teamName: "Equipo al que te unes",
-  teamNameHint:
-    "Escribe el nombre del equipo. Si todavía no tienes uno, indica “Sin equipo”.",
   heardFrom: "¿Cómo nos has conocido?",
   heardFromOtherPlaceholder: "Cuéntanos cómo nos encontraste…",
   submit: "Enviar solicitud",
@@ -286,15 +285,9 @@ const t = {
   ambassadorWhyLabel: "¿Por qué quieres ser embajador/a?",
   ambassadorWhyHint:
     "Unas frases sobre qué te mueve — comunidad, tech, tu campus, llegar a gente nueva…",
-  ambassadorStudyLabel: "¿Dónde estudias?",
-  ambassadorStudyHint:
-    "Universidad, bootcamp, centro u organización — lo que encaje.",
   errorFullName: "Indica tu nombre completo.",
-  errorOccupationStatus:
-    "Indica si estudias, trabajas o estás en otra situación.",
   errorStudyInstitution: "Indica tu universidad o centro de estudios.",
   errorEmployer: "Indica tu empresa u organización.",
-  errorTeamName: "Indica el equipo al que te unes o escribe “Sin equipo”.",
   legalSubmitNoticeBefore: "Al enviar este formulario aceptas nuestra ",
   legalPrivacyLinkLabel: "política de privacidad",
   legalSubmitNoticeAfter:
@@ -330,8 +323,8 @@ export function SignupPage() {
   const { register, handleSubmit, control, setValue, watch, reset, formState } =
     useForm<StoredFields>({ defaultValues: { ...EMPTY_FIELDS } });
   const { isSubmitting } = formState;
-  const heardFromSource = watch("heardFromSource");
-  const occupationStatus = watch("occupationStatus");
+  const heardFromSources = watch("heardFromSources");
+  const occupationStatuses = watch("occupationStatuses");
   const wantsAmbassador = watch("wantsAmbassador");
 
   const [attentionTarget, setAttentionTarget] = useState<SignupAttention>(null);
@@ -482,7 +475,7 @@ export function SignupPage() {
       level: "info",
     });
 
-    if (!data.heardFromSource) {
+    if (data.heardFromSources.length === 0) {
       addBreadcrumb({
         category: "signup",
         message: "no heard from selected",
@@ -521,10 +514,7 @@ export function SignupPage() {
         });
         return;
       }
-      if (
-        parsed.code === "ambassador_motivation" ||
-        parsed.code === "ambassador_study_where"
-      ) {
+      if (parsed.code === "ambassador_motivation") {
         pulseAttention("ambassador");
         return;
       }
@@ -536,14 +526,10 @@ export function SignupPage() {
         setErrorMessage(t.errorInvalidEmail);
       } else if (parsed.code === "fullName") {
         setErrorMessage(t.errorFullName);
-      } else if (parsed.code === "occupation_status") {
-        setErrorMessage(t.errorOccupationStatus);
       } else if (parsed.code === "study_institution") {
         setErrorMessage(t.errorStudyInstitution);
       } else if (parsed.code === "employer") {
         setErrorMessage(t.errorEmployer);
-      } else if (parsed.code === "team_name") {
-        setErrorMessage(t.errorTeamName);
       } else {
         setErrorMessage(t.errorGeneric);
       }
@@ -557,7 +543,7 @@ export function SignupPage() {
           const r = await fetch("/api/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            // Same shape as `parseSignupBody` on the server (heardFromSource / heardFromOther).
+            // Same shape as `parseSignupBody` on the server.
             body: JSON.stringify(payload),
           });
           span.setAttribute("http.status_code", r.status);
@@ -604,8 +590,8 @@ export function SignupPage() {
           }
           scope.setContext("form", {
             wantsAmbassador: data.wantsAmbassador,
-            heardFrom: data.heardFromSource,
-            occupationStatus: data.occupationStatus,
+            heardFrom: data.heardFromSources,
+            occupationStatuses: data.occupationStatuses,
           });
           captureMessage(
             `Signup: API rejected ${res.status}${resJson.error ? ` (${resJson.error})` : ""}`,
@@ -627,20 +613,12 @@ export function SignupPage() {
         setStatus("error");
         pulseAttention("ambassador");
         return;
-      } else if (resJson.error === "ambassador_study_where_required") {
-        setStatus("error");
-        pulseAttention("ambassador");
-        return;
       } else if (resJson.error === "fullName_required") {
         setErrorMessage(t.errorFullName);
-      } else if (resJson.error === "occupation_status_required") {
-        setErrorMessage(t.errorOccupationStatus);
       } else if (resJson.error === "study_institution_required") {
         setErrorMessage(t.errorStudyInstitution);
       } else if (resJson.error === "employer_required") {
         setErrorMessage(t.errorEmployer);
-      } else if (resJson.error === "team_name_required") {
-        setErrorMessage(t.errorTeamName);
       } else if (resJson.error === "heard_from_other_required") {
         setStatus("error");
         pulseAttention("heard");
@@ -1026,9 +1004,12 @@ export function SignupPage() {
                 <div className={cellBase}>
                   <fieldset className="min-w-0 border-0 p-0">
                     <legend className="font-bungee text-hs-ink text-sm tracking-wide">
-                      {t.occupationStatus} *
+                      {t.occupationStatus}
                     </legend>
-                    <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    <p className="mt-1 font-sans font-semibold text-hs-ink/75 text-xs">
+                      Puedes marcar ambas opciones o ninguna.
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-1.5">
                       {OCCUPATION_STATUS_OPTIONS.map((option) => (
                         <label
                           className="flex cursor-pointer items-center gap-2 rounded-sm border-[3px] border-hs-ink bg-hs-paper px-3 py-2 shadow-[2px_2px_0_0_var(--color-hs-ink)] hover:bg-hs-sand/40 has-[:focus-visible]:border-hs-navy has-[:checked]:bg-hs-gold/35"
@@ -1038,18 +1019,22 @@ export function SignupPage() {
                           <input
                             className="h-4 w-4 accent-hs-gold"
                             id={`signup-occupation-${option.id}`}
-                            required
-                            type="radio"
+                            type="checkbox"
                             value={option.id}
-                            {...register("occupationStatus", {
+                            {...register("occupationStatuses", {
                               onChange: (event) => {
-                                const value = event.target.value;
-                                if (value !== "student") {
+                                if (
+                                  option.id === "student" &&
+                                  !event.target.checked
+                                ) {
                                   setValue("studyInstitution", "", {
                                     shouldDirty: true,
                                   });
                                 }
-                                if (value !== "working") {
+                                if (
+                                  option.id === "working" &&
+                                  !event.target.checked
+                                ) {
                                   setValue("employer", "", {
                                     shouldDirty: true,
                                   });
@@ -1067,7 +1052,7 @@ export function SignupPage() {
                 </div>
 
                 <AnimatePresence initial={false}>
-                  {occupationStatus === "student" ? (
+                  {occupationStatuses.includes("student") ? (
                     <motion.div
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
@@ -1089,7 +1074,7 @@ export function SignupPage() {
                       </FormField>
                     </motion.div>
                   ) : null}
-                  {occupationStatus === "working" ? (
+                  {occupationStatuses.includes("working") ? (
                     <motion.div
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
@@ -1112,16 +1097,6 @@ export function SignupPage() {
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
-
-                <FormField
-                  className={cellBase}
-                  hint={t.teamNameHint}
-                  id="signup-team-name"
-                  label={t.teamName}
-                  required
-                >
-                  <Input required {...register("teamName")} />
-                </FormField>
 
                 <div
                   className={`${cellBase} relative isolate`}
@@ -1146,27 +1121,24 @@ export function SignupPage() {
                           >
                             <div className="relative mt-px h-4 w-4 shrink-0">
                               <input
+                                className="h-4 w-4 cursor-pointer accent-hs-gold"
                                 id={`signup-heard-from-${opt.id}`}
-                                type="radio"
+                                type="checkbox"
                                 value={opt.id}
-                                {...register("heardFromSource", {
+                                {...register("heardFromSources", {
                                   onChange: (e) => {
                                     setAttentionTarget(null);
-                                    if (e.target.value !== "other") {
+                                    if (
+                                      opt.id === "other" &&
+                                      !e.target.checked
+                                    ) {
                                       setValue("heardFromOther", "", {
                                         shouldDirty: true,
                                       });
                                     }
                                   },
                                 })}
-                                className="peer absolute inset-0 z-10 h-4 w-4 cursor-pointer appearance-none opacity-0"
                               />
-                              <div
-                                aria-hidden
-                                className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-full border-2 border-hs-ink bg-hs-paper peer-checked:bg-hs-gold [&_span]:opacity-0 [&_span]:transition-opacity peer-checked:[&_span]:opacity-100"
-                              >
-                                <span className="h-1.5 w-1.5 rounded-full bg-hs-ink" />
-                              </div>
                             </div>
                             <span className="min-w-0 font-sans font-semibold text-hs-ink text-xs leading-tight sm:text-sm">
                               {opt.label}
@@ -1174,7 +1146,7 @@ export function SignupPage() {
                           </label>
                         ))}
                       </div>
-                      {heardFromSource === "other" ? (
+                      {heardFromSources.includes("other") ? (
                         <div className="mt-3">
                           <Input
                             aria-required
@@ -1278,20 +1250,6 @@ export function SignupPage() {
                             className="min-h-[100px] resize-y"
                             rows={4}
                             {...register("ambassadorMotivation", {
-                              onChange: () => setAttentionTarget(null),
-                            })}
-                          />
-                        </FormField>
-                        <FormField
-                          className="bg-hs-paper p-4"
-                          hint={t.ambassadorStudyHint}
-                          id="signup-ambassador-study"
-                          label={t.ambassadorStudyLabel}
-                          required
-                        >
-                          <Input
-                            autoComplete="organization"
-                            {...register("ambassadorStudyWhere", {
                               onChange: () => setAttentionTarget(null),
                             })}
                           />
