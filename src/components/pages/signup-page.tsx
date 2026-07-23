@@ -62,6 +62,14 @@ function setAppliedFlag() {
   }
 }
 
+function clearAppliedFlag() {
+  try {
+    localStorage.removeItem(STORAGE_APPLIED_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 interface StoredFields {
   achievements: string;
   ambassadorMotivation: string;
@@ -388,6 +396,7 @@ export function SignupPage() {
         });
         setInvitationToken(token);
         setPrefillStatus("loaded");
+        clearAppliedFlag();
 
         const cleanUrl = new URL(window.location.href);
         cleanUrl.hash = "";
