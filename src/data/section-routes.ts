@@ -1,8 +1,17 @@
-export const SECTION_SLUGS = ["mission", "tracks", "apuntate"] as const;
+export const SECTION_SLUGS = [
+  "mission",
+  "tracks",
+  "gran-premio",
+  "apuntate",
+] as const;
 type SectionSlug = (typeof SECTION_SLUGS)[number];
 
 /** Section index of the tracks page (index 0 is the hero, so slugs start at 1). */
 export const TRACKS_SECTION_INDEX = SECTION_SLUGS.indexOf("tracks") + 1;
+
+/** Section index of the grand prize page, which follows tracks. */
+export const GRAND_PRIZE_SECTION_INDEX =
+  SECTION_SLUGS.indexOf("gran-premio") + 1;
 
 const TRAILING_SLASH_PATH = /\/$/;
 

@@ -15,6 +15,7 @@ import {
   exponentialLogo,
   horseSvg,
   logoSvg,
+  trophySvg,
   upmLogo,
   windmillSvg,
 } from "../theme/assets";
@@ -22,6 +23,7 @@ import { GITHUB_SVG, INSTAGRAM_SVG, X_SVG } from "../theme/constants";
 import { Button, ButtonLink } from "../ui/button";
 import { P } from "../ui/panel";
 import {
+  GRAND_PRIZE_SPONSORS,
   PartnerLogoGrid,
   PartnerLogoReel,
   TRACK_SPONSORS,
@@ -261,6 +263,9 @@ export function buildSections(
             El hackathon para unir a los mejores{" "}
             <span className="text-hs-red">builders</span> jóvenes de España.
           </p>
+          <p className={`${LBL} text-center text-hs-ink/50`}>
+            +10.000€ en premios. 5 tracks.
+          </p>
           <ButtonLink
             aria-label="Solicitar plaza en HackSpain — abrir formulario"
             className="shrink-0"
@@ -350,8 +355,9 @@ export function buildSections(
         <P bg="bg-hs-teal">
           <p className={`${LBL} text-white/60`}>HACKSPAIN 2026</p>
           <h2 className={`text-center ${MOSAIC_HERO_LG} text-white`}>
-            TRACKS ORIGINALES,
-            <br />1 <span className="text-hs-gold">GRAN</span> PREMIO
+            5 TRACKS
+            <br />
+            <span className="text-hs-gold">ORIGINALES</span>
           </h2>
           <p className={`${LBL} text-white/60`}>Compute gratis para todos</p>
         </P>
@@ -361,9 +367,8 @@ export function buildSections(
       r4c: (
         <P bg="bg-hs-paper" className="!justify-evenly !px-10 !py-8">
           <p className={`${BD} text-center text-hs-ink`}>
-            Retos de las mejores startups de España, y un{" "}
-            <span className="text-hs-red">gran premio</span> con un jurado
-            estrella.
+            Cinco tracks con retos de las mejores{" "}
+            <span className="text-hs-red">startups</span> de España.
           </p>
           <TracksInfoModal />
         </P>
@@ -371,6 +376,34 @@ export function buildSections(
       r4b: <P bg="bg-hs-paper" />,
       r1c: <P bg="bg-hs-paper" />,
       ...bottomRow(2),
+    },
+    {
+      hero: (
+        <P bg="bg-hs-red">
+          <p className={`${LBL} text-hs-paper/70`}>HACKSPAIN 2026</p>
+          <h2 className={`text-center ${MOSAIC_HERO_LG} text-hs-paper`}>
+            1 <span className="text-hs-gold">GRAN</span>
+            <br />
+            PREMIO
+          </h2>
+          <p className={`${LBL} text-hs-paper/70`}>
+            5.000 € para el equipo ganador
+          </p>
+        </P>
+      ),
+      r3a: <P bg="bg-hs-paper" />,
+      r3b: <P bg="bg-hs-paper" />,
+      r4c: (
+        <P bg="bg-hs-paper" className="!justify-evenly !px-10 !py-8">
+          <p className={`${BD} text-center text-hs-ink`}>
+            Juzgado por los <span className="text-hs-red">mejores VCs</span> del
+            panorama español.
+          </p>
+        </P>
+      ),
+      r4b: <P bg="bg-hs-paper" />,
+      r1c: <P bg="bg-hs-paper" />,
+      ...bottomRow(3),
     },
     {
       hero: (
@@ -395,7 +428,7 @@ export function buildSections(
           </ButtonLink>
         </P>
       ),
-      ...bottomRow(3),
+      ...bottomRow(4),
     },
   ];
 }
@@ -609,6 +642,9 @@ export function buildSectionsCompact(
             El hackathon para unir a los mejores{" "}
             <span className="text-hs-red">builders</span> jóvenes de España.
           </p>
+          <p className={`${CLBL} text-center text-hs-ink/50`}>
+            +10.000€ en premios. 5 tracks.
+          </p>
           <ButtonLink
             aria-label="Solicitar plaza en HackSpain — abrir formulario"
             className="!px-5 !py-2.5 !text-[clamp(0.85rem,3vw,1.1rem)] shrink-0"
@@ -711,20 +747,16 @@ export function buildSectionsCompact(
           <h2
             className={`text-center ${CH} text-[clamp(2rem,9vw,3.4rem)] text-white`}
           >
-            TRACKS ORIGINALES, <span className="text-hs-gold">1 GRAN</span>{" "}
-            PREMIO
+            5 TRACKS <span className="text-hs-gold">ORIGINALES</span>
           </h2>
-          <p className={`${CLBL} text-white/60`}>
-            Compute gratis · Un gran premio
-          </p>
+          <p className={`${CLBL} text-white/60`}>Compute gratis para todos</p>
         </P>
       ),
       b1: (
         <P bg="bg-hs-paper" className={`${CARD} !justify-evenly`}>
           <p className={`${CBD} text-center text-hs-ink`}>
-            Retos de las mejores startups de España, y un{" "}
-            <span className="text-hs-red">gran premio</span> con un jurado
-            estrella.
+            Cinco tracks con retos de las mejores{" "}
+            <span className="text-hs-red">startups</span> de España.
           </p>
           <TracksInfoModal />
         </P>
@@ -744,6 +776,46 @@ export function buildSectionsCompact(
         true
       ),
       // flip1=false, flip5=true → orn1 tl, orn5 tl
+      foot,
+    },
+    {
+      hero: (
+        <P bg="bg-hs-red" className={CARD}>
+          <p className={`${CLBL} text-hs-paper/70`}>HACKSPAIN 2026</p>
+          <h2
+            className={`text-center ${CH} text-[clamp(2rem,9vw,3.4rem)] text-hs-paper`}
+          >
+            1 <span className="text-hs-gold">GRAN</span> PREMIO
+          </h2>
+          <p className={`${CLBL} text-hs-paper/70`}>
+            5.000 € para el equipo ganador
+          </p>
+        </P>
+      ),
+      b1: (
+        <P bg="bg-hs-gold" className={CARDART}>
+          {cardArt(trophySvg, "br")}
+          <p className={`${CBD} text-center text-hs-ink`}>
+            Juzgado por los <span className="text-hs-red">mejores VCs</span> del
+            panorama español.
+          </p>
+        </P>
+      ),
+      b2: (
+        <P bg="bg-hs-paper" className={`${CARD} !justify-center`}>
+          <PartnerLogoGrid pinned={GRAND_PRIZE_SPONSORS} />
+        </P>
+      ),
+      ...orn(
+        "bg-hs-teal",
+        "bg-hs-paper",
+        "bg-hs-gold",
+        "bg-hs-orange",
+        "bg-hs-paper",
+        true,
+        false
+      ),
+      // flip1=true, flip5=false → orn1 br, orn5 br
       foot,
     },
     {

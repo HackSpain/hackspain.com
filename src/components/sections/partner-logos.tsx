@@ -2,13 +2,17 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { shuffled } from "../../lib/shuffle";
 import {
+  acurioLogo,
   cursorLogo,
   embatLogo,
+  enzoLogo,
   exaLogo,
   falLogo,
   googleLogo,
   happyrobotLogo,
-  // kfundLogo,
+  jmeLogo,
+  kfundLogo,
+  kiboLogo,
   maisaLogo,
   onecoworkLogo,
   prosperAiLogo,
@@ -33,6 +37,12 @@ const CURSOR_LOGO_SIZE = "h-[54cqh]";
 const MAISA_LOGO_SIZE = "h-[52cqh]";
 /** Prosper AI wordmark reads small at the default height. */
 const PROSPER_AI_LOGO_SIZE = "h-[36cqh]";
+/** Kibo's mark is a stacked three-line lockup, so height binds, not width. */
+const KIBO_LOGO_SIZE = "h-[48cqh]";
+/** Acurio stacks a wordmark over a subtitle. */
+const ACURIO_LOGO_SIZE = "h-[38cqh]";
+/** Enzo is a chunky script wordmark. */
+const ENZO_LOGO_SIZE = "h-[32cqh]";
 
 const LARGE_GRID_HEIGHT = "h-[clamp(2.1rem,10.5vw,4rem)]";
 const DEFAULT_GRID_HEIGHT = "h-[clamp(1.75rem,9vw,3.25rem)]";
@@ -50,8 +60,18 @@ const LARGE_PARTNER_SRC = new Set([onecoworkLogo.src]);
 const CURSOR_PARTNER_SRC = new Set([cursorLogo.src]);
 const MAISA_PARTNER_SRC = new Set([maisaLogo.src]);
 const PROSPER_AI_PARTNER_SRC = new Set([prosperAiLogo.src]);
+/** Kibo's stacked three-line lockup is nearly square, so height binds. */
+const STACKED_PARTNER_SRC = new Set([kiboLogo.src]);
+/** Acurio (wordmark over subtitle) and Enzo (chunky script) sit in between. */
+const MEDIUM_PARTNER_SRC = new Set([acurioLogo.src, enzoLogo.src]);
 
 function partnerGridHeight(src: string): string {
+  if (STACKED_PARTNER_SRC.has(src)) {
+    return CURSOR_GRID_HEIGHT;
+  }
+  if (MEDIUM_PARTNER_SRC.has(src)) {
+    return PROSPER_AI_GRID_HEIGHT;
+  }
   if (CURSOR_PARTNER_SRC.has(src)) {
     return CURSOR_GRID_HEIGHT;
   }
@@ -157,6 +177,39 @@ export const TRACK_SPONSORS: Partner[] = [
   PROSPER_AI,
   EMBAT,
   THEKER,
+];
+
+/**
+ * The five funds backing the grand prize, pinned the same way on the gran
+ * premio section. Deliberately not part of PARTNERS — they back the prize
+ * rather than the event, so they never enter the general rotation.
+ */
+export const GRAND_PRIZE_SPONSORS: Partner[] = [
+  {
+    alt: "JME Ventures — patrocinador del gran premio de HackSpain",
+    size: LOGO_SIZE,
+    src: jmeLogo.src,
+  },
+  {
+    alt: "Kfund — patrocinador del gran premio de HackSpain",
+    size: LOGO_SIZE,
+    src: kfundLogo.src,
+  },
+  {
+    alt: "Kibo Ventures — patrocinador del gran premio de HackSpain",
+    size: KIBO_LOGO_SIZE,
+    src: kiboLogo.src,
+  },
+  {
+    alt: "Enzo Ventures — patrocinador del gran premio de HackSpain",
+    size: ENZO_LOGO_SIZE,
+    src: enzoLogo.src,
+  },
+  {
+    alt: "Acurio Ventures — patrocinador del gran premio de HackSpain",
+    size: ACURIO_LOGO_SIZE,
+    src: acurioLogo.src,
+  },
 ];
 
 /** Number of open-row cells (o1..o5) the logos rotate through. */
