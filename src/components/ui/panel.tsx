@@ -26,7 +26,8 @@ export function P({
   bg?: string;
   align?: "center" | "start";
   className?: string;
-  children: React.ReactNode;
+  /** Optional — `<P bg="…" />` is used throughout as an empty colored spacer. */
+  children?: React.ReactNode;
 }) {
   const a =
     align === "start"

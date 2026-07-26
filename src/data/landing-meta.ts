@@ -33,10 +33,16 @@ const PAGES: PageSeo[] = [
     ogImageAlt: "HackSpain 2026 — España tiene talento",
   },
   {
-    title: "Tracks originales, 1 gran premio | HackSpain 2026",
+    title: "Tracks originales | HackSpain 2026",
     description:
-      "Compute gratis para todos. Retos de las mejores startups de España, y un gran premio con un jurado estrella.",
-    ogImageAlt: "HackSpain 2026 — tracks originales, 1 gran premio",
+      "Compute gratis para todos. Cinco tracks con retos de las mejores startups de España: Maisa, HappyRobot, Prosper AI, Embat y THEKER Robotics.",
+    ogImageAlt: "HackSpain 2026 — tracks originales",
+  },
+  {
+    title: "1 gran premio de 5.000 € | HackSpain 2026",
+    description:
+      "Un único gran premio de 5.000 € para el equipo ganador de HackSpain 2026, con el patrocinio de JME Ventures, Kfund, Kibo Ventures, Enzo Ventures y Acurio Ventures.",
+    ogImageAlt: "HackSpain 2026 — 1 gran premio de 5.000 €",
   },
   {
     title: "Inscripción abierta | HackSpain 2026",
@@ -91,7 +97,8 @@ const KEYWORDS_BASE =
 const KEYWORDS_BY_SECTION = [
   "MADRID 2026, 18 al 20 de Septiembre, 250 participantes",
   "España tiene talento, talento tech joven, 36 horas",
-  "tracks originales, gran premio, compute gratis, startups España",
+  "tracks originales, compute gratis, startups España",
+  "gran premio, 5.000 euros, premio hackathon, fondos españoles, venture capital España",
   "inscripción abierta, apúntate HackSpain",
 ];
 

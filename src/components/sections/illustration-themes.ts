@@ -45,7 +45,8 @@ export interface IllDef {
 const SCHEDULE: (IllArt | null)[][] = [
   ["windmill", "sun", "horse", "quixote", null, null], // Inicio
   ["sun", "quixote", "windmill", "compass", null, null], // Misión
-  ["spark", "code", null, "trophy", null, null], // Tracks
+  ["spark", "code", null, "compass", null, null], // Tracks
+  ["medal", "trophy", null, "spark", null, null], // Gran premio
   ["trophy", "windmill", "horse", "quixote", null, null], // Apúntate
 ];
 

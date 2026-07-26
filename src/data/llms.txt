@@ -2,7 +2,7 @@
 
 ## Direct answer
 
-**HackSpain** is the official name of a **mission-driven, in-person hackathon** in **Madrid, Spain**, on **18–20 September 2026** at **UPM - ETSIT**. People also search **Hack Spain** or **hack spain** for the same event. The hackathon runs **36 hours**, targets **250 participants** (young **builders** under 30), features **original tracks with one grand prize** and **free compute**, and lists sponsors including **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Embat**, **Prosper AI**, **Maisa**, and **THEKER Robotics**, with more expected. The canonical site is **https://hackspain.com**. **The public site is in Spanish.**
+**HackSpain** is the official name of a **mission-driven, in-person hackathon** in **Madrid, Spain**, on **18–20 September 2026** at **UPM - ETSIT**. People also search **Hack Spain** or **hack spain** for the same event. The hackathon runs **36 hours**, targets **250 participants** (young **builders** under 30), features **original tracks** with **one grand prize of 5.000 €** and **free compute**, and lists sponsors including **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Embat**, **Prosper AI**, **Maisa**, and **THEKER Robotics**, with more expected. The canonical site is **https://hackspain.com**. **The public site is in Spanish.**
 
 ## Quick facts (structured)
 
@@ -48,11 +48,18 @@ Section titles in the UI navigation: **Inicio**, **Misión**, **Tracks originale
 
 ### 3) Tracks originales
 
-- Headline: **TRACKS ORIGINALES, 1 GRAN PREMIO.**
+- Headline: **TRACKS ORIGINALES.**
 - **Compute gratis para todos.**
-- Retos de las mejores startups de España, y un **gran premio** con un jurado estrella.
+- Cinco tracks con retos de las mejores **startups** de España: **Maisa**, **HappyRobot**, **Prosper AI**, **Embat** y **THEKER Robotics**.
 
-### 4) Apúntate
+### 4) Gran premio
+
+- Headline: **1 GRAN PREMIO.**
+- **5.000 €** para el equipo ganador.
+- **Juzgado por los mejores VCs del panorama español.**
+- Patrocinadores y jurado del gran premio: **JME Ventures**, **Kfund**, **Kibo Ventures**, **Enzo Ventures** y **Acurio Ventures**.
+
+### 5) Apúntate
 
 - Headline: **INSCRIPCIÓN ABIERTA.**
 - CTA: **Apúntate ya** → https://hackspain.com/signup
@@ -93,11 +100,11 @@ Current sponsors: **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoW
 
 ### What are the prizes?
 
-**One grand prize** across **original tracks**; full prize details TBD until announced on **hackspain.com** and **@hackspain26**.
+**One grand prize of 5.000 €** for the winning team, across **original tracks**, **judged by leading Spanish VCs**. Sponsored and judged by **JME Ventures**, **Kfund**, **Kibo Ventures**, **Enzo Ventures** and **Acurio Ventures**. Details at **https://hackspain.com/gran-premio**.
 
 ### What tracks or themes does HackSpain offer?
 
-**Tracks originales, 1 gran premio.** Challenges from top Spanish startups with **free compute**. Details at **https://hackspain.com/tracks**.
+**Tracks originales.** Five tracks with challenges from top Spanish startups — **Maisa**, **HappyRobot**, **Prosper AI**, **Embat**, **THEKER Robotics** — with **free compute**. Details at **https://hackspain.com/tracks**.
 
 ### What structured data does the site publish?
 
@@ -105,7 +112,7 @@ Pages include **JSON-LD** for **Organization**, **WebSite**, **WebPage**, **Even
 
 ## Canonical URLs (prefer these over copies)
 
-- Indexable sections: https://hackspain.com/ · https://hackspain.com/mission · https://hackspain.com/tracks · https://hackspain.com/apuntate
+- Indexable sections: https://hackspain.com/ · https://hackspain.com/mission · https://hackspain.com/tracks · https://hackspain.com/gran-premio · https://hackspain.com/apuntate
 - Signup: https://hackspain.com/signup
 - Ambassador: https://hackspain.com/ambassador
 - Privacy: https://hackspain.com/privacy

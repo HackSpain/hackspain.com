@@ -1,4 +1,4 @@
-const SECTIONS = ["mission", "tracks", "apuntate"] as const;
+import { SECTION_SLUGS } from "./section-routes";
 
 const TRAILING_SLASHES = /\/+$/;
 
@@ -17,7 +17,7 @@ export function getAllSitemapPageUrls(): string[] {
   const o = SITEMAP_SITE_ORIGIN;
   const raw = [
     o,
-    ...SECTIONS.map((s) => `${o}/${s}`),
+    ...SECTION_SLUGS.map((s) => `${o}/${s}`),
     `${o}/signup`,
     `${o}/ambassador`,
     `${o}/privacy`,
