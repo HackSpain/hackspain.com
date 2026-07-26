@@ -15,7 +15,7 @@ import {
 } from "../theme/assets";
 import { P } from "../ui/panel";
 
-interface Partner {
+export interface Partner {
   alt: string;
   /** Tailwind height class — sets the on-screen logo height. */
   size: string;
@@ -82,6 +82,34 @@ function partnerReelHeight(src: string): string {
   return DEFAULT_REEL_HEIGHT;
 }
 
+// The five track sponsors are named so the tracks section can pin them without
+// duplicating their alt text and per-logo sizing.
+const HAPPYROBOT: Partner = {
+  alt: "HappyRobot — partner de HackSpain",
+  size: LOGO_SIZE,
+  src: happyrobotLogo.src,
+};
+const EMBAT: Partner = {
+  alt: "Embat — partner de HackSpain",
+  size: LOGO_SIZE,
+  src: embatLogo.src,
+};
+const THEKER: Partner = {
+  alt: "THEKER Robotics — partner de HackSpain",
+  size: LOGO_SIZE,
+  src: theckerLogo.src,
+};
+const PROSPER_AI: Partner = {
+  alt: "Prosper AI — partner de HackSpain",
+  size: PROSPER_AI_LOGO_SIZE,
+  src: prosperAiLogo.src,
+};
+const MAISA: Partner = {
+  alt: "Maisa — partner de HackSpain",
+  size: MAISA_LOGO_SIZE,
+  src: maisaLogo.src,
+};
+
 /** The list order doubles as the rotation order. */
 const PARTNERS: Partner[] = [
   {
@@ -99,11 +127,7 @@ const PARTNERS: Partner[] = [
     size: LOGO_SIZE,
     src: falLogo.src,
   },
-  {
-    alt: "HappyRobot — partner de HackSpain",
-    size: LOGO_SIZE,
-    src: happyrobotLogo.src,
-  },
+  HAPPYROBOT,
   // {
   //   alt: "K Fund — partner de HackSpain",
   //   size: LOGO_SIZE,
@@ -115,26 +139,23 @@ const PARTNERS: Partner[] = [
     size: LARGE_LOGO_SIZE,
     src: onecoworkLogo.src,
   },
-  {
-    alt: "Embat — partner de HackSpain",
-    size: LOGO_SIZE,
-    src: embatLogo.src,
-  },
-  {
-    alt: "THEKER Robotics — partner de HackSpain",
-    size: LOGO_SIZE,
-    src: theckerLogo.src,
-  },
-  {
-    alt: "Prosper AI — partner de HackSpain",
-    size: PROSPER_AI_LOGO_SIZE,
-    src: prosperAiLogo.src,
-  },
-  {
-    alt: "Maisa — partner de HackSpain",
-    size: MAISA_LOGO_SIZE,
-    src: maisaLogo.src,
-  },
+  EMBAT,
+  THEKER,
+  PROSPER_AI,
+  MAISA,
+];
+
+/**
+ * The five sponsors backing the tracks. Pinned in place — and frozen — while
+ * the tracks section is on screen, so the logo row reads as "these are the
+ * track sponsors" rather than a rotating partner wall.
+ */
+export const TRACK_SPONSORS: Partner[] = [
+  MAISA,
+  HAPPYROBOT,
+  PROSPER_AI,
+  EMBAT,
+  THEKER,
 ];
 
 /** Number of open-row cells (o1..o5) the logos rotate through. */
@@ -153,16 +174,24 @@ interface RotationState {
  * queue and sends its own to the back. On-screen logos and the queue always
  * partition PARTNERS, so the same logo can never appear twice at once. Fully
  * deterministic — no randomness, repeats on a fixed cycle.
+ *
+ * Passing `pinned` shows exactly that list and stops the clock. The rotation
+ * state is kept (not reset) while pinned, so unpinning resumes the cycle from
+ * where it left off instead of snapping back to the top of PARTNERS.
  */
-export function usePartnerRotation(count = PARTNER_CELL_COUNT): Partner[] {
+export function usePartnerRotation(
+  count = PARTNER_CELL_COUNT,
+  pinned?: Partner[]
+): Partner[] {
   const [state, setState] = useState<RotationState>(() => ({
     nextCell: 0,
     onScreen: PARTNERS.slice(0, count),
     queue: PARTNERS.slice(count),
   }));
+  const frozen = pinned !== undefined;
 
   useEffect(() => {
-    if (PARTNERS.length <= count) {
+    if (frozen || PARTNERS.length <= count) {
       return;
     }
     const id = setInterval(() => {
@@ -185,22 +214,31 @@ export function usePartnerRotation(count = PARTNER_CELL_COUNT): Partner[] {
       });
     }, SWAP_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [count]);
+  }, [count, frozen]);
 
-  return state.onScreen;
+  return pinned ?? state.onScreen;
 }
 
-/** 2×3 grid of partner logos with round-robin rotation, for mobile sections. */
-export function PartnerLogoGrid() {
-  const partners = usePartnerRotation(6);
+/**
+ * Two-column grid of partner logos with round-robin rotation, for mobile
+ * sections. With `pinned` it shows that exact list, frozen; an odd final logo
+ * spans the row so it centers instead of hanging off to the left.
+ */
+export function PartnerLogoGrid({ pinned }: { pinned?: Partner[] }) {
+  const partners = usePartnerRotation(6, pinned);
+  const oddLast = partners.length % 2 === 1;
   return (
     <div className="grid w-full grid-cols-2 gap-6 px-4">
-      {partners.map((p) => (
+      {partners.map((p, i) => (
         <AnimatePresence initial={false} key={p.src} mode="wait">
           <motion.span
             animate={{ opacity: 1 }}
             aria-label={p.alt}
-            className={`block w-full bg-hs-ink/60 ${partnerGridHeight(p.src)}`}
+            className={`block bg-hs-ink/60 ${partnerGridHeight(p.src)} ${
+              oddLast && i === partners.length - 1
+                ? "col-span-2 mx-auto w-1/2"
+                : "w-full"
+            }`}
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             role="img"
@@ -259,7 +297,14 @@ export function PartnerLogoReel() {
   );
 }
 
-export function PartnerLogoCell({ partner }: { partner: Partner }) {
+export function PartnerLogoCell({
+  partner,
+  delay = 0,
+}: {
+  partner: Partner;
+  /** Staggers this cell's crossfade, so a whole-row swap reads as a wave. */
+  delay?: number;
+}) {
   // The logos are white silhouettes; mask + bg tints them to the warm brand
   // ink (instead of harsh pure black) and keeps the tint color easy to change.
   return (
@@ -283,7 +328,7 @@ export function PartnerLogoCell({ partner }: { partner: Partner }) {
             WebkitMaskRepeat: "no-repeat",
             WebkitMaskSize: "contain",
           }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.3, delay }}
         />
       </AnimatePresence>
     </P>

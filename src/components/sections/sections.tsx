@@ -21,7 +21,11 @@ import {
 import { GITHUB_SVG, INSTAGRAM_SVG, X_SVG } from "../theme/constants";
 import { Button, ButtonLink } from "../ui/button";
 import { P } from "../ui/panel";
-import { PartnerLogoGrid, PartnerLogoReel } from "./partner-logos";
+import {
+  PartnerLogoGrid,
+  PartnerLogoReel,
+  TRACK_SPONSORS,
+} from "./partner-logos";
 
 const B = "font-bungee";
 const D = "font-sans";
@@ -750,7 +754,7 @@ export function buildSectionsCompact(
       ),
       b2: (
         <P bg="bg-hs-paper" className={`${CARD} !justify-center`}>
-          <PartnerLogoGrid />
+          <PartnerLogoGrid pinned={TRACK_SPONSORS} />
         </P>
       ),
       ...orn(
