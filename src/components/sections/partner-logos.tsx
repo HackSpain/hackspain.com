@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { shuffled } from "../../lib/shuffle";
 import {
   cursorLogo,
   embatLogo,
@@ -178,6 +179,10 @@ interface RotationState {
  * Passing `pinned` shows exactly that list and stops the clock. The rotation
  * state is kept (not reset) while pinned, so unpinning resumes the cycle from
  * where it left off instead of snapping back to the top of PARTNERS.
+ *
+ * A pinned list is shown in a random order, reshuffled whenever it is handed
+ * back in, so no sponsor is permanently first — the fixed order of the
+ * unpinned rotation is deliberate, but pinned sponsors are peers.
  */
 export function usePartnerRotation(
   count = PARTNER_CELL_COUNT,
@@ -188,6 +193,10 @@ export function usePartnerRotation(
     onScreen: PARTNERS.slice(0, count),
     queue: PARTNERS.slice(count),
   }));
+  const pinnedOrder = useMemo(
+    () => (pinned === undefined ? undefined : shuffled(pinned)),
+    [pinned]
+  );
   const frozen = pinned !== undefined;
 
   useEffect(() => {
@@ -216,7 +225,7 @@ export function usePartnerRotation(
     return () => clearInterval(id);
   }, [count, frozen]);
 
-  return pinned ?? state.onScreen;
+  return pinnedOrder ?? state.onScreen;
 }
 
 /**

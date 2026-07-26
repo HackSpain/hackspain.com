@@ -14,6 +14,7 @@ import { artboardFor } from "../mosaic/artboard";
 import { cellsForProfile } from "../mosaic/cells";
 import { MosaicBackground } from "../mosaic/mosaic-background";
 import { useLayoutProfile } from "../mosaic/use-layout-profile";
+import { isOverlayOpen } from "../overlay/overlay-lock";
 import { useReferralAwareHref } from "../referral/use-referral-href";
 import { illustrationsForSection } from "../sections/illustration-themes";
 import {
@@ -166,7 +167,12 @@ export function LandingPage({ initialSection = 0 }: Props) {
   const isCompact = profile === "compact";
 
   useEffect(() => {
+    // A full-screen overlay scrolls its own content, so section snapping — and
+    // in particular the wheel preventDefault below — has to stand down.
     const onWheel = (e: WheelEvent) => {
+      if (isOverlayOpen()) {
+        return;
+      }
       e.preventDefault();
       if (Math.abs(e.deltaY) <= 5) {
         return;
@@ -178,6 +184,9 @@ export function LandingPage({ initialSection = 0 }: Props) {
       touchY = e.touches[0].clientY;
     };
     const onTouchEnd = (e: TouchEvent) => {
+      if (isOverlayOpen()) {
+        return;
+      }
       const dy = touchY - e.changedTouches[0].clientY;
       if (Math.abs(dy) <= 40) {
         return;
@@ -185,6 +194,9 @@ export function LandingPage({ initialSection = 0 }: Props) {
       advance(dy > 0 ? 1 : -1);
     };
     const onKey = (e: KeyboardEvent) => {
+      if (isOverlayOpen()) {
+        return;
+      }
       if (e.key === "ArrowDown" || e.key === " ") {
         e.preventDefault();
         advance(1);

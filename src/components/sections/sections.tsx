@@ -26,6 +26,7 @@ import {
   PartnerLogoReel,
   TRACK_SPONSORS,
 } from "./partner-logos";
+import { TracksOverlay } from "./tracks-overlay";
 
 const B = "font-bungee";
 const D = "font-sans";
@@ -185,40 +186,16 @@ function TracksInfoModal() {
   return (
     <>
       <Button
-        aria-label="Más información sobre los tracks de HackSpain"
+        aria-label="Ver los tracks y las startups de HackSpain"
         className="shrink-0"
         onClick={() => setOpen(true)}
         size="compact"
         variant="gold"
       >
-        More Info
+        Ver tracks
       </Button>
 
-      {open && (
-        <div
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-hs-ink/95 p-6"
-          role="dialog"
-        >
-          <button
-            aria-label="Cerrar"
-            className="absolute top-6 right-8 font-bungee text-4xl text-hs-paper/60 hover:text-hs-paper"
-            onClick={() => setOpen(false)}
-            type="button"
-          >
-            ×
-          </button>
-          <div className="flex max-w-xl flex-col items-center gap-8 text-center">
-            <span className="font-bungee text-[clamp(2.5rem,8vw,5rem)] text-hs-gold leading-none">
-              COMING SOON
-            </span>
-            <p className="font-sans font-semibold text-[clamp(1rem,2.5vw,1.5rem)] text-hs-paper leading-snug">
-              Pronto podrás ver las startups con track, y el jurado del gran
-              premio.
-            </p>
-          </div>
-        </div>
-      )}
+      {open && <TracksOverlay onClose={() => setOpen(false)} />}
     </>
   );
 }
