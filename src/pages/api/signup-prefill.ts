@@ -7,6 +7,7 @@ export const prerender = false;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RESPONSE_HEADERS = {
   "Cache-Control": "no-store, max-age=0",
@@ -36,12 +37,23 @@ export const POST: APIRoute = async ({ request }) => {
   } catch {
     return json({ error: "invalid_json" }, 400);
   }
+  const payload = body && typeof body === "object" ? body : null;
   const token =
-    body && typeof body === "object" && "token" in body
-      ? (body as { token?: unknown }).token
+    payload && "token" in payload
+      ? (payload as { token?: unknown }).token
       : null;
-  if (typeof token !== "string" || !UUID_RE.test(token)) {
-    return json({ error: "invalid_invitation" }, 400);
+  const emailRaw =
+    payload && "email" in payload
+      ? (payload as { email?: unknown }).email
+      : null;
+  const validToken =
+    typeof token === "string" && UUID_RE.test(token) ? token : null;
+  const hasValidToken = validToken !== null;
+  const email =
+    typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";
+  const hasValidEmail = email.length <= 320 && EMAIL_RE.test(email);
+  if (!(hasValidToken || hasValidEmail)) {
+    return json({ error: "invalid_lookup" }, 400);
   }
 
   const db = getDb();
@@ -56,14 +68,22 @@ export const POST: APIRoute = async ({ request }) => {
       xUrl: hackathonPreSignups.xUrl,
     })
     .from(hackathonPreSignups)
-    .where(eq(hackathonPreSignups.signupToken, token))
+    .where(
+      validToken === null
+        ? eq(hackathonPreSignups.email, email)
+        : eq(hackathonPreSignups.signupToken, validToken)
+    )
     .limit(1);
 
   if (!preSignup) {
-    return json({ error: "invalid_invitation" }, 404);
+    return hasValidToken
+      ? json({ error: "invalid_invitation" }, 404)
+      : json({ data: null });
   }
   if (preSignup.signupCompletedAt) {
-    return json({ error: "invitation_used" }, 410);
+    return hasValidToken
+      ? json({ error: "invitation_used" }, 410)
+      : json({ data: null });
   }
 
   const [existingSignup] = await db
@@ -72,7 +92,9 @@ export const POST: APIRoute = async ({ request }) => {
     .where(eq(hackathonSignups.email, preSignup.email))
     .limit(1);
   if (existingSignup) {
-    return json({ error: "invitation_used" }, 410);
+    return hasValidToken
+      ? json({ error: "invitation_used" }, 410)
+      : json({ data: null });
   }
 
   return json({

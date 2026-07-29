@@ -43,6 +43,8 @@ const STORAGE_APPLIED_KEY = "hackspain-signup-applied-v1";
 const UNICODE_LEFT_ARROW_PREFIX_RE = /^\u2190\s*/;
 const ASCII_LEFT_ARROW_PREFIX_RE = /^←\s*/;
 const LINE_BREAK_SPLIT_RE = /\r?\n/;
+const EMAIL_LOOKUP_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PREFILL_DEBOUNCE_MS = 800;
 
 type FlowStatus = "idle" | "success" | "error" | "alreadyApplied";
 type PrefillStatus = "idle" | "loading" | "loaded" | "error";
@@ -284,7 +286,7 @@ const t = {
     "No hemos podido verificar la solicitud. Recarga la página e inténtalo de nuevo, o usa un navegador normal con JavaScript activado.",
   errorInvitation:
     "El enlace personal no es válido o ya no está disponible. Puedes completar el formulario manualmente.",
-  prefillLoading: "Estamos recuperando los datos de tu pre-inscripción…",
+  prefillLoading: "Autocompletando datos de tu pre-inscripción…",
   prefillLoaded:
     "Hemos completado los datos de tu pre-inscripción. Revisa la información y termina la solicitud.",
   ambassadorCheckboxBefore: "Quiero participar como ",
@@ -328,9 +330,18 @@ export function SignupPage() {
   const ambassadorPageHref = "/ambassador";
   const privacyHref = "/privacy";
 
-  const { register, handleSubmit, control, setValue, watch, reset, formState } =
-    useForm<StoredFields>({ defaultValues: { ...EMPTY_FIELDS } });
+  const {
+    register,
+    handleSubmit,
+    control,
+    getValues,
+    setValue,
+    watch,
+    reset,
+    formState,
+  } = useForm<StoredFields>({ defaultValues: { ...EMPTY_FIELDS } });
   const { isSubmitting } = formState;
+  const email = watch("email");
   const heardFromSources = watch("heardFromSources");
   const occupationStatuses = watch("occupationStatuses");
   const wantsAmbassador = watch("wantsAmbassador");
@@ -342,6 +353,7 @@ export function SignupPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [invitationToken, setInvitationToken] = useState("");
   const [prefillStatus, setPrefillStatus] = useState<PrefillStatus>("idle");
+  const [emailPrefillLoaded, setEmailPrefillLoaded] = useState(false);
 
   useLayoutEffect(() => {
     if (!invitationTokenFromLocation() && readAppliedFlag()) {
@@ -350,6 +362,71 @@ export function SignupPage() {
     }
     reset(readStoredFields());
   }, [reset]);
+
+  useEffect(() => {
+    if (
+      invitationToken ||
+      emailPrefillLoaded ||
+      invitationTokenFromLocation()
+    ) {
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (
+      normalizedEmail.length > 320 ||
+      !EMAIL_LOOKUP_RE.test(normalizedEmail)
+    ) {
+      setPrefillStatus("idle");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setPrefillStatus("loading");
+      try {
+        const response = await fetch("/api/signup-prefill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail }),
+          signal: controller.signal,
+        });
+        const responseBody = (await response.json().catch(() => ({}))) as {
+          data?: SignupPrefillFields | null;
+        };
+        if (controller.signal.aborted) {
+          return;
+        }
+        if (!(response.ok && responseBody.data)) {
+          setPrefillStatus("idle");
+          return;
+        }
+
+        const prefill = responseBody.data;
+        reset({
+          ...getValues(),
+          email: prefill.email,
+          fullName: prefill.fullName,
+          githubUrl: cleanProfilePasteText(prefill.githubUrl, "github"),
+          linkedinUrl: cleanProfilePasteText(prefill.linkedinUrl, "linkedin"),
+          webUrl: prefill.webUrl,
+          xUrl: cleanProfilePasteText(prefill.xUrl, "x"),
+        });
+        setEmailPrefillLoaded(true);
+        setPrefillStatus("loaded");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setPrefillStatus("idle");
+          captureException(error);
+        }
+      }
+    }, EMAIL_PREFILL_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [email, emailPrefillLoaded, getValues, invitationToken, reset]);
 
   useEffect(() => {
     const token = invitationTokenFromLocation();
