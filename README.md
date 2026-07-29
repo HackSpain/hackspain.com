@@ -64,7 +64,10 @@ Schema and client live in `src/db/`. Drizzle Kit is configured in `drizzle.confi
 The public application form lives at `/signup`. New applications are stored as
 pending until they are reviewed. The accepted-candidate email reads its private
 community link from `WHATSAPP_COMMUNITY_URL`, and pre-signup invitation links
-use `SITE_URL` as their public origin.
+use `SITE_URL` as their public origin. Every pre-signup also has a separate,
+readable share code (for example, `disamtech-k7x9p`) that invitation emails use
+in `/signup?ref=…`, so referrals can be attributed without exposing the private
+prefill token.
 
 ## Project layout
 

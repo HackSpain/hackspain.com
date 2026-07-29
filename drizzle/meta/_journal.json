@@ -64,6 +64,20 @@
       "when": 1784279252111,
       "tag": "0008_puzzling_thor_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785344495000,
+      "tag": "0009_pre_signup_share_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785344496000,
+      "tag": "0010_pre_signup_reminder_sent",
+      "breakpoints": true
     }
   ]
 }

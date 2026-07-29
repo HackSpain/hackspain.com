@@ -1,6 +1,7 @@
 import { captureException, captureMessage, withScope } from "@sentry/astro";
 import type { APIRoute } from "astro";
 import { checkBotId } from "botid/server";
+import { randomUUID } from "node:crypto";
 import { start } from "workflow/api";
 import { getDb } from "../../db";
 import { hackathonPreSignups } from "../../db/schema";
@@ -23,6 +24,19 @@ function safeSentry(report: () => void): void {
 
 function emptyToNull(s: string): string | null {
   return s.length === 0 ? null : s;
+}
+
+function shareCodeFromEmail(email: string): string {
+  const localPart = email.split("@", 1)[0] ?? "";
+  const slug = localPart
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
+  return `${slug || "hacker"}-${suffix}`;
 }
 
 function emailHintFromBody(body: unknown): string | undefined {
@@ -178,6 +192,7 @@ export const POST: APIRoute = async ({ request }) => {
         githubUrl: emptyToNull(githubUrl),
         webUrl: emptyToNull(webUrl),
         referralCode: emptyToNull(referralCode),
+        shareCode: shareCodeFromEmail(email),
       });
     } catch (e: unknown) {
       if (isPostgresUniqueViolation(e)) {

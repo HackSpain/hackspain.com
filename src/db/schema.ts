@@ -61,11 +61,15 @@ export const hackathonPreSignups = pgTable("hackathon_pre_signups", {
   githubUrl: text("github_url"),
   webUrl: text("web_url"),
   referralCode: text("referral_code"),
+  shareCode: text("share_code").notNull().unique(),
   signupToken: uuid("signup_token").defaultRandom().notNull().unique(),
   signupInviteQueuedAt: timestamp("signup_invite_queued_at", {
     withTimezone: true,
   }),
   signupInviteSentAt: timestamp("signup_invite_sent_at", {
+    withTimezone: true,
+  }),
+  signupReminderSentAt: timestamp("signup_reminder_sent_at", {
     withTimezone: true,
   }),
   signupCompletedAt: timestamp("signup_completed_at", {

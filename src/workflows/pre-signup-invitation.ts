@@ -10,33 +10,38 @@ export interface PreSignupInvitationWorkflowInput {
   signupUrl: string;
 }
 
+type PreSignupInvitationEmailWorkflowInput =
+  PreSignupInvitationWorkflowInput & { shareCode: string };
+
 export async function handlePreSignupInvitation(
   input: PreSignupInvitationWorkflowInput
 ) {
   "use workflow";
 
-  const shouldSend = await shouldSendPreSignupInvitationStep(
+  const shareCode = await eligiblePreSignupReminderShareCodeStep(
     input.preSignupId
   );
-  if (!shouldSend) {
+  if (!shareCode) {
     return { status: "skipped" };
   }
-  await sendPreSignupInvitationEmailStep(input);
-  await markPreSignupInvitationSentStep(input.preSignupId);
+  await sendPreSignupInvitationEmailStep({ ...input, shareCode });
+  await markPreSignupReminderSentStep(input.preSignupId);
   return { status: "sent" };
 }
 
-async function shouldSendPreSignupInvitationStep(
+async function eligiblePreSignupReminderShareCodeStep(
   preSignupId: string
-): Promise<boolean> {
+): Promise<string | null> {
   "use step";
 
   const db = getDb();
   const [preSignup] = await db
     .select({
       email: hackathonPreSignups.email,
+      shareCode: hackathonPreSignups.shareCode,
       signupCompletedAt: hackathonPreSignups.signupCompletedAt,
       signupInviteSentAt: hackathonPreSignups.signupInviteSentAt,
+      signupReminderSentAt: hackathonPreSignups.signupReminderSentAt,
     })
     .from(hackathonPreSignups)
     .where(eq(hackathonPreSignups.id, preSignupId))
@@ -44,9 +49,10 @@ async function shouldSendPreSignupInvitationStep(
   if (
     !preSignup ||
     preSignup.signupCompletedAt ||
-    preSignup.signupInviteSentAt
+    preSignup.signupReminderSentAt ||
+    !preSignup.signupInviteSentAt
   ) {
-    return false;
+    return null;
   }
 
   const [existingSignup] = await db
@@ -55,18 +61,18 @@ async function shouldSendPreSignupInvitationStep(
     .where(eq(hackathonSignups.email, preSignup.email))
     .limit(1);
   if (!existingSignup) {
-    return true;
+    return preSignup.shareCode;
   }
 
   await db
     .update(hackathonPreSignups)
     .set({ signupCompletedAt: existingSignup.createdAt })
     .where(eq(hackathonPreSignups.id, preSignupId));
-  return false;
+  return null;
 }
 
 async function sendPreSignupInvitationEmailStep(
-  input: PreSignupInvitationWorkflowInput
+  input: PreSignupInvitationEmailWorkflowInput
 ) {
   "use step";
 
@@ -80,7 +86,7 @@ async function sendPreSignupInvitationEmailStep(
   return result;
 }
 
-async function markPreSignupInvitationSentStep(
+async function markPreSignupReminderSentStep(
   preSignupId: string
 ): Promise<void> {
   "use step";
@@ -88,6 +94,6 @@ async function markPreSignupInvitationSentStep(
   const db = getDb();
   await db
     .update(hackathonPreSignups)
-    .set({ signupInviteSentAt: new Date() })
+    .set({ signupReminderSentAt: new Date() })
     .where(eq(hackathonPreSignups.id, preSignupId));
 }
