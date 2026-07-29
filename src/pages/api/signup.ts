@@ -26,52 +26,6 @@ function emptyToNull(s: string): string | null {
   return s.length === 0 ? null : s;
 }
 
-function emailHintFromBody(body: unknown): string | undefined {
-  if (!body || typeof body !== "object") {
-    return;
-  }
-  const e = (body as { email?: unknown }).email;
-  return typeof e === "string" ? e.trim().slice(0, 320) : undefined;
-}
-
-/** Walk `Error.cause` (Drizzle wraps Neon here) so ops sees the real failure, not only "Failed query". */
-function errDetail(e: unknown): string {
-  const parts: string[] = [];
-  const seen = new Set<unknown>();
-  let cur: unknown = e;
-  for (let depth = 0; depth < 14 && cur != null; depth++) {
-    if (seen.has(cur)) {
-      break;
-    }
-    seen.add(cur);
-    if (cur instanceof Error) {
-      const line = `${cur.name}: ${cur.message}`.trim();
-      if (line && parts.at(-1) !== line) {
-        parts.push(line);
-      }
-      cur = cur.cause;
-      continue;
-    }
-    if (typeof cur === "object") {
-      const o = cur as Record<string, unknown>;
-      if (typeof o.message === "string" && o.message.trim()) {
-        const line = o.message.trim();
-        if (parts.at(-1) !== line) {
-          parts.push(line);
-        }
-      }
-      if ("cause" in o && o.cause != null) {
-        cur = o.cause;
-        continue;
-      }
-      break;
-    }
-    parts.push(String(cur));
-    break;
-  }
-  return parts.join("\n→\n").slice(0, 1024);
-}
-
 /** Drizzle wraps Postgres/Neon errors; `23505` unique violation lives on `cause`. */
 function isPostgresUniqueViolation(e: unknown): boolean {
   const seen = new Set<unknown>();
@@ -190,7 +144,6 @@ export const POST: APIRoute = async ({ request }) => {
     await notifyDiscordSignupApiIssue({
       status: 400,
       error: parsed.error,
-      emailHint: emailHintFromBody(body),
     });
     safeSentry(() => {
       withScope((scope) => {
@@ -217,6 +170,7 @@ export const POST: APIRoute = async ({ request }) => {
     freeTime,
     dietaryRestrictions,
     dietaryDetails,
+    dietaryDataConsent,
     occupationStatuses,
     studyInstitution,
     employer,
@@ -230,6 +184,8 @@ export const POST: APIRoute = async ({ request }) => {
   const motivationDb = wantsAmbassador
     ? emptyToNull(ambassadorMotivation)
     : null;
+  const hasDietaryData =
+    dietaryRestrictions.length > 0 || dietaryDetails.length > 0;
 
   let relatedPreSignupId: string | null = null;
   let relatedPreSignupReferralCode: string | null = null;
@@ -287,6 +243,8 @@ export const POST: APIRoute = async ({ request }) => {
         freeTime: emptyToNull(freeTime),
         dietaryRestrictions,
         dietaryDetails: emptyToNull(dietaryDetails),
+        dietaryConsentAt:
+          hasDietaryData && dietaryDataConsent ? new Date() : null,
         occupationStatuses,
         studyInstitution: emptyToNull(studyInstitution),
         employer: emptyToNull(employer),
@@ -304,21 +262,18 @@ export const POST: APIRoute = async ({ request }) => {
       }
       throw e;
     }
-  } catch (e) {
-    console.error(e);
+  } catch {
+    console.error("[signup] Failed to save application");
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "signup");
         scope.setTag("outcome", "save_failed");
-        scope.setContext("error", { detail: errDetail(e) });
-        captureException(e);
+        captureMessage("POST /api/signup: persistence failed", "error");
       });
     });
     await notifyDiscordSignupApiIssue({
       status: 500,
       error: "save_failed",
-      detail: errDetail(e),
-      emailHint: email,
     });
     return Response.json({ error: "save_failed" }, { status: 500 });
   }
@@ -330,13 +285,16 @@ export const POST: APIRoute = async ({ request }) => {
         .update(hackathonPreSignups)
         .set({ signupCompletedAt: new Date() })
         .where(eq(hackathonPreSignups.id, relatedPreSignupId));
-    } catch (e) {
-      console.error("[signup] Failed to mark pre-signup as completed:", e);
+    } catch {
+      console.error("[signup] Failed to mark pre-signup as completed");
       safeSentry(() => {
         withScope((scope) => {
           scope.setTag("api", "signup");
           scope.setTag("outcome", "pre_signup_completion_mark_failed");
-          captureException(e);
+          captureMessage(
+            "POST /api/signup: pre-signup completion update failed",
+            "error"
+          );
         });
       });
     }
@@ -353,8 +311,6 @@ export const POST: APIRoute = async ({ request }) => {
       webUrl,
       achievements,
       freeTime,
-      dietaryRestrictions,
-      dietaryDetails,
       occupationStatuses,
       studyInstitution,
       employer,
@@ -363,13 +319,16 @@ export const POST: APIRoute = async ({ request }) => {
       ambassadorMotivation: wantsAmbassador ? ambassadorMotivation : "",
       heardFrom,
     });
-  } catch (e) {
-    console.error("[signup] Discord notify failed after successful insert:", e);
+  } catch {
+    console.error("[signup] Discord notify failed after successful insert");
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "signup");
         scope.setTag("outcome", "discord_notify_failed");
-        captureException(e);
+        captureMessage(
+          "POST /api/signup: Discord notification failed",
+          "warning"
+        );
       });
     });
   }
@@ -385,7 +344,6 @@ export const POST: APIRoute = async ({ request }) => {
         withScope((scope) => {
           scope.setTag("api", "signup");
           scope.setTag("outcome", "confirmation_email_failed");
-          scope.setContext("email", { detail: emailResult.detail });
           captureMessage(
             "POST /api/signup: confirmation email failed",
             "warning"
@@ -393,16 +351,16 @@ export const POST: APIRoute = async ({ request }) => {
         });
       });
     }
-  } catch (e) {
-    console.error(
-      "[signup] Confirmation email threw after successful insert:",
-      e
-    );
+  } catch {
+    console.error("[signup] Confirmation email failed after successful insert");
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "signup");
         scope.setTag("outcome", "confirmation_email_exception");
-        captureException(e);
+        captureMessage(
+          "POST /api/signup: confirmation email failed",
+          "warning"
+        );
       });
     });
   }

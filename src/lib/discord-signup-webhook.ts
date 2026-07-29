@@ -1,5 +1,4 @@
 import {
-  formatDietaryRestrictions,
   formatHeardFromStored,
   formatOccupationStatuses,
 } from "./signup-validation";
@@ -114,8 +113,6 @@ export interface SignupDiscordPayload {
   achievements: string;
   ambassadorMotivation: string;
   cameFromPreSignup: boolean;
-  dietaryDetails: string;
-  dietaryRestrictions: string[];
   email: string;
   employer: string;
   freeTime: string;
@@ -171,19 +168,6 @@ export async function notifyDiscordNewSignup(
       {
         name: "Free time / hobbies",
         value: fieldVal(data.freeTime, max),
-        inline: false,
-      },
-      {
-        name: "Dietary restrictions",
-        value: fieldVal(
-          formatDietaryRestrictions(data.dietaryRestrictions),
-          max
-        ),
-        inline: false,
-      },
-      {
-        name: "Dietary details",
-        value: fieldVal(data.dietaryDetails, max),
         inline: false,
       },
       {
@@ -248,8 +232,6 @@ export async function notifyDiscordNewSignup(
 export async function notifyDiscordSignupApiIssue(payload: {
   status: 400 | 500;
   error: string;
-  detail?: string;
-  emailHint?: string;
 }): Promise<void> {
   const url = getWebhookUrl();
   if (!url) {
@@ -265,24 +247,6 @@ export async function notifyDiscordSignupApiIssue(payload: {
     fields: [
       { name: "HTTP", value: String(payload.status), inline: true },
       { name: "error", value: fieldVal(payload.error, 256), inline: true },
-      ...(payload.emailHint
-        ? [
-            {
-              name: "Email (if sent)",
-              value: fieldVal(payload.emailHint, 320),
-              inline: false,
-            },
-          ]
-        : []),
-      ...(payload.detail
-        ? [
-            {
-              name: "Detail",
-              value: fieldVal(payload.detail, 1024),
-              inline: false,
-            },
-          ]
-        : []),
     ],
     timestamp: new Date().toISOString(),
   };

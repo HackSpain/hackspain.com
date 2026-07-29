@@ -19,7 +19,6 @@ import { HACKSPAIN_SOCIAL_URLS } from "../../data/landing-meta";
 import { getStoredReferralCode } from "../../lib/referral-code";
 import {
   cleanProfilePasteText,
-  DIETARY_RESTRICTION_IDS,
   DIETARY_RESTRICTION_OPTIONS,
   type DietaryRestrictionId,
   HEARD_FROM_OPTIONS,
@@ -75,6 +74,7 @@ function clearAppliedFlag() {
 interface StoredFields {
   achievements: string;
   ambassadorMotivation: string;
+  dietaryDataConsent: boolean;
   dietaryDetails: string;
   dietaryRestrictions: DietaryRestrictionId[];
   email: string;
@@ -92,6 +92,12 @@ interface StoredFields {
   xUrl: string;
 }
 
+const NON_PERSISTED_DRAFT_FIELDS = new Set<string>([
+  "dietaryDataConsent",
+  "dietaryDetails",
+  "dietaryRestrictions",
+]);
+
 const EMPTY_FIELDS: StoredFields = {
   fullName: "",
   email: "",
@@ -103,6 +109,7 @@ const EMPTY_FIELDS: StoredFields = {
   freeTime: "",
   dietaryRestrictions: [],
   dietaryDetails: "",
+  dietaryDataConsent: false,
   occupationStatuses: [],
   studyInstitution: "",
   employer: "",
@@ -126,13 +133,6 @@ function readStoredFields(): StoredFields {
       typeof o[k] === "string" ? (o[k] as string) : "";
     const wantsAmbassador =
       o.wantsAmbassador === true || o.wantsAmbassador === "true";
-    const dietaryIds = DIETARY_RESTRICTION_IDS as readonly string[];
-    const dietaryRestrictions = Array.isArray(o.dietaryRestrictions)
-      ? o.dietaryRestrictions.filter(
-          (value): value is DietaryRestrictionId =>
-            typeof value === "string" && dietaryIds.includes(value)
-        )
-      : [];
     const occupationIds = OCCUPATION_STATUS_IDS as readonly string[];
     let occupationValues: unknown[] = [];
     if (Array.isArray(o.occupationStatuses)) {
@@ -178,8 +178,9 @@ function readStoredFields(): StoredFields {
       webUrl: s("webUrl"),
       achievements: s("achievements"),
       freeTime: s("freeTime"),
-      dietaryRestrictions,
-      dietaryDetails: s("dietaryDetails"),
+      dietaryRestrictions: [],
+      dietaryDetails: "",
+      dietaryDataConsent: false,
       occupationStatuses,
       studyInstitution: s("studyInstitution"),
       employer: s("employer"),
@@ -195,7 +196,10 @@ function readStoredFields(): StoredFields {
 
 function writeStoredFields(fields: StoredFields) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(fields));
+    const storedFields = JSON.stringify(fields, (key, value) =>
+      NON_PERSISTED_DRAFT_FIELDS.has(key) ? undefined : value
+    );
+    localStorage.setItem(STORAGE_KEY, storedFields);
   } catch {
     /* ignore quota / private mode */
   }
@@ -261,6 +265,8 @@ const t = {
   dietaryDetails: "Detalles de alergias o restricciones",
   dietaryDetailsHint:
     "Cuéntanos cualquier detalle que debamos conocer para organizar las comidas.",
+  dietaryDataConsent:
+    "Si has indicado una restricción o alergia, consiento expresamente que HackSpain trate estos datos únicamente para organizar comidas seguras y atender mis necesidades durante el evento.",
   occupationStatus: "¿Estudias / trabajas?",
   studyInstitution: "Universidad o centro",
   employer: "Empresa u organización",
@@ -298,6 +304,8 @@ const t = {
   errorFullName: "Indica tu nombre completo.",
   errorStudyInstitution: "Indica tu universidad o centro de estudios.",
   errorEmployer: "Indica tu empresa u organización.",
+  errorDietaryConsent:
+    "Debes consentir expresamente el tratamiento de los datos alimentarios que has indicado.",
   legalSubmitNoticeBefore: "Al enviar este formulario aceptas nuestra ",
   legalPrivacyLinkLabel: "política de privacidad",
   legalSubmitNoticeAfter:
@@ -345,6 +353,10 @@ export function SignupPage() {
   const heardFromSources = watch("heardFromSources");
   const occupationStatuses = watch("occupationStatuses");
   const wantsAmbassador = watch("wantsAmbassador");
+  const dietaryRestrictions = watch("dietaryRestrictions");
+  const dietaryDetails = watch("dietaryDetails");
+  const hasDietaryData =
+    dietaryRestrictions.length > 0 || dietaryDetails.trim().length > 0;
 
   const [attentionTarget, setAttentionTarget] = useState<SignupAttention>(null);
   const heardFromSectionRef = useRef<HTMLDivElement>(null);
@@ -616,6 +628,8 @@ export function SignupPage() {
         setErrorMessage(t.errorStudyInstitution);
       } else if (parsed.code === "employer") {
         setErrorMessage(t.errorEmployer);
+      } else if (parsed.code === "dietary_consent") {
+        setErrorMessage(t.errorDietaryConsent);
       } else {
         setErrorMessage(t.errorGeneric);
       }
@@ -705,6 +719,8 @@ export function SignupPage() {
         setErrorMessage(t.errorStudyInstitution);
       } else if (resJson.error === "employer_required") {
         setErrorMessage(t.errorEmployer);
+      } else if (resJson.error === "dietary_consent_required") {
+        setErrorMessage(t.errorDietaryConsent);
       } else if (resJson.error === "heard_from_other_required") {
         setStatus("error");
         pulseAttention("heard");
@@ -811,6 +827,7 @@ export function SignupPage() {
             ) : (
               <form
                 className="flex flex-col gap-0 border-hs-ink border-t-[3px]"
+                data-sentry-mask
                 onSubmit={handleSubmit(onSubmitForm)}
               >
                 {prefillStatus === "idle" ? null : (
@@ -1002,7 +1019,7 @@ export function SignupPage() {
                   />
                 </FormField>
 
-                <div className={cellBase}>
+                <div className={cellBase} data-sentry-block>
                   <fieldset className="min-w-0 border-0 p-0">
                     <legend className="font-bungee text-hs-ink text-sm tracking-wide">
                       {t.dietaryRestrictions}
@@ -1082,10 +1099,31 @@ export function SignupPage() {
                 >
                   <Textarea
                     className="min-h-[90px] resize-y"
+                    data-sentry-block
                     rows={3}
                     {...register("dietaryDetails")}
                   />
                 </FormField>
+
+                {hasDietaryData ? (
+                  <div className={cellBase} data-sentry-block>
+                    <label
+                      className="flex cursor-pointer items-start gap-3"
+                      htmlFor="signup-dietary-data-consent"
+                    >
+                      <input
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-hs-gold"
+                        id="signup-dietary-data-consent"
+                        required
+                        type="checkbox"
+                        {...register("dietaryDataConsent")}
+                      />
+                      <span className="font-sans font-semibold text-hs-ink text-sm leading-snug sm:text-[0.95rem]">
+                        {t.dietaryDataConsent} *
+                      </span>
+                    </label>
+                  </div>
+                ) : null}
 
                 <div className={cellBase}>
                   <fieldset className="min-w-0 border-0 p-0">

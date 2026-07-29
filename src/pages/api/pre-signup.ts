@@ -1,7 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { captureException, captureMessage, withScope } from "@sentry/astro";
 import type { APIRoute } from "astro";
 import { checkBotId } from "botid/server";
-import { randomUUID } from "node:crypto";
 import { start } from "workflow/api";
 import { getDb } from "../../db";
 import { hackathonPreSignups } from "../../db/schema";
@@ -37,51 +37,6 @@ function shareCodeFromEmail(email: string): string {
     .slice(0, 40);
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
   return `${slug || "hacker"}-${suffix}`;
-}
-
-function emailHintFromBody(body: unknown): string | undefined {
-  if (!body || typeof body !== "object") {
-    return;
-  }
-  const e = (body as { email?: unknown }).email;
-  return typeof e === "string" ? e.trim().slice(0, 320) : undefined;
-}
-
-function errDetail(e: unknown): string {
-  const parts: string[] = [];
-  const seen = new Set<unknown>();
-  let cur: unknown = e;
-  for (let depth = 0; depth < 14 && cur != null; depth++) {
-    if (seen.has(cur)) {
-      break;
-    }
-    seen.add(cur);
-    if (cur instanceof Error) {
-      const line = `${cur.name}: ${cur.message}`.trim();
-      if (line && parts.at(-1) !== line) {
-        parts.push(line);
-      }
-      cur = cur.cause;
-      continue;
-    }
-    if (typeof cur === "object") {
-      const o = cur as Record<string, unknown>;
-      if (typeof o.message === "string" && o.message.trim()) {
-        const line = o.message.trim();
-        if (parts.at(-1) !== line) {
-          parts.push(line);
-        }
-      }
-      if ("cause" in o && o.cause != null) {
-        cur = o.cause;
-        continue;
-      }
-      break;
-    }
-    parts.push(String(cur));
-    break;
-  }
-  return parts.join("\n→\n").slice(0, 1024);
 }
 
 function isPostgresUniqueViolation(e: unknown): boolean {
@@ -166,7 +121,6 @@ export const POST: APIRoute = async ({ request }) => {
     await notifyDiscordSignupApiIssue({
       status: 400,
       error: `pre-signup:${parsed.error}`,
-      emailHint: emailHintFromBody(body),
     });
     return Response.json({ error: parsed.error }, { status: parsed.status });
   }
@@ -200,21 +154,18 @@ export const POST: APIRoute = async ({ request }) => {
       }
       throw e;
     }
-  } catch (e) {
-    console.error(e);
+  } catch {
+    console.error("[pre-signup] Failed to save pre-signup");
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "pre-signup");
         scope.setTag("outcome", "save_failed");
-        scope.setContext("error", { detail: errDetail(e) });
-        captureException(e);
+        captureMessage("POST /api/pre-signup: persistence failed", "error");
       });
     });
     await notifyDiscordSignupApiIssue({
       status: 500,
       error: "pre-signup:save_failed",
-      detail: errDetail(e),
-      emailHint: email,
     });
     return Response.json({ error: "save_failed" }, { status: 500 });
   }
@@ -229,32 +180,34 @@ export const POST: APIRoute = async ({ request }) => {
       githubUrl,
       webUrl,
     });
-  } catch (e) {
-    console.error(
-      "[pre-signup] Discord notify failed after successful insert:",
-      e
-    );
+  } catch {
+    console.error("[pre-signup] Discord notify failed after successful insert");
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "pre-signup");
         scope.setTag("outcome", "discord_notify_failed");
-        captureException(e);
+        captureMessage(
+          "POST /api/pre-signup: Discord notification failed",
+          "warning"
+        );
       });
     });
   }
 
   try {
     await start(handlePreSignupFollowup, [{ fullName, email }]);
-  } catch (e) {
+  } catch {
     console.error(
-      "[pre-signup] Failed to start followup workflow after successful insert:",
-      e
+      "[pre-signup] Failed to start followup workflow after successful insert"
     );
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "pre-signup");
         scope.setTag("outcome", "workflow_start_failed");
-        captureException(e);
+        captureMessage(
+          "POST /api/pre-signup: followup workflow failed",
+          "warning"
+        );
       });
     });
   }

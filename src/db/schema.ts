@@ -21,6 +21,7 @@ export const hackathonSignups = pgTable("hackathon_signups", {
     .default(sql`ARRAY[]::text[]`)
     .notNull(),
   dietaryDetails: text("dietary_details"),
+  dietaryConsentAt: timestamp("dietary_consent_at", { withTimezone: true }),
   legacyOccupationStatus: text("occupation_status").default("").notNull(),
   occupationStatuses: text("occupation_statuses")
     .array()

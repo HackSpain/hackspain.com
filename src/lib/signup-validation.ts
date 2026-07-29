@@ -426,6 +426,7 @@ const signupBodySchema = z
         .max(SIGNUP_MAX.longText)
         .transform((value) => value.trim())
     ),
+    dietaryDataConsent: z.boolean().optional().default(false),
     occupationStatuses: z.preprocess(
       (value) => (Array.isArray(value) ? value : []),
       z
@@ -498,6 +499,15 @@ const signupBodySchema = z
         path: ["ambassadorMotivation"],
       });
     }
+    const hasDietaryData =
+      data.dietaryRestrictions.length > 0 || data.dietaryDetails.length > 0;
+    if (hasDietaryData && !data.dietaryDataConsent) {
+      ctx.addIssue({
+        code: "custom",
+        message: "dietary_consent_required",
+        path: ["dietaryDataConsent"],
+      });
+    }
     if (
       data.occupationStatuses.includes("student") &&
       data.studyInstitution.length === 0
@@ -567,6 +577,9 @@ export function parseSignupBody(
   }
   if (msg === "employer_required") {
     return { ok: false, error: "employer_required", status: 400 };
+  }
+  if (msg === "dietary_consent_required") {
+    return { ok: false, error: "dietary_consent_required", status: 400 };
   }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, error: "heard_from_required", status: 400 };
@@ -654,6 +667,7 @@ export function parseSignupBodyClient(body: unknown):
         | "fullName"
         | "study_institution"
         | "employer"
+        | "dietary_consent"
         | "ambassador_motivation"
         | "heard_from"
         | "heard_from_other"
@@ -681,6 +695,9 @@ export function parseSignupBodyClient(body: unknown):
   }
   if (msg === "employer_required") {
     return { ok: false, code: "employer" };
+  }
+  if (msg === "dietary_consent_required") {
+    return { ok: false, code: "dietary_consent" };
   }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, code: "heard_from" };
