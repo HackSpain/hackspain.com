@@ -8,7 +8,13 @@ import {
 } from "@sentry/astro";
 import { initBotId } from "botid/client/core";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ComponentPropsWithRef,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Controller,
   type SubmitHandler,
@@ -47,6 +53,52 @@ const EMAIL_PREFILL_DEBOUNCE_MS = 800;
 
 type FlowStatus = "idle" | "success" | "error" | "alreadyApplied";
 type PrefillStatus = "idle" | "loading" | "loaded" | "error";
+
+type HackSpainCheckboxProps = Omit<ComponentPropsWithRef<"input">, "type"> & {
+  size?: "default" | "large";
+};
+
+function HackSpainCheckbox({
+  size = "default",
+  ...inputProps
+}: HackSpainCheckboxProps) {
+  const isLarge = size === "large";
+  const sizeClass = isLarge ? "h-6 w-6" : "h-4 w-4";
+  const borderClass = isLarge
+    ? "border-[3px] shadow-[2px_2px_0_0_var(--color-hs-ink)]"
+    : "border-2";
+
+  return (
+    <span className={`relative mt-px ${sizeClass} shrink-0`}>
+      <input
+        {...inputProps}
+        className={`peer absolute inset-0 z-10 ${sizeClass} cursor-pointer appearance-none opacity-0`}
+        type="checkbox"
+      />
+      <span
+        aria-hidden
+        className={`pointer-events-none flex ${sizeClass} items-center justify-center rounded-sm border-hs-ink bg-hs-paper ${borderClass} transition-colors peer-checked:bg-hs-gold peer-hover:bg-hs-sand/55 peer-focus-visible:border-hs-navy [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100`}
+      >
+        <svg
+          fill="none"
+          height={isLarge ? 14 : 10}
+          viewBox="0 0 14 14"
+          width={isLarge ? 14 : 10}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <title>Marca de verificación</title>
+          <path
+            d="M2.5 7.2 5.6 10.3 11.5 3.8"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={isLarge ? 2.2 : 1.8}
+          />
+        </svg>
+      </span>
+    </span>
+  );
+}
 
 function readAppliedFlag(): boolean {
   if (typeof window === "undefined") {
@@ -240,7 +292,7 @@ const cellLeftSm = `${cellBase} sm:border-r-[3px]`;
 const t = {
   title: "Apúntate al hackathon",
   subtitle:
-    "Cuéntanos quién eres. Revisamos cada solicitud antes de confirmar la plaza.",
+    "Cuéntanos quién eres y qué te motiva a participar. Como las plazas son limitadas, revisaremos cada solicitud y te confirmaremos por correo si has sido seleccionado/a.",
   backHome: "← Inicio",
   fullName: "Nombre completo",
   email: "Email",
@@ -281,7 +333,8 @@ const t = {
   followSocialsHint:
     "Síguenos en redes para enterarte de fechas, novedades y todo lo que viene en HackSpain 2026.",
   followSocialsLabel: "También en redes",
-  errorGeneric: "Algo ha fallado. Prueba otra vez en un momento.",
+  errorGeneric:
+    "No hemos podido recibir tu solicitud. Tus datos siguen guardados en este navegador; inténtalo de nuevo en unos minutos.",
   errorSocialRequired: "Añade al menos un enlace a perfil o web.",
   errorInvalidSocialUrl:
     "Uno o más enlaces no son válidos para ese campo (revisa X, LinkedIn, GitHub o tu web).",
@@ -292,7 +345,6 @@ const t = {
     "No hemos podido verificar la solicitud. Recarga la página e inténtalo de nuevo, o usa un navegador normal con JavaScript activado.",
   errorInvitation:
     "El enlace personal no es válido o ya no está disponible. Puedes completar el formulario manualmente.",
-  prefillLoading: "Autocompletando datos de tu pre-inscripción…",
   prefillLoaded:
     "Hemos completado los datos de tu pre-inscripción. Revisa la información y termina la solicitud.",
   ambassadorCheckboxBefore: "Quiero participar como ",
@@ -311,16 +363,6 @@ const t = {
   legalSubmitNoticeAfter:
     ", incluida la comunicación de tus datos a patrocinadores oficiales de HackSpain según se indica allí.",
 } as const;
-
-function prefillMessageForStatus(status: PrefillStatus): string {
-  if (status === "loading") {
-    return t.prefillLoading;
-  }
-  if (status === "loaded") {
-    return t.prefillLoaded;
-  }
-  return t.errorInvitation;
-}
 
 function ambassadorQueryEnabled(): boolean {
   if (typeof window === "undefined") {
@@ -830,7 +872,7 @@ export function SignupPage() {
                 data-sentry-mask
                 onSubmit={handleSubmit(onSubmitForm)}
               >
-                {prefillStatus === "idle" ? null : (
+                {prefillStatus === "loaded" || prefillStatus === "error" ? (
                   <div
                     className={`border-hs-ink border-b-[3px] px-4 py-3 font-bold font-sans text-sm sm:text-base ${
                       prefillStatus === "error"
@@ -839,9 +881,11 @@ export function SignupPage() {
                     }`}
                     role={prefillStatus === "error" ? "alert" : "status"}
                   >
-                    {prefillMessageForStatus(prefillStatus)}
+                    {prefillStatus === "loaded"
+                      ? t.prefillLoaded
+                      : t.errorInvitation}
                   </div>
-                )}
+                ) : null}
                 <div className="grid gap-0 sm:grid-cols-2">
                   <FormField
                     className={cellLeftSm}
@@ -1040,45 +1084,20 @@ export function SignupPage() {
                                 htmlFor={`signup-dietary-${option.id}`}
                                 key={option.id}
                               >
-                                <div className="relative mt-px h-4 w-4 shrink-0">
-                                  <input
-                                    checked={checked}
-                                    className="peer absolute inset-0 z-10 h-4 w-4 cursor-pointer appearance-none opacity-0"
-                                    id={`signup-dietary-${option.id}`}
-                                    name={field.name}
-                                    onBlur={field.onBlur}
-                                    onChange={(event) => {
-                                      const next = event.target.checked
-                                        ? [...field.value, option.id]
-                                        : field.value.filter(
-                                            (value) => value !== option.id
-                                          );
-                                      field.onChange(next);
-                                    }}
-                                    type="checkbox"
-                                  />
-                                  <div
-                                    aria-hidden
-                                    className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border-2 border-hs-ink bg-hs-paper peer-checked:bg-hs-gold [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100"
-                                  >
-                                    <svg
-                                      fill="none"
-                                      height="10"
-                                      viewBox="0 0 10 10"
-                                      width="10"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                      <title>Marca de verificación</title>
-                                      <path
-                                        d="M1.5 5.1 3.8 7.4 8.5 2.5"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.8"
-                                      />
-                                    </svg>
-                                  </div>
-                                </div>
+                                <HackSpainCheckbox
+                                  checked={checked}
+                                  id={`signup-dietary-${option.id}`}
+                                  name={field.name}
+                                  onBlur={field.onBlur}
+                                  onChange={(event) => {
+                                    const next = event.target.checked
+                                      ? [...field.value, option.id]
+                                      : field.value.filter(
+                                          (value) => value !== option.id
+                                        );
+                                    field.onChange(next);
+                                  }}
+                                />
                                 <span className="min-w-0 font-sans font-semibold text-hs-ink text-xs leading-tight sm:text-sm">
                                   {option.label}
                                 </span>
@@ -1111,11 +1130,10 @@ export function SignupPage() {
                       className="flex cursor-pointer items-start gap-3"
                       htmlFor="signup-dietary-data-consent"
                     >
-                      <input
-                        className="mt-0.5 h-5 w-5 shrink-0 accent-hs-gold"
+                      <HackSpainCheckbox
                         id="signup-dietary-data-consent"
                         required
-                        type="checkbox"
+                        size="large"
                         {...register("dietaryDataConsent")}
                       />
                       <span className="font-sans font-semibold text-hs-ink text-sm leading-snug sm:text-[0.95rem]">
@@ -1140,10 +1158,8 @@ export function SignupPage() {
                           htmlFor={`signup-occupation-${option.id}`}
                           key={option.id}
                         >
-                          <input
-                            className="h-4 w-4 accent-hs-gold"
+                          <HackSpainCheckbox
                             id={`signup-occupation-${option.id}`}
-                            type="checkbox"
                             value={option.id}
                             {...register("occupationStatuses", {
                               onChange: (event) => {
@@ -1249,54 +1265,29 @@ export function SignupPage() {
                                   htmlFor={`signup-heard-from-${option.id}`}
                                   key={option.id}
                                 >
-                                  <div className="relative mt-px h-4 w-4 shrink-0">
-                                    <input
-                                      checked={checked}
-                                      className="peer absolute inset-0 z-10 h-4 w-4 cursor-pointer appearance-none opacity-0"
-                                      id={`signup-heard-from-${option.id}`}
-                                      name={field.name}
-                                      onBlur={field.onBlur}
-                                      onChange={(event) => {
-                                        const next = event.target.checked
-                                          ? [...field.value, option.id]
-                                          : field.value.filter(
-                                              (value) => value !== option.id
-                                            );
-                                        field.onChange(next);
-                                        setAttentionTarget(null);
-                                        if (
-                                          option.id === "other" &&
-                                          !event.target.checked
-                                        ) {
-                                          setValue("heardFromOther", "", {
-                                            shouldDirty: true,
-                                          });
-                                        }
-                                      }}
-                                      type="checkbox"
-                                    />
-                                    <div
-                                      aria-hidden
-                                      className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border-2 border-hs-ink bg-hs-paper peer-checked:bg-hs-gold [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100"
-                                    >
-                                      <svg
-                                        fill="none"
-                                        height="10"
-                                        viewBox="0 0 10 10"
-                                        width="10"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <title>Marca de verificación</title>
-                                        <path
-                                          d="M1.5 5.1 3.8 7.4 8.5 2.5"
-                                          stroke="currentColor"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="1.8"
-                                        />
-                                      </svg>
-                                    </div>
-                                  </div>
+                                  <HackSpainCheckbox
+                                    checked={checked}
+                                    id={`signup-heard-from-${option.id}`}
+                                    name={field.name}
+                                    onBlur={field.onBlur}
+                                    onChange={(event) => {
+                                      const next = event.target.checked
+                                        ? [...field.value, option.id]
+                                        : field.value.filter(
+                                            (value) => value !== option.id
+                                          );
+                                      field.onChange(next);
+                                      setAttentionTarget(null);
+                                      if (
+                                        option.id === "other" &&
+                                        !event.target.checked
+                                      ) {
+                                        setValue("heardFromOther", "", {
+                                          shouldDirty: true,
+                                        });
+                                      }
+                                    }}
+                                  />
                                   <span className="min-w-0 font-sans font-semibold text-hs-ink text-xs leading-tight sm:text-sm">
                                     {option.label}
                                   </span>
@@ -1332,38 +1323,13 @@ export function SignupPage() {
 
                 <div className="border-hs-ink border-b-[3px] bg-hs-teal/15 px-4 py-4">
                   <div className="flex items-start gap-3">
-                    <div className="relative mt-0.5 h-6 w-6 shrink-0">
-                      <input
-                        id="signup-wants-ambassador"
-                        type="checkbox"
-                        {...register("wantsAmbassador", {
-                          onChange: () => setAttentionTarget(null),
-                        })}
-                        className="peer absolute inset-0 z-10 h-6 w-6 cursor-pointer appearance-none opacity-0"
-                      />
-                      <div
-                        aria-hidden
-                        className="pointer-events-none flex h-6 w-6 items-center justify-center rounded-sm border-[3px] border-hs-ink bg-hs-paper shadow-[2px_2px_0_0_var(--color-hs-ink)] transition-[background-color,box-shadow,border-color] duration-200 peer-checked:bg-hs-gold peer-hover:bg-hs-sand/55 peer-focus-visible:border-hs-navy [&_svg]:opacity-0 [&_svg]:transition-opacity [&_svg]:duration-200 [&_svg]:ease-out peer-checked:[&_svg]:opacity-100"
-                      >
-                        <svg
-                          className="text-hs-ink"
-                          fill="none"
-                          height="14"
-                          viewBox="0 0 14 14"
-                          width="14"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <title>Marca de verificación</title>
-                          <path
-                            d="M2.5 7.2 5.6 10.3 11.5 3.8"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2.2"
-                          />
-                        </svg>
-                      </div>
-                    </div>
+                    <HackSpainCheckbox
+                      id="signup-wants-ambassador"
+                      size="large"
+                      {...register("wantsAmbassador", {
+                        onChange: () => setAttentionTarget(null),
+                      })}
+                    />
                     <div className="min-w-0 font-sans font-semibold text-base text-hs-ink leading-snug sm:text-[1.05rem]">
                       <label
                         className="cursor-pointer"
