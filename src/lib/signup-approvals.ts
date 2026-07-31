@@ -36,6 +36,9 @@ export async function reviewSignup(
     if (signup.approvalStatus === "approved") {
       return { ok: false, reason: "not_reversible" };
     }
+    if (signup.approvalStatus === "cancelled") {
+      return { ok: false, reason: "not_reversible" };
+    }
     if (signup.approvalStatus === "rejected") {
       return { ok: false, reason: "already_rejected" };
     }
@@ -48,6 +51,9 @@ export async function reviewSignup(
 
   if (signup.approvalStatus === "rejected") {
     return { ok: false, reason: "already_rejected" };
+  }
+  if (signup.approvalStatus === "cancelled") {
+    return { ok: false, reason: "not_reversible" };
   }
 
   if (signup.approvalStatus === "pending") {
@@ -62,6 +68,7 @@ export async function reviewSignup(
   }
 
   const emailResult = await sendSignupAcceptedEmail({
+    cancellationToken: signup.cancellationToken,
     email: signup.email,
     fullName: signup.fullName,
     signupId: signup.id,

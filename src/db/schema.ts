@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-type SignupApprovalStatus = "approved" | "pending" | "rejected";
+type SignupApprovalStatus = "approved" | "cancelled" | "pending" | "rejected";
 
 export const hackathonSignups = pgTable("hackathon_signups", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -48,6 +48,14 @@ export const hackathonSignups = pgTable("hackathon_signups", {
   approvalEmailSentAt: timestamp("approval_email_sent_at", {
     withTimezone: true,
   }),
+  cancellationToken: uuid("cancellation_token")
+    .defaultRandom()
+    .notNull()
+    .unique(),
+  cancellationEmailSentAt: timestamp("cancellation_email_sent_at", {
+    withTimezone: true,
+  }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
 });
 
 export const hackathonPreSignups = pgTable("hackathon_pre_signups", {
