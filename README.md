@@ -11,7 +11,7 @@ Public marketing site for [HackSpain](https://hackspain.com) — Hack Spain 2026
 | **Hosting** | [Vercel](https://vercel.com/) via `@astrojs/vercel` |
 | **Data** | [PostgreSQL](https://www.postgresql.org/) ([Neon](https://neon.tech/)) with [Drizzle ORM](https://orm.drizzle.team/) |
 | **Forms & validation** | [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/) |
-| **Email** | Nodemailer (SMTP), plain text |
+| **Email** | Resend API, plain text and HTML |
 | **Background jobs** | [Workflow](https://useworkflow.dev/) (`workflow/astro`) for follow-up flows |
 | **Observability** | [Sentry](https://sentry.io/), [@vercel/analytics](https://vercel.com/docs/analytics), [@vercel/speed-insights](https://vercel.com/docs/speed-insights) |
 | **Bot protection** | [BotID](https://botid.vercel.app/) on signup endpoints |
@@ -68,6 +68,11 @@ use `SITE_URL` as their public origin. Every pre-signup also has a separate,
 readable share code (for example, `disamtech-k7x9p`) that invitation emails use
 in `/signup?ref=…`, so referrals can be attributed without exposing the private
 prefill token.
+
+Transactional email is sent through Resend. Verify the sending domain configured
+in `RESEND_FROM`, then set `RESEND_API_KEY` and `RESEND_FROM` in Vercel. The
+sender uses the isolated `updates.hackspain.com` subdomain and intentionally
+does not advertise a separate reply address.
 
 ## Project layout
 

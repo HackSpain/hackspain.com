@@ -189,6 +189,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   let relatedPreSignupId: string | null = null;
   let relatedPreSignupReferralCode: string | null = null;
+  const signupId = crypto.randomUUID();
+  const signupCancellationToken = crypto.randomUUID();
 
   try {
     const db = getDb();
@@ -233,6 +235,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     try {
       await db.insert(hackathonSignups).values({
+        id: signupId,
         fullName,
         email,
         xUrl: emptyToNull(xUrl),
@@ -255,6 +258,7 @@ export const POST: APIRoute = async ({ request }) => {
         referralCode: emptyToNull(
           referralCode || relatedPreSignupReferralCode || ""
         ),
+        cancellationToken: signupCancellationToken,
       });
     } catch (e: unknown) {
       if (isPostgresUniqueViolation(e)) {
@@ -335,8 +339,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     const emailResult = await sendSignupConfirmationEmail({
+      cancellationToken: signupCancellationToken,
       fullName,
       email,
+      signupId,
       wantsAmbassador,
     });
     if (!emailResult.ok && emailResult.reason === "send_failed") {

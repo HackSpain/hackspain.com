@@ -16,6 +16,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
+.workflow-data
 
 # environment variables
 .env*
@@ -34,3 +35,4 @@ pnpm-debug.log*
 .agents
 .cursor
 skills-lock.json
+/.swc

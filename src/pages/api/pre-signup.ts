@@ -134,11 +134,13 @@ export const POST: APIRoute = async ({ request }) => {
     webUrl,
     referralCode,
   } = parsed.data;
+  const preSignupId = crypto.randomUUID();
 
   try {
     const db = getDb();
     try {
       await db.insert(hackathonPreSignups).values({
+        id: preSignupId,
         fullName,
         email,
         xUrl: emptyToNull(xUrl),
@@ -195,7 +197,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    await start(handlePreSignupFollowup, [{ fullName, email }]);
+    await start(handlePreSignupFollowup, [{ fullName, email, preSignupId }]);
   } catch {
     console.error(
       "[pre-signup] Failed to start followup workflow after successful insert"
