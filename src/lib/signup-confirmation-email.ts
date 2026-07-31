@@ -120,7 +120,7 @@ function referralSignupFormUrl(shareCode: string): string {
 }
 
 function signupCancellationUrl(cancellationToken: string): string {
-  const url = new URL("/cancelar", siteOriginFromRuntime());
+  const url = new URL("/cancelacion", siteOriginFromRuntime());
   url.searchParams.set("token", cancellationToken);
   return url.toString();
 }
