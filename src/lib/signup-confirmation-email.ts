@@ -28,7 +28,6 @@ function getResend(apiKey: string): Resend {
 }
 
 export interface ConfirmationEmailInput {
-  cancellationToken: string;
   email: string;
   fullName: string;
   signupId: string;
@@ -141,7 +140,6 @@ function escapeHtml(value: string): string {
 
 function signupConfirmationText(input: ConfirmationEmailInput): string {
   const firstName = firstNameFrom(input.fullName);
-  const cancellationUrl = signupCancellationUrl(input.cancellationToken);
   const ambassadorNote = input.wantsAmbassador
     ? "\n\nTambién hemos anotado que te interesa participar como embajador/a. Si tu perfil encaja, te escribiremos con los siguientes pasos."
     : "";
@@ -159,9 +157,6 @@ Instagram: https://www.instagram.com/hackspain26/
 
 Si quieres compartir la inscripción con alguien, usa este enlace:
 ${signupFormUrl()}
-
-Si en algún momento quieres retirar tu solicitud, puedes hacerlo desde este enlace personal. No lo compartas con nadie:
-${cancellationUrl}
 
 Nos vemos pronto,
 El equipo de HackSpain
@@ -181,7 +176,6 @@ export interface PreSignupInvitationEmailInput extends PreSignupEmailInput {
 }
 
 export interface SignupAcceptedEmailInput {
-  cancellationToken: string;
   email: string;
   fullName: string;
   signupId: string;
@@ -305,7 +299,6 @@ export function sendSignupAcceptedEmail(
 
   const organizerName = pickOrganizerName();
   const firstName = firstNameFrom(input.fullName);
-  const cancellationUrl = signupCancellationUrl(input.cancellationToken);
   const text = `Hola ${firstName},
 
 Estás dentro de HackSpain 2026.
@@ -315,9 +308,6 @@ Hemos revisado tu solicitud y queremos contar contigo en HackSpain 2026. Ya solo
 ${communityUrl}
 
 Este enlace es solo para participantes aceptados. No lo compartas fuera de la comunidad.
-
-Si al final no puedes asistir, cancela tu plaza desde este enlace personal para que podamos ofrecérsela a otra persona:
-${cancellationUrl}
 
 Nos vemos dentro,
 ${organizerName} de HackSpain`;

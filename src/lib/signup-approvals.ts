@@ -68,7 +68,6 @@ export async function reviewSignup(
   }
 
   const emailResult = await sendSignupAcceptedEmail({
-    cancellationToken: signup.cancellationToken,
     email: signup.email,
     fullName: signup.fullName,
     signupId: signup.id,

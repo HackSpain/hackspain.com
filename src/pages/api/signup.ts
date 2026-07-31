@@ -339,7 +339,6 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     const emailResult = await sendSignupConfirmationEmail({
-      cancellationToken: signupCancellationToken,
       fullName,
       email,
       signupId,
