@@ -427,6 +427,7 @@ const signupBodySchema = z
         .transform((value) => value.trim())
     ),
     dietaryDataConsent: z.boolean().optional().default(false),
+    isUnderThirty: z.boolean().optional().default(false),
     occupationStatuses: z.preprocess(
       (value) => (Array.isArray(value) ? value : []),
       z
@@ -508,6 +509,13 @@ const signupBodySchema = z
         path: ["dietaryDataConsent"],
       });
     }
+    if (!data.isUnderThirty) {
+      ctx.addIssue({
+        code: "custom",
+        message: "under_thirty_required",
+        path: ["isUnderThirty"],
+      });
+    }
     if (
       data.occupationStatuses.includes("student") &&
       data.studyInstitution.length === 0
@@ -580,6 +588,9 @@ export function parseSignupBody(
   }
   if (msg === "dietary_consent_required") {
     return { ok: false, error: "dietary_consent_required", status: 400 };
+  }
+  if (msg === "under_thirty_required") {
+    return { ok: false, error: "under_thirty_required", status: 400 };
   }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, error: "heard_from_required", status: 400 };
@@ -668,6 +679,7 @@ export function parseSignupBodyClient(body: unknown):
         | "study_institution"
         | "employer"
         | "dietary_consent"
+        | "under_thirty"
         | "ambassador_motivation"
         | "heard_from"
         | "heard_from_other"
@@ -698,6 +710,9 @@ export function parseSignupBodyClient(body: unknown):
   }
   if (msg === "dietary_consent_required") {
     return { ok: false, code: "dietary_consent" };
+  }
+  if (msg === "under_thirty_required") {
+    return { ok: false, code: "under_thirty" };
   }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, code: "heard_from" };

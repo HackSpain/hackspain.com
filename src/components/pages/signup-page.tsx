@@ -138,6 +138,7 @@ interface StoredFields {
   heardFromSources: HeardFromSourceId[];
   linkedinUrl: string;
   occupationStatuses: OccupationStatusId[];
+  isUnderThirty: boolean;
   studyInstitution: string;
   wantsAmbassador: boolean;
   webUrl: string;
@@ -148,6 +149,7 @@ const NON_PERSISTED_DRAFT_FIELDS = new Set<string>([
   "dietaryDataConsent",
   "dietaryDetails",
   "dietaryRestrictions",
+  "isUnderThirty",
 ]);
 
 const EMPTY_FIELDS: StoredFields = {
@@ -162,6 +164,7 @@ const EMPTY_FIELDS: StoredFields = {
   dietaryRestrictions: [],
   dietaryDetails: "",
   dietaryDataConsent: false,
+  isUnderThirty: false,
   occupationStatuses: [],
   studyInstitution: "",
   employer: "",
@@ -233,6 +236,7 @@ function readStoredFields(): StoredFields {
       dietaryRestrictions: [],
       dietaryDetails: "",
       dietaryDataConsent: false,
+      isUnderThirty: false,
       occupationStatuses,
       studyInstitution: s("studyInstitution"),
       employer: s("employer"),
@@ -358,6 +362,8 @@ const t = {
   errorEmployer: "Indica tu empresa u organización.",
   errorDietaryConsent:
     "Debes consentir expresamente el tratamiento de los datos alimentarios que has indicado.",
+  underThirtyConfirmation: "Confirmo que soy menor de 30 años.",
+  errorUnderThirty: "Debes confirmar que eres menor de 30 años.",
   legalSubmitNoticeBefore: "Al enviar este formulario aceptas nuestra ",
   legalPrivacyLinkLabel: "política de privacidad",
   legalSubmitNoticeAfter:
@@ -672,6 +678,8 @@ export function SignupPage() {
         setErrorMessage(t.errorEmployer);
       } else if (parsed.code === "dietary_consent") {
         setErrorMessage(t.errorDietaryConsent);
+      } else if (parsed.code === "under_thirty") {
+        setErrorMessage(t.errorUnderThirty);
       } else {
         setErrorMessage(t.errorGeneric);
       }
@@ -763,6 +771,8 @@ export function SignupPage() {
         setErrorMessage(t.errorEmployer);
       } else if (resJson.error === "dietary_consent_required") {
         setErrorMessage(t.errorDietaryConsent);
+      } else if (resJson.error === "under_thirty_required") {
+        setErrorMessage(t.errorUnderThirty);
       } else if (resJson.error === "heard_from_other_required") {
         setStatus("error");
         pulseAttention("heard");
@@ -1401,16 +1411,32 @@ export function SignupPage() {
                 ) : null}
 
                 <div className="flex flex-col gap-4 bg-hs-sand/30 p-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-                  <p className="max-w-xl font-sans font-semibold text-hs-ink text-xs leading-snug sm:max-w-md sm:text-sm">
-                    {t.legalSubmitNoticeBefore}
-                    <a
-                      className="font-extrabold text-hs-navy underline decoration-2 underline-offset-2 hover:text-hs-ink"
-                      href={`${privacyHref}#privacy-policy`}
+                  <div className="max-w-xl sm:max-w-md">
+                    <label
+                      className="flex cursor-pointer items-start gap-3"
+                      htmlFor="signup-under-thirty"
                     >
-                      {t.legalPrivacyLinkLabel}
-                    </a>
-                    {t.legalSubmitNoticeAfter}
-                  </p>
+                      <HackSpainCheckbox
+                        id="signup-under-thirty"
+                        required
+                        size="large"
+                        {...register("isUnderThirty")}
+                      />
+                      <span className="font-sans font-semibold text-hs-ink text-sm leading-snug sm:text-[0.95rem]">
+                        {t.underThirtyConfirmation} *
+                      </span>
+                    </label>
+                    <p className="mt-3 font-sans font-semibold text-hs-ink text-xs leading-snug sm:text-sm">
+                      {t.legalSubmitNoticeBefore}
+                      <a
+                        className="font-extrabold text-hs-navy underline decoration-2 underline-offset-2 hover:text-hs-ink"
+                        href={`${privacyHref}#privacy-policy`}
+                      >
+                        {t.legalPrivacyLinkLabel}
+                      </a>
+                      {t.legalSubmitNoticeAfter}
+                    </p>
+                  </div>
                   <Button
                     className="shrink-0 self-end sm:self-auto"
                     disabled={isSubmitting}
