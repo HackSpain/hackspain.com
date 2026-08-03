@@ -188,6 +188,18 @@ function cardArt(svg: string, corner: "tl" | "br") {
 const SIGNUP_CLOSED_LABEL = "Inscripciones cerradas";
 
 /**
+ * Second word of the "INSCRIPCIÓN ABIERTA" hero — flips to "CERRADA" with the
+ * countdown, so the hero never contradicts a closed CTA.
+ */
+function SignupStatusWord() {
+  const { expired } = useSignupCountdown();
+
+  return (
+    <span className="text-hs-gold">{expired ? "CERRADA" : "ABIERTA"}</span>
+  );
+}
+
+/**
  * Signup CTA that closes itself: a link while the countdown is running, a
  * disabled button once the deadline has passed.
  */
@@ -466,7 +478,7 @@ export function buildSections(
           <h2 className={`text-center ${MOSAIC_HERO_LG} text-hs-paper`}>
             INSCRIPCIÓN
             <br />
-            <span className="text-hs-gold">ABIERTA</span>
+            <SignupStatusWord />
           </h2>
         </P>
       ),
@@ -885,7 +897,7 @@ export function buildSectionsCompact(
           <h2
             className={`text-center ${CH} text-[clamp(2rem,9vw,3.4rem)] text-hs-paper`}
           >
-            INSCRIPCIÓN <span className="text-hs-gold">ABIERTA</span>
+            INSCRIPCIÓN <SignupStatusWord />
           </h2>
         </P>
       ),

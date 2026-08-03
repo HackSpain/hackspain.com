@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { SIGNUP_DEADLINE_ISO } from "../../data/signup-deadline";
-
-const DEADLINE_MS = new Date(SIGNUP_DEADLINE_ISO).getTime();
+import { SIGNUP_DEADLINE_MS } from "../../data/signup-deadline";
 
 const SECOND_MS = 1000;
 const MINUTE_MS = 60 * SECOND_MS;
@@ -17,7 +15,7 @@ interface Remaining {
 }
 
 function remainingAt(now: number): Remaining {
-  const delta = DEADLINE_MS - now;
+  const delta = SIGNUP_DEADLINE_MS - now;
   if (delta <= 0) {
     return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
   }
