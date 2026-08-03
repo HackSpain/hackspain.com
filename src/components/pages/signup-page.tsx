@@ -339,6 +339,8 @@ const t = {
   followSocialsLabel: "También en redes",
   errorGeneric:
     "No hemos podido recibir tu solicitud. Tus datos siguen guardados en este navegador; inténtalo de nuevo en unos minutos.",
+  errorFormOutdated:
+    "No hemos podido recibir tu solicitud. Tus datos siguen guardados en este navegador; recarga la página y vuelve a intentarlo en unos minutos.",
   errorSocialRequired: "Añade al menos un enlace a perfil o web.",
   errorInvalidSocialUrl:
     "Uno o más enlaces no son válidos para ese campo (revisa X, LinkedIn, GitHub o tu web).",
@@ -786,6 +788,8 @@ export function SignupPage() {
         return;
       } else if (resJson.error === "invalid_email") {
         setErrorMessage(t.errorInvalidEmail);
+      } else if (res.status === 400) {
+        setErrorMessage(t.errorFormOutdated);
       } else {
         setErrorMessage(t.errorGeneric);
       }
