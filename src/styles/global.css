@@ -120,6 +120,13 @@ body {
     text-wrap: balance;
   }
 
+  .hs-mosaic-headline-sm {
+    font-family: var(--font-bungee);
+    font-size: clamp(0.6rem, min(10cqw, 9cqh), 1.8rem);
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+
   .hs-mosaic-footer {
     font-size: clamp(0.62rem, 6.5cqw, 1rem);
   }
