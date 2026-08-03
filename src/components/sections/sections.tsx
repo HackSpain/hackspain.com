@@ -2,12 +2,14 @@ import { Fragment, useState } from "react";
 import { HACKSPAIN_SOCIAL_URLS } from "../../data/landing-meta";
 import { InlineSvg } from "../media/inline-svg";
 import { ParticipantsCountUp } from "../media/participants-count-up";
+import { SignupCountdown, useSignupCountdown } from "../media/signup-countdown";
 import {
   MOSAIC_BD,
   MOSAIC_DISPLAY,
   MOSAIC_FOOTER,
   MOSAIC_FOOTER_SM,
   MOSAIC_HEADLINE,
+  MOSAIC_HEADLINE_SM,
   MOSAIC_HERO_LG,
   MOSAIC_LBL,
 } from "../mosaic/mosaic-typography";
@@ -182,6 +184,47 @@ function cardArt(svg: string, corner: "tl" | "br") {
   );
 }
 
+/** Copy shown on the signup CTAs once the deadline has passed. */
+const SIGNUP_CLOSED_LABEL = "Inscripciones cerradas";
+
+/**
+ * Signup CTA that closes itself: a link while the countdown is running, a
+ * disabled button once the deadline has passed.
+ */
+function SignupCta({
+  ariaLabel,
+  className,
+  href,
+  label,
+}: {
+  ariaLabel: string;
+  className?: string;
+  href: string;
+  label: string;
+}) {
+  const { expired } = useSignupCountdown();
+
+  if (expired) {
+    return (
+      <Button className={className} disabled size="compact" variant="gold">
+        {SIGNUP_CLOSED_LABEL}
+      </Button>
+    );
+  }
+
+  return (
+    <ButtonLink
+      aria-label={ariaLabel}
+      className={className}
+      href={href}
+      size="compact"
+      variant="gold"
+    >
+      {label}
+    </ButtonLink>
+  );
+}
+
 function TracksInfoModal() {
   const [open, setOpen] = useState(false);
 
@@ -257,24 +300,35 @@ export function buildSections(
           </a>
         </P>
       ),
+      r4b: (
+        <P bg="bg-hs-teal">
+          <span className={`${MOSAIC_HEADLINE} text-center text-white`}>
+            +10.000€
+          </span>
+          <p className={`${LBL} text-center text-white/60`}>en premios</p>
+          <span className={`${MOSAIC_HEADLINE_SM} text-center text-hs-gold`}>
+            5 TRACKS
+          </span>
+        </P>
+      ),
       r4c: (
         <P bg="bg-hs-paper" className="!justify-evenly !px-2 !py-3">
           <p className={`${MOSAIC_HEADLINE} text-center text-hs-ink`}>
             El hackathon para unir a los mejores{" "}
             <span className="text-hs-red">builders</span> jóvenes de España.
           </p>
-          <p className={`${LBL} text-center text-hs-ink/50`}>
-            +10.000€ en premios. 5 tracks.
-          </p>
-          <ButtonLink
-            aria-label="Solicitar plaza en HackSpain — abrir formulario"
+          <SignupCta
+            ariaLabel="Solicitar plaza en HackSpain — abrir formulario"
             className="shrink-0"
             href={signupHref}
-            size="compact"
-            variant="gold"
-          >
-            Apúntate
-          </ButtonLink>
+            label="Apúntate"
+          />
+          <SignupCountdown
+            className="shrink-0 text-hs-ink"
+            label="La inscripción cierra en"
+            labelClassName={`${D} ${MOSAIC_FOOTER_SM} font-black text-hs-ink/50 uppercase tracking-widest`}
+            variant="mosaicSm"
+          />
         </P>
       ),
       ...bottomRow(0),
@@ -417,15 +471,17 @@ export function buildSections(
         </P>
       ),
       r4c: (
-        <P bg="bg-hs-paper" className="!justify-evenly !px-10 !py-8">
-          <ButtonLink
-            aria-label="Apúntate ya a HackSpain 2026"
+        <P bg="bg-hs-paper" className="!justify-evenly !px-10 !py-6">
+          <SignupCountdown
+            className="text-hs-ink"
+            label="La inscripción cierra en"
+            labelClassName={`${LBL} text-center text-hs-ink/50`}
+          />
+          <SignupCta
+            ariaLabel="Apúntate ya a HackSpain 2026"
             href={signupHref}
-            size="compact"
-            variant="gold"
-          >
-            Apúntate ya
-          </ButtonLink>
+            label="Apúntate ya"
+          />
         </P>
       ),
       ...bottomRow(4),
@@ -645,15 +701,19 @@ export function buildSectionsCompact(
           <p className={`${CLBL} text-center text-hs-ink/50`}>
             +10.000€ en premios. 5 tracks.
           </p>
-          <ButtonLink
-            aria-label="Solicitar plaza en HackSpain — abrir formulario"
+          <SignupCta
+            ariaLabel="Solicitar plaza en HackSpain — abrir formulario"
             className="!px-5 !py-2.5 !text-[clamp(0.85rem,3vw,1.1rem)] shrink-0"
             href={signupHref}
-            size="compact"
-            variant="gold"
-          >
-            Apúntate
-          </ButtonLink>
+            label="Apúntate"
+          />
+          <SignupCountdown
+            className="shrink-0 text-hs-ink"
+            label="Cierra en"
+            labelClassName={`${D} font-black text-[clamp(0.6rem,2.6vw,0.85rem)] text-hs-ink/50 uppercase tracking-widest`}
+            layout="inline"
+            variant="compactSm"
+          />
         </P>
       ),
       ...orn(
@@ -830,16 +890,19 @@ export function buildSectionsCompact(
         </P>
       ),
       b1: (
-        <P bg="bg-hs-paper" className={`${CARD} !justify-center`}>
-          <ButtonLink
-            aria-label="Apúntate ya a HackSpain 2026"
+        <P bg="bg-hs-paper" className={`${CARD} !justify-evenly`}>
+          <SignupCountdown
+            className="text-hs-ink"
+            label="La inscripción cierra en"
+            labelClassName={`${CLBL} text-center text-hs-ink/50`}
+            variant="compact"
+          />
+          <SignupCta
+            ariaLabel="Apúntate ya a HackSpain 2026"
             className="!px-8 !py-4 !text-[clamp(1rem,4vw,1.4rem)]"
             href={signupHref}
-            size="compact"
-            variant="gold"
-          >
-            Apúntate ya
-          </ButtonLink>
+            label="Apúntate ya"
+          />
         </P>
       ),
       b2: (
