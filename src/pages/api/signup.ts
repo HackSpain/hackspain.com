@@ -2,6 +2,7 @@ import { captureException, captureMessage, withScope } from "@sentry/astro";
 import type { APIRoute } from "astro";
 import { checkBotId } from "botid/server";
 import { eq } from "drizzle-orm";
+import { areSignupsClosed } from "../../data/signup-deadline";
 import { getDb } from "../../db";
 import { hackathonPreSignups, hackathonSignups } from "../../db/schema";
 import {
@@ -61,6 +62,19 @@ function isPostgresUniqueViolation(e: unknown): boolean {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  // The client hides the form after the deadline, but its clock is not the
+  // authority: nothing is accepted past the deadline, whatever the caller says.
+  if (areSignupsClosed()) {
+    safeSentry(() => {
+      withScope((scope) => {
+        scope.setTag("api", "signup");
+        scope.setTag("outcome", "signups_closed");
+        captureMessage("POST /api/signup after the deadline", "info");
+      });
+    });
+    return Response.json({ error: "signups_closed" }, { status: 410 });
+  }
+
   // `vercel.json` Bot Protection rewrites only run on Vercel / `vercel dev`, not `astro dev`.
   // Without them, client scripts 404 and BotID checks misbehave; skip locally.
   if (!import.meta.env.DEV) {

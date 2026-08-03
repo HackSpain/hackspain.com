@@ -1,3 +1,5 @@
+import { areSignupsClosed } from "./signup-deadline";
+
 const SITE = "https://hackspain.com";
 
 /** Official profiles for CTAs (footer, signup end screen, etc.). */
@@ -51,8 +53,22 @@ const PAGES: PageSeo[] = [
   },
 ];
 
+/** The signup section is the last one; its copy depends on the deadline. */
+const SIGNUP_SECTION_INDEX = PAGES.length - 1;
+
+const SIGNUP_CLOSED_SEO: PageSeo = {
+  title: "Inscripción cerrada | HackSpain 2026",
+  description:
+    "La inscripción para HackSpain 2026 está cerrada. Síguenos en redes para enterarte de la próxima edición.",
+  ogImageAlt: "HackSpain 2026 — inscripción cerrada",
+};
+
 export function seoForSectionIndex(i: number): PageSeo {
-  return PAGES[Math.max(0, Math.min(PAGES.length - 1, i))] ?? PAGES[0];
+  const index = Math.max(0, Math.min(PAGES.length - 1, i));
+  if (index === SIGNUP_SECTION_INDEX && areSignupsClosed()) {
+    return SIGNUP_CLOSED_SEO;
+  }
+  return PAGES[index] ?? PAGES[0];
 }
 
 export const SIGNUP_KEYWORDS =

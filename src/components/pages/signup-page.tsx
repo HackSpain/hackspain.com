@@ -22,6 +22,10 @@ import {
   useWatch,
 } from "react-hook-form";
 import { HACKSPAIN_SOCIAL_URLS } from "../../data/landing-meta";
+import {
+  areSignupsClosed,
+  SIGNUP_DEADLINE_MS,
+} from "../../data/signup-deadline";
 import { getStoredReferralCode } from "../../lib/referral-code";
 import {
   cleanProfilePasteText,
@@ -45,13 +49,16 @@ import { Button, ButtonLink } from "../ui/button";
 const STORAGE_KEY = "hackspain-signup-draft-v1";
 const STORAGE_APPLIED_KEY = "hackspain-signup-applied-v1";
 
+/** `setTimeout` truncates past 2^31-1 ms (~24.8 days); don't arm it beyond that. */
+const MAX_TIMEOUT_MS = 2_147_483_647;
+
 const UNICODE_LEFT_ARROW_PREFIX_RE = /^\u2190\s*/;
 const ASCII_LEFT_ARROW_PREFIX_RE = /^←\s*/;
 const LINE_BREAK_SPLIT_RE = /\r?\n/;
 const EMAIL_LOOKUP_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_PREFILL_DEBOUNCE_MS = 800;
 
-type FlowStatus = "idle" | "success" | "error" | "alreadyApplied";
+type FlowStatus = "idle" | "success" | "error" | "alreadyApplied" | "closed";
 type PrefillStatus = "idle" | "loading" | "loaded" | "error";
 
 type HackSpainCheckboxProps = Omit<ComponentPropsWithRef<"input">, "type"> & {
@@ -334,6 +341,10 @@ const t = {
     "¡Gracias! Hemos recibido tu solicitud. Espera nuestra respuesta por correo; te escribiremos en cuanto podamos.",
   alreadyApplied:
     "Ya enviaste una solicitud desde este navegador. Te contactaremos por correo.",
+  signupsClosedSubtitle:
+    "El plazo para enviar solicitudes ha terminado. Síguenos en redes para no perderte lo que viene.",
+  signupsClosed:
+    "Las inscripciones para HackSpain 2026 están cerradas. Gracias por el interés — síguenos en redes para enterarte de la próxima edición.",
   followSocialsHint:
     "Síguenos en redes para enterarte de fechas, novedades y todo lo que viene en HackSpain 2026.",
   followSocialsLabel: "También en redes",
@@ -416,6 +427,27 @@ export function SignupPage() {
   const [invitationToken, setInvitationToken] = useState("");
   const [prefillStatus, setPrefillStatus] = useState<PrefillStatus>("idle");
   const [emailPrefillLoaded, setEmailPrefillLoaded] = useState(false);
+  const [deadlinePassed, setDeadlinePassed] = useState(() =>
+    areSignupsClosed()
+  );
+
+  // No polling: arm a single timer for the deadline so a page left open across
+  // it closes itself instead of letting someone finish a doomed form.
+  useEffect(() => {
+    if (deadlinePassed) {
+      return;
+    }
+    const msLeft = SIGNUP_DEADLINE_MS - Date.now();
+    if (msLeft <= 0) {
+      setDeadlinePassed(true);
+      return;
+    }
+    if (msLeft > MAX_TIMEOUT_MS) {
+      return;
+    }
+    const id = window.setTimeout(() => setDeadlinePassed(true), msLeft);
+    return () => window.clearTimeout(id);
+  }, [deadlinePassed]);
 
   useLayoutEffect(() => {
     if (!invitationTokenFromLocation() && readAppliedFlag()) {
@@ -718,6 +750,18 @@ export function SignupPage() {
       const isDuplicateEmail =
         resJson.error === "duplicate_email" ||
         (res.status === 409 && !isInvitationError);
+      // The deadline passed while this form was open — expected, not a failure.
+      if (resJson.error === "signups_closed") {
+        addBreadcrumb({
+          category: "http",
+          type: "http",
+          data: { status: res.status, error: resJson.error },
+          level: "info",
+          message: "signup rejected after the deadline (expected)",
+        });
+        setStatus("closed");
+        return;
+      }
       if (isDuplicateEmail) {
         addBreadcrumb({
           category: "http",
@@ -818,6 +862,18 @@ export function SignupPage() {
     onChange: () => setAttentionTarget(null),
   });
 
+  // An application already sent still wins over the closed notice — whoever got
+  // in before the deadline should see their confirmation, not "estamos cerrados".
+  const alreadyDone = status === "success" || status === "alreadyApplied";
+  const showClosed = !alreadyDone && (deadlinePassed || status === "closed");
+  const showFinalPanel = alreadyDone || showClosed;
+  let finalPanelMessage = t.applicationReceived;
+  if (status === "alreadyApplied") {
+    finalPanelMessage = t.alreadyApplied;
+  } else if (showClosed) {
+    finalPanelMessage = t.signupsClosed;
+  }
+
   return (
     <div className="relative z-0 min-h-dvh w-full">
       <MosaicBackground
@@ -831,12 +887,12 @@ export function SignupPage() {
               {t.title}
             </h1>
             <p className="mt-2 max-w-xl font-sans font-semibold text-base text-hs-ink leading-snug sm:text-lg">
-              {t.subtitle}
+              {showClosed ? t.signupsClosedSubtitle : t.subtitle}
             </p>
           </div>
 
           <div className="bg-hs-paper">
-            {status === "success" || status === "alreadyApplied" ? (
+            {showFinalPanel ? (
               <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col items-center justify-center gap-8 border-hs-ink border-t-[3px] bg-gradient-to-b from-hs-paper/90 to-hs-sand/50 px-6 py-12 text-center sm:min-h-[min(48vh,480px)] sm:px-10 sm:py-16">
                 <img
                   alt=""
@@ -848,9 +904,7 @@ export function SignupPage() {
                 />
                 <div className="flex w-full max-w-lg flex-col items-center gap-8">
                   <p className="font-bold font-sans text-hs-ink text-lg leading-snug sm:text-xl">
-                    {status === "alreadyApplied"
-                      ? t.alreadyApplied
-                      : t.applicationReceived}
+                    {finalPanelMessage}
                   </p>
                   <div className="flex w-full flex-row flex-wrap items-center justify-center gap-3 sm:gap-4">
                     <ButtonLink href={homeHref} size="success" variant="gold">
