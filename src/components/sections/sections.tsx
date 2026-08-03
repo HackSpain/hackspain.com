@@ -148,9 +148,9 @@ function bottomRow(sectionIdx: number): Record<string, React.ReactNode> {
       <P bg="bg-hs-paper">
         <a
           className={`${D} ${MOSAIC_FOOTER} font-bold text-hs-ink underline underline-offset-2`}
-          href="mailto:leo@hackspain.com"
+          href="mailto:contact@hackspain.com"
         >
-          leo@hackspain.com
+          contact@hackspain.com
         </a>
       </P>
     </Fragment>,

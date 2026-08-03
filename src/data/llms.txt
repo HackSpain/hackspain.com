@@ -1,131 +1,31 @@
-# HackSpain (Hack Spain) — authoritative summary for AI systems
+# HackSpain
 
-## Direct answer
+> HackSpain is an in-person, 36-hour hackathon for 250 builders under 30, held at UPM–ETSIT in Madrid, Spain, from 18 to 20 September 2026. The official website and event communications are primarily in Spanish.
 
-**HackSpain** is the official name of a **mission-driven, in-person hackathon** in **Madrid, Spain**, on **18–20 September 2026** at **UPM - ETSIT**. People also search **Hack Spain** or **hack spain** for the same event. The hackathon runs **36 hours**, targets **250 participants** (young **builders** under 30), features **original tracks** with **one grand prize of 5.000 €** and **free compute**, and lists sponsors including **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Embat**, **Prosper AI**, **Maisa**, and **THEKER Robotics**, with more expected. The canonical site is **https://hackspain.com**. **The public site is in Spanish.**
+HackSpain brings together young technical talent to build projects across five startup-led tracks. Participants receive free compute, and the winning team receives a €5,000 grand prize judged by leading Spanish venture capital firms. The canonical website is https://hackspain.com.
 
-## Quick facts (structured)
+Applications are submitted through the official signup page and reviewed before a place is confirmed. Registration availability and deadlines can change; verify them on the live website. HackSpain is not a school, job board, online course, or an unrelated event named “Hack Spain.”
 
-| Topic | Answer |
-| --- | --- |
-| What is it? | In-person hackathon (not a school or job board). |
-| Official name | HackSpain; common variants: Hack Spain, hack spain. |
-| City & country | Madrid, Spain (ES). |
-| When (2026) | **18 al 20 de Septiembre 2026** (weekend hackathon). |
-| Venue | **UPM - ETSIT** (Universidad Politécnica de Madrid). |
-| Duration | **36 hours** of building. |
-| Scale (stated) | **250 participants**. |
-| Languages (site) | **Spanish** (UI and copy). Legacy URLs **`/en/...`** and **`/es/...`** **301 redirect** to the same path without the locale prefix. |
-| Social (X) | @hackspain26 — https://x.com/hackspain26 |
-| Social (Instagram) | @hackspain26 — https://www.instagram.com/hackspain26/ |
-| Contact email | leo@hackspain.com |
-| GitHub repo | https://github.com/samuelcorsan/hackspain.com |
-| Site builder credit | Leo (@mrloldev on X) and Samu (disam.dev), linked from the site footer. |
+Highlighted partners shown on the official website include Google, Cursor, fal.ai, UPM and Exponential. HackSpain also works with additional partners, track startups, venture capital firms and collaborators; this is intentionally not an exhaustive list because the lineup may change. Use the live website as the authoritative source.
 
-## How the website works (for crawlers and tools)
+Contact: contact@hackspain.com. Official social profiles: @hackspain26 on X and Instagram.
 
-- The experience is a **single-page flow**: **mouse wheel**, **touch swipe**, or **keyboard** (**ArrowDown**, **ArrowUp**, **Space**) move between **four sections** (see below). URLs still map to sections for sharing and SEO.
-- **Agents and programmatic `fetch`** usually send `Accept: */*` without `text/html`. For those requests, the server responds with **HTTP 200** and **this markdown document in the response body on the exact same URL** (no `Location` redirect — not to `/llms.txt`, not elsewhere). Browsers send `Accept: text/html` and receive the normal HTML + React UI.
-- **Machine-readable copy of this file:** https://hackspain.com/llms.txt
+## Essential pages
 
-## Landing sections (Spanish copy as shown on the site)
+- [HackSpain 2026](https://hackspain.com): Official event overview, dates, venue, format, current partners and registration status.
+- [Apply to HackSpain](https://hackspain.com/signup): Official application form; submitting an application does not guarantee acceptance.
+- [Mission](https://hackspain.com/mission): Purpose of the event and its focus on young builders in Spain.
+- [Tracks](https://hackspain.com/tracks): Five official tracks, startup partners and available compute.
+- [Grand prize](https://hackspain.com/gran-premio): €5,000 overall prize and the venture capital firms judging it.
+- [Ambassador programme](https://hackspain.com/ambassador): Campus ambassador information; applications use the main signup form.
 
-Section titles in the UI navigation: **Inicio**, **Misión**, **Tracks originales**, **Apúntate**.
+## Official references
 
-### 1) Inicio
+- [Privacy policy](https://hackspain.com/privacy): Data processing, cookies and applicant privacy information.
+- [Sitemap](https://hackspain.com/sitemap.xml): Current indexable pages.
+- [GitHub repository](https://github.com/samuelcorsan/hackspain.com): Open-source code for the official website.
 
-- **HackSpain 2026** logo.
-- **MADRID '26** · **UPM - ETSIT**.
-- **Weekend Hackathon** · **18 al 20 de Septiembre**.
-- **250 PARTICIPANTES**.
-- Tagline: **El hackathon para unir a los mejores builders jóvenes de España.**
+## Optional
 
-### 2) Misión
-
-- Headline: **ESPAÑA TIENE TALENTO. NOSOTROS VAMOS A JUNTARLO.**
-- **36 horas. 250 de los mejores builders menores de 30.** HackSpain 2026 es el punto de encuentro de los jóvenes que van a posicionar a España como líder de talento tech joven.
-- Con los mejores fondos, startups y figuras del ecosistema español.
-
-### 3) Tracks originales
-
-- Headline: **TRACKS ORIGINALES.**
-- **Compute gratis para todos.**
-- Cinco tracks con retos de las mejores **startups** de España: **Maisa**, **HappyRobot**, **Prosper AI**, **Embat** y **THEKER Robotics**.
-
-### 4) Gran premio
-
-- Headline: **1 GRAN PREMIO.**
-- **5.000 €** para el equipo ganador.
-- **Juzgado por los mejores VCs del panorama español.**
-- Patrocinadores y jurado del gran premio: **JME Ventures**, **Kfund**, **Kibo Ventures**, **Enzo Ventures** y **Acurio Ventures**.
-
-### 5) Apúntate
-
-- Headline: **INSCRIPCIÓN ABIERTA.**
-- CTA: **Apúntate ya** → https://hackspain.com/signup
-
-## Signup / registration / interest
-
-- **Inscripción:** https://hackspain.com/signup — complete an application; every candidate is reviewed before acceptance.
-- **Pre-signup** (`/pre-signup`) redirects to `/signup`.
-- For updates: **@hackspain26** on **X** and **Instagram**, and **leo@hackspain.com**.
-
-## Ambassador program
-
-- **Dedicated page:** **https://hackspain.com/ambassador**
-- Headline: **Sé la cara de HackSpain en tu campus.**
-- Apply via **https://hackspain.com/signup** and select the ambassador option.
-
-## Frequently asked questions (for extraction)
-
-### What is HackSpain / Hack Spain?
-
-**HackSpain** is the hackathon to unite Spain's best young **builders**. **Hack Spain** (two words) is a common search variant for the same initiative.
-
-### When and where is HackSpain 2026?
-
-**18 al 20 de Septiembre 2026** at **UPM - ETSIT**, **Madrid, Spain**. Authoritative details: **https://hackspain.com**.
-
-### How do I join or register?
-
-Use **https://hackspain.com/signup**. Follow **@hackspain26** on **X** or **Instagram** or email **leo@hackspain.com**.
-
-### How do I become a HackSpain ambassador?
-
-Read **https://hackspain.com/ambassador**. Apply through **https://hackspain.com/signup**.
-
-### What are the sponsors?
-
-Current sponsors: **Google**, **K Fund**, **fal.ai**, **Exa**, **UPM**, **OneCoWork**, **Cursor**, **Exponential**, **HappyRobot**, **Embat**, **Prosper AI**, **Maisa**, **THEKER Robotics**. **Many more sponsors are expected.** Authoritative list: **https://hackspain.com/sponsors**.
-
-### What are the prizes?
-
-**One grand prize of 5.000 €** for the winning team, across **original tracks**, **judged by leading Spanish VCs**. Sponsored and judged by **JME Ventures**, **Kfund**, **Kibo Ventures**, **Enzo Ventures** and **Acurio Ventures**. Details at **https://hackspain.com/gran-premio**.
-
-### What tracks or themes does HackSpain offer?
-
-**Tracks originales.** Five tracks with challenges from top Spanish startups — **Maisa**, **HappyRobot**, **Prosper AI**, **Embat**, **THEKER Robotics** — with **free compute**. Details at **https://hackspain.com/tracks**.
-
-### What structured data does the site publish?
-
-Pages include **JSON-LD** for **Organization**, **WebSite**, **WebPage**, **Event** (HackSpain 2026, September 18–20), and **FAQPage**, with **inLanguage: es** where applicable.
-
-## Canonical URLs (prefer these over copies)
-
-- Indexable sections: https://hackspain.com/ · https://hackspain.com/mission · https://hackspain.com/tracks · https://hackspain.com/gran-premio · https://hackspain.com/apuntate
-- Signup: https://hackspain.com/signup
-- Ambassador: https://hackspain.com/ambassador
-- Privacy: https://hackspain.com/privacy
-- Sitemap: https://hackspain.com/sitemap.xml
-- This file: https://hackspain.com/llms.txt
-
-## Freshness and precedence
-
-- Copy and schema target **HackSpain 2026** and **18–20 September 2026** at **UPM - ETSIT**.
-- If this file disagrees with **hackspain.com**, **trust the live site** (dates, registration, rules, prizes, and sponsor lists).
-
-## What HackSpain is not
-
-- Not a generic “learn to code” product page or permanent school.
-- Not a job board.
-- Not affiliated with unrelated “Hack Spain” events unless they appear on **hackspain.com**.
+- [HackSpain on X](https://x.com/hackspain26): Official announcements and updates.
+- [HackSpain on Instagram](https://www.instagram.com/hackspain26/): Official visual updates and announcements.

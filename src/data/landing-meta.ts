@@ -250,7 +250,7 @@ export function jsonLdFaq() {
         name: "¿Cómo me apunto o me registro en HackSpain?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Completa tu solicitud en hackspain.com/signup. Revisamos cada candidatura antes de confirmar la plaza. También puedes seguir @hackspain26 en X e Instagram o escribir a leo@hackspain.com.",
+          text: "Completa tu solicitud en hackspain.com/signup. Revisamos cada candidatura antes de confirmar la plaza. También puedes seguir @hackspain26 en X e Instagram o escribir a contact@hackspain.com.",
         },
       },
       {
@@ -298,7 +298,7 @@ export function jsonLdFaq() {
         name: "¿Cómo seguir a HackSpain en redes?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "En X (Twitter): @hackspain26. Instagram: @hackspain26 (instagram.com/hackspain26). Contacto: leo@hackspain.com.",
+          text: "En X (Twitter): @hackspain26. Instagram: @hackspain26 (instagram.com/hackspain26). Contacto: contact@hackspain.com.",
         },
       },
       {

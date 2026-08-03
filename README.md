@@ -62,12 +62,9 @@ Schema and client live in `src/db/`. Drizzle Kit is configured in `drizzle.confi
 ## Signup workflow
 
 The public application form lives at `/signup`. New applications are stored as
-pending until they are reviewed. The accepted-candidate email reads its private
-community link from `WHATSAPP_COMMUNITY_URL`, and pre-signup invitation links
-use `SITE_URL` as their public origin. Every pre-signup also has a separate,
-readable share code (for example, `disamtech-k7x9p`) that invitation emails use
-in `/signup?ref=…`, so referrals can be attributed without exposing the private
-prefill token.
+pending until they are reviewed. Historical pre-signup records can prefill the
+application form through private invitation tokens, while public referral codes
+in `/signup?ref=…` attribute how applicants found the event.
 
 Transactional email is sent through Resend. Verify the sending domain configured
 in `RESEND_FROM`, then set `RESEND_API_KEY` and `RESEND_FROM` in Vercel. The
@@ -84,5 +81,5 @@ src/
 ├── layouts/        # Astro layouts
 ├── lib/            # Shared server and client utilities
 ├── pages/          # File-based routes
-└── workflows/      # Workflow definitions (e.g. pre-signup follow-up)
+└── workflows/      # Workflow definitions (e.g. cancellation email delivery)
 ```

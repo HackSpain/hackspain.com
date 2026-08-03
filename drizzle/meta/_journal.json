@@ -92,6 +92,13 @@
       "when": 1785490256122,
       "tag": "0012_daffy_doomsday",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785773594622,
+      "tag": "0013_remove_legacy_signup_data",
+      "breakpoints": true
     }
   ]
 }

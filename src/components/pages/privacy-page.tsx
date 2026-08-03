@@ -29,7 +29,7 @@ const PRIVACY: {
       title: "1. Responsable del tratamiento",
       paragraphs: [
         "El responsable del tratamiento es la **Asociación HackSpain** («nosotros», «HackSpain»), asociación sin ánimo de lucro inscrita en España, en el marco de la iniciativa HackSpain 2026 y actividades relacionadas.",
-        "Para consultas sobre protección de datos y ejercicio de derechos: leo@hackspain.com.",
+        "Para consultas sobre protección de datos y ejercicio de derechos: contact@hackspain.com.",
         "Tratamos los datos personales de conformidad con el Reglamento (UE) 2016/679 (**RGPD**) y, en su caso, con la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (**LOPDGDD**).",
       ],
     },
@@ -94,7 +94,7 @@ const PRIVACY: {
       title: "8. Tus derechos",
       paragraphs: [
         "En virtud del RGPD y la LOPDGDD puedes, con los límites legales: acceder a tus datos; rectificar los inexactos; suprimirlos («derecho al olvido») cuando proceda; limitar el tratamiento; oponerte al basado en interés legítimo (incluidos ciertos supuestos de comunicación a patrocinadores cuando esa sea la base); recibir tus datos en formato estructurado (portabilidad) cuando el tratamiento se base en consentimiento o contrato y sea automatizado; y retirar el consentimiento.",
-        "Para ejercer derechos frente a la **Asociación HackSpain**, escribe a leo@hackspain.com. Si tu solicitud se refiere al tratamiento por un patrocinador o colaborador como **responsable independiente**, también debes dirigirte a ellos mediante la información de su política de privacidad; te asistiremos cuando el **RGPD** nos obligue (p. ej. información sobre destinatarios).",
+        "Para ejercer derechos frente a la **Asociación HackSpain**, escribe a contact@hackspain.com. Si tu solicitud se refiere al tratamiento por un patrocinador o colaborador como **responsable independiente**, también debes dirigirte a ellos mediante la información de su política de privacidad; te asistiremos cuando el **RGPD** nos obligue (p. ej. información sobre destinatarios).",
         "Puedes presentar reclamación ante una autoridad de control; en España, la Agencia Española de Protección de Datos (AEPD — https://www.aepd.es).",
       ],
     },

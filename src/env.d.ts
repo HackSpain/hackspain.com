@@ -16,8 +16,6 @@ interface ImportMetaEnv {
   readonly RESEND_FROM?: string;
   /** Canonical public origin used in transactional email links. */
   readonly SITE_URL?: string;
-  /** Server-only WhatsApp community invite included after approval. */
-  readonly WHATSAPP_COMMUNITY_URL?: string;
 }
 
 interface ImportMeta {

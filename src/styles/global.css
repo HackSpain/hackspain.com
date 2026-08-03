@@ -95,18 +95,6 @@ body {
     text-wrap: pretty;
   }
 
-  .hs-mosaic-hero {
-    flex-shrink: 1;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    min-height: 0;
-    font-family: var(--font-bungee);
-    font-size: clamp(0.7rem, min(8.5cqw, 16cqh), 2.8rem);
-    line-height: 1.08;
-    text-wrap: balance;
-  }
-
   .hs-mosaic-hero-lg {
     flex-shrink: 1;
     width: 100%;
@@ -132,43 +120,12 @@ body {
     text-wrap: balance;
   }
 
-  .hs-mosaic-headline-sm {
-    font-family: var(--font-bungee);
-    font-size: clamp(0.6rem, min(10cqw, 9cqh), 1.8rem);
-    line-height: 1.08;
-    text-wrap: balance;
-  }
-
-  .hs-mosaic-btn {
-    font-size: clamp(0.48rem, min(8.5cqw, 5cqh), 0.78rem);
-    line-height: 1.15;
-  }
-
   .hs-mosaic-footer {
     font-size: clamp(0.62rem, 6.5cqw, 1rem);
   }
 
   .hs-mosaic-footer-sm {
     font-size: clamp(0.58rem, 5.5cqw, 0.9rem);
-  }
-
-  .hs-mosaic-logo {
-    width: auto;
-    height: clamp(0.85rem, 22cqh, 3rem);
-  }
-
-  .hs-mosaic-logo-lg {
-    width: auto;
-    max-width: 88%;
-    height: clamp(1.25rem, 38cqh, 5.5rem);
-    max-height: 80%;
-  }
-
-  .hs-mosaic-logo-xl {
-    width: auto;
-    max-width: 94%;
-    height: clamp(1.5rem, 48cqh, 8rem);
-    max-height: 92%;
   }
 }
 

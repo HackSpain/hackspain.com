@@ -37,7 +37,7 @@ export const HEARD_FROM_OPTIONS: readonly {
   { id: "other", label: "Otro" },
 ] as const;
 
-export const DIETARY_RESTRICTION_IDS = [
+const DIETARY_RESTRICTION_IDS = [
   "vegetarian",
   "vegan",
   "gluten_free",
@@ -75,18 +75,6 @@ export const OCCUPATION_STATUS_OPTIONS: readonly {
   { id: "student", label: "Estudiante" },
   { id: "working", label: "Trabajo" },
 ] as const;
-
-export function formatDietaryRestrictions(
-  restrictions: readonly string[]
-): string {
-  return restrictions
-    .map(
-      (restriction) =>
-        DIETARY_RESTRICTION_OPTIONS.find(({ id }) => id === restriction)
-          ?.label ?? restriction
-    )
-    .join(", ");
-}
 
 export function formatOccupationStatuses(statuses: readonly string[]): string {
   return statuses
@@ -603,66 +591,6 @@ export function parseSignupBody(
   }
   if (msg === "invalid_invitation") {
     return { ok: false, error: "invalid_invitation", status: 400 };
-  }
-  return { ok: false, error: "invalid_request", status: 400 };
-}
-
-const preSignupBodySchema = z
-  .object({
-    fullName: z
-      .string()
-      .max(SIGNUP_MAX.name)
-      .transform((s) => s.trim())
-      .refine((s) => s.length > 0, { message: "fullName_required" }),
-    email: z
-      .string()
-      .max(SIGNUP_MAX.email)
-      .transform((s) => s.trim().toLowerCase())
-      .refine((s) => EMAIL_RE.test(s), { message: "invalid_email" }),
-    xUrl: socialField("x"),
-    linkedinUrl: socialField("linkedin"),
-    githubUrl: socialField("github"),
-    webUrl: socialField("web"),
-    referralCode: referralCodeField,
-  })
-  .superRefine((data, ctx) => {
-    const has =
-      data.xUrl.length > 0 ||
-      data.linkedinUrl.length > 0 ||
-      data.githubUrl.length > 0 ||
-      data.webUrl.length > 0;
-    if (!has) {
-      ctx.addIssue({
-        code: "custom",
-        message: "social_required",
-        path: ["xUrl"],
-      });
-    }
-  });
-
-export type PreSignupBodyParsed = z.infer<typeof preSignupBodySchema>;
-
-export function parsePreSignupBody(
-  body: unknown
-):
-  | { ok: true; data: PreSignupBodyParsed }
-  | { ok: false; error: string; status: number } {
-  const r = preSignupBodySchema.safeParse(body);
-  if (r.success) {
-    return { ok: true, data: r.data };
-  }
-  const msg = r.error.issues[0]?.message ?? "validation_error";
-  if (msg === "social_required") {
-    return { ok: false, error: "social_required", status: 400 };
-  }
-  if (msg === "invalid_social_url") {
-    return { ok: false, error: "invalid_social_url", status: 400 };
-  }
-  if (msg === "invalid_email") {
-    return { ok: false, error: "invalid_email", status: 400 };
-  }
-  if (msg === "fullName_required") {
-    return { ok: false, error: "fullName_required", status: 400 };
   }
   return { ok: false, error: "invalid_request", status: 400 };
 }
