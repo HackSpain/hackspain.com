@@ -143,9 +143,9 @@ interface StoredFields {
   githubUrl: string;
   heardFromOther: string;
   heardFromSources: HeardFromSourceId[];
+  isUnderThirty: boolean;
   linkedinUrl: string;
   occupationStatuses: OccupationStatusId[];
-  isUnderThirty: boolean;
   studyInstitution: string;
   wantsAmbassador: boolean;
   webUrl: string;
@@ -193,44 +193,25 @@ function readStoredFields(): StoredFields {
     const o = JSON.parse(raw) as Record<string, unknown>;
     const s = (k: keyof StoredFields) =>
       typeof o[k] === "string" ? (o[k] as string) : "";
-    const wantsAmbassador =
-      o.wantsAmbassador === true || o.wantsAmbassador === "true";
+    const wantsAmbassador = o.wantsAmbassador === true;
     const occupationIds = OCCUPATION_STATUS_IDS as readonly string[];
-    let occupationValues: unknown[] = [];
-    if (Array.isArray(o.occupationStatuses)) {
-      occupationValues = o.occupationStatuses;
-    } else if (typeof o.occupationStatus === "string") {
-      occupationValues = [o.occupationStatus];
-    }
+    const occupationValues = Array.isArray(o.occupationStatuses)
+      ? o.occupationStatuses
+      : [];
     const occupationStatuses = occupationValues.filter(
       (value): value is OccupationStatusId =>
         typeof value === "string" && occupationIds.includes(value)
     );
     const ids = HEARD_FROM_SOURCE_IDS as readonly string[];
-    let sourceValues: unknown[] = [];
-    if (Array.isArray(o.heardFromSources)) {
-      sourceValues = o.heardFromSources;
-    } else if (typeof o.heardFromSource === "string") {
-      sourceValues = [o.heardFromSource];
-    }
-    let heardFromSources = sourceValues.filter(
+    const sourceValues = Array.isArray(o.heardFromSources)
+      ? o.heardFromSources
+      : [];
+    const heardFromSources = sourceValues.filter(
       (value): value is HeardFromSourceId =>
         typeof value === "string" && ids.includes(value)
     );
-    let heardFromOther =
+    const heardFromOther =
       typeof o.heardFromOther === "string" ? o.heardFromOther : "";
-    const legacy = typeof o.heardFrom === "string" ? o.heardFrom.trim() : "";
-    if (heardFromSources.length === 0 && legacy) {
-      if (legacy.startsWith("other:")) {
-        heardFromSources = ["other"];
-        heardFromOther = legacy.slice(6).trim();
-      } else if (ids.includes(legacy)) {
-        heardFromSources = [legacy as HeardFromSourceId];
-      } else {
-        heardFromSources = ["other"];
-        heardFromOther = legacy;
-      }
-    }
     return {
       fullName: s("fullName"),
       email: s("email"),
@@ -340,7 +321,7 @@ const t = {
   applicationReceived:
     "¡Gracias! Hemos recibido tu solicitud. Espera nuestra respuesta por correo; te escribiremos en cuanto podamos.",
   alreadyApplied:
-    "Ya enviaste una solicitud desde este navegador. Te contactaremos por correo.",
+    "Ya tenemos una solicitud con este correo. No necesitas volver a enviarla; te contactaremos por email cuando haya novedades.",
   signupsClosedSubtitle:
     "El plazo para enviar solicitudes ha terminado. Síguenos en redes para no perderte lo que viene.",
   signupsClosed:
@@ -356,8 +337,6 @@ const t = {
   errorInvalidSocialUrl:
     "Uno o más enlaces no son válidos para ese campo (revisa X, LinkedIn, GitHub o tu web).",
   errorInvalidEmail: "Introduce un correo electrónico válido.",
-  errorDuplicateEmail:
-    "Ya hay una solicitud con este correo. Si necesitas cambiar algo, escríbenos o usa otro email.",
   errorAccessDenied:
     "No hemos podido verificar la solicitud. Recarga la página e inténtalo de nuevo, o usa un navegador normal con JavaScript activado.",
   errorInvitation:
@@ -770,37 +749,38 @@ export function SignupPage() {
           level: "info",
           message: "signup duplicate email (expected)",
         });
-      } else {
-        addBreadcrumb({
-          category: "http",
-          type: "http",
-          data: { status: res.status, error: resJson.error },
-          level: "error",
-        });
-        withScope((scope) => {
-          scope.setTag("flow", "signup");
-          scope.setTag("source", "client");
-          scope.setTag("http_status", String(res.status));
-          if (resJson.error) {
-            scope.setTag("api_error", resJson.error);
-          }
-          scope.setContext("form", {
-            wantsAmbassador: data.wantsAmbassador,
-            heardFrom: data.heardFromSources,
-            occupationStatuses: data.occupationStatuses,
-          });
-          captureMessage(
-            `Signup: API rejected ${res.status}${resJson.error ? ` (${resJson.error})` : ""}`,
-            "error"
-          );
-        });
+        clearStoredFields();
+        setAppliedFlag();
+        setStatus("alreadyApplied");
+        return;
       }
+      addBreadcrumb({
+        category: "http",
+        type: "http",
+        data: { status: res.status, error: resJson.error },
+        level: "error",
+      });
+      withScope((scope) => {
+        scope.setTag("flow", "signup");
+        scope.setTag("source", "client");
+        scope.setTag("http_status", String(res.status));
+        if (resJson.error) {
+          scope.setTag("api_error", resJson.error);
+        }
+        scope.setContext("form", {
+          wantsAmbassador: data.wantsAmbassador,
+          heardFrom: data.heardFromSources,
+          occupationStatuses: data.occupationStatuses,
+        });
+        captureMessage(
+          `Signup: API rejected ${res.status}${resJson.error ? ` (${resJson.error})` : ""}`,
+          "error"
+        );
+      });
       if (res.status === 403) {
         setErrorMessage(t.errorAccessDenied);
       } else if (isInvitationError) {
         setErrorMessage(t.errorInvitation);
-      } else if (res.status === 409 || resJson.error === "duplicate_email") {
-        setErrorMessage(t.errorDuplicateEmail);
       } else if (resJson.error === "social_required") {
         setErrorMessage(t.errorSocialRequired);
       } else if (resJson.error === "invalid_social_url") {

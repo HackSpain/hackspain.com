@@ -14,24 +14,6 @@ function stripTrailingSlash(pathname: string): string {
   return s === "" ? "/" : s;
 }
 
-function redirectIfLegacyLocalePath(
-  pathname: string,
-  baseUrl: string
-): Response | null {
-  const p = stripTrailingSlash(pathname);
-  const parts = p === "/" ? [] : p.slice(1).split("/").filter(Boolean);
-  if (parts.length === 0) {
-    return null;
-  }
-  const first = parts[0];
-  if (first !== "en" && first !== "es") {
-    return null;
-  }
-  const rest = parts.slice(1);
-  const targetPath = rest.length === 0 ? "/" : `/${rest.join("/")}`;
-  return Response.redirect(new URL(targetPath, baseUrl), 301);
-}
-
 function isLandingDocumentPath(pathname: string): boolean {
   const p = stripTrailingSlash(pathname);
   if (p === "/") {
@@ -116,10 +98,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const { request } = context;
   const method = request.method;
   const path = new URL(request.url).pathname;
-  const redirect = redirectIfLegacyLocalePath(path, request.url);
-  if (redirect) {
-    return redirect;
-  }
 
   if (method !== "GET" && method !== "HEAD") {
     return next();
