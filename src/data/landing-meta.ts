@@ -1,3 +1,5 @@
+import { areSignupsClosed } from "./signup-deadline";
+
 const SITE = "https://hackspain.com";
 
 /** Official profiles for CTAs (footer, signup end screen, etc.). */
@@ -33,20 +35,40 @@ const PAGES: PageSeo[] = [
     ogImageAlt: "HackSpain 2026 — España tiene talento",
   },
   {
-    title: "Tracks originales, 1 gran premio | HackSpain 2026",
+    title: "Tracks originales | HackSpain 2026",
     description:
-      "Compute gratis para todos. Retos de las mejores startups de España, y un gran premio con un jurado estrella.",
-    ogImageAlt: "HackSpain 2026 — tracks originales, 1 gran premio",
+      "Compute gratis para todos. Cinco tracks con retos de las mejores startups de España: Maisa, HappyRobot, Prosper AI, Embat y THEKER Robotics.",
+    ogImageAlt: "HackSpain 2026 — tracks originales",
   },
   {
-    title: "Pre inscripción abierta | HackSpain 2026",
-    description: "Pre inscripción abierta para HackSpain 2026. Apúntate ya.",
-    ogImageAlt: "HackSpain 2026 — pre inscripción abierta",
+    title: "1 gran premio de 5.000 € | HackSpain 2026",
+    description:
+      "Un único gran premio de 5.000 € para el equipo ganador de HackSpain 2026, con el patrocinio de JME Ventures, Kfund, Kibo Ventures, Enzo Ventures y Acurio Ventures.",
+    ogImageAlt: "HackSpain 2026 — 1 gran premio de 5.000 €",
+  },
+  {
+    title: "Inscripción abierta | HackSpain 2026",
+    description: "Inscripción abierta para HackSpain 2026. Envía tu solicitud.",
+    ogImageAlt: "HackSpain 2026 — inscripción abierta",
   },
 ];
 
+/** The signup section is the last one; its copy depends on the deadline. */
+const SIGNUP_SECTION_INDEX = PAGES.length - 1;
+
+const SIGNUP_CLOSED_SEO: PageSeo = {
+  title: "Inscripción cerrada | HackSpain 2026",
+  description:
+    "La inscripción para HackSpain 2026 está cerrada. Síguenos en redes para enterarte de la próxima edición.",
+  ogImageAlt: "HackSpain 2026 — inscripción cerrada",
+};
+
 export function seoForSectionIndex(i: number): PageSeo {
-  return PAGES[Math.max(0, Math.min(PAGES.length - 1, i))] ?? PAGES[0];
+  const index = Math.max(0, Math.min(PAGES.length - 1, i));
+  if (index === SIGNUP_SECTION_INDEX && areSignupsClosed()) {
+    return SIGNUP_CLOSED_SEO;
+  }
+  return PAGES[index] ?? PAGES[0];
 }
 
 export const SIGNUP_KEYWORDS =
@@ -55,20 +77,9 @@ export const SIGNUP_KEYWORDS =
 export function signupSeo(): PageSeo {
   return {
     title: "Apúntate al hackathon | HackSpain 2026",
-    description: "Cuéntanos quién eres — te avisamos sobre HackSpain 2026.",
-    ogImageAlt: "HackSpain 2026 — apúntate al hackathon",
-  };
-}
-
-export const PRE_SIGNUP_KEYWORDS =
-  "pre-inscripción HackSpain, lista de espera hackathon España, hackathon Madrid 2026, registro previo";
-
-export function preSignupSeo(): PageSeo {
-  return {
-    title: "Pre-inscripción | HackSpain 2026",
     description:
-      "Déjanos tus datos básicos — te avisamos para completar la inscripción a HackSpain 2026.",
-    ogImageAlt: "HackSpain 2026 — pre-inscripción",
+      "Completa tu solicitud para HackSpain 2026. Revisamos cada candidatura antes de confirmar la plaza.",
+    ogImageAlt: "HackSpain 2026 — apúntate al hackathon",
   };
 }
 
@@ -102,8 +113,9 @@ const KEYWORDS_BASE =
 const KEYWORDS_BY_SECTION = [
   "MADRID 2026, 18 al 20 de Septiembre, 250 participantes",
   "España tiene talento, talento tech joven, 36 horas",
-  "tracks originales, gran premio, compute gratis, startups España",
-  "pre inscripción abierta, apúntate HackSpain",
+  "tracks originales, compute gratis, startups España",
+  "gran premio, 5.000 euros, premio hackathon, fondos españoles, venture capital España",
+  "inscripción abierta, apúntate HackSpain",
 ];
 
 export function keywordsForSectionIndex(i: number): string {
@@ -238,7 +250,7 @@ export function jsonLdFaq() {
         name: "¿Cómo me apunto o me registro en HackSpain?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Deja tus datos en hackspain.com/pre-signup (pre-inscripción). También puedes seguir @hackspain26 en X e Instagram o escribir a leo@hackspain.com.",
+          text: "Completa tu solicitud en hackspain.com/signup. Revisamos cada candidatura antes de confirmar la plaza. También puedes seguir @hackspain26 en X e Instagram o escribir a contact@hackspain.com.",
         },
       },
       {
@@ -246,7 +258,7 @@ export function jsonLdFaq() {
         name: "¿Cómo puedo ser embajador o embajadora de HackSpain?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Lee el programa en hackspain.com/ambassador. Para apuntarte deja tus datos en hackspain.com/pre-signup y te avisaremos cuando abramos la inscripción completa.",
+          text: "Lee el programa en hackspain.com/ambassador. Puedes solicitar plaza y marcar que quieres participar como embajador o embajadora en hackspain.com/signup.",
         },
       },
       {
@@ -286,7 +298,7 @@ export function jsonLdFaq() {
         name: "¿Cómo seguir a HackSpain en redes?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "En X (Twitter): @hackspain26. Instagram: @hackspain26 (instagram.com/hackspain26). Contacto: leo@hackspain.com.",
+          text: "En X (Twitter): @hackspain26. Instagram: @hackspain26 (instagram.com/hackspain26). Contacto: contact@hackspain.com.",
         },
       },
       {

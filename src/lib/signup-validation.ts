@@ -12,7 +12,7 @@ const SIGNUP_MAX = {
 
 export const HEARD_FROM_SOURCE_IDS = [
   "x",
-  "instagram",
+  "exponential",
   "linkedin",
   "friend",
   "school",
@@ -28,7 +28,7 @@ export const HEARD_FROM_OPTIONS: readonly {
   label: string;
 }[] = [
   { id: "x", label: "X (Twitter)" },
-  { id: "instagram", label: "Instagram" },
+  { id: "exponential", label: "Exponential" },
   { id: "linkedin", label: "LinkedIn" },
   { id: "friend", label: "Un amigo o compañero" },
   { id: "school", label: "Universidad, FP o bootcamp" },
@@ -37,19 +37,74 @@ export const HEARD_FROM_OPTIONS: readonly {
   { id: "other", label: "Otro" },
 ] as const;
 
-export function formatHeardFromStored(stored: string): string {
-  if (!stored) {
-    return "";
-  }
-  if (stored.startsWith("other:")) {
-    const detail = stored.slice(6).trim();
-    return detail.length > 0 ? `Otro: ${detail}` : "Otro";
-  }
-  const row = HEARD_FROM_OPTIONS.find((o) => o.id === stored);
-  return row?.label ?? stored;
+const DIETARY_RESTRICTION_IDS = [
+  "vegetarian",
+  "vegan",
+  "gluten_free",
+  "lactose_free",
+  "halal",
+  "kosher",
+  "allergies",
+  "other",
+] as const;
+
+export type DietaryRestrictionId = (typeof DIETARY_RESTRICTION_IDS)[number];
+
+export const DIETARY_RESTRICTION_OPTIONS: readonly {
+  id: DietaryRestrictionId;
+  label: string;
+}[] = [
+  { id: "vegetarian", label: "Vegetariana" },
+  { id: "vegan", label: "Vegana" },
+  { id: "gluten_free", label: "Sin gluten" },
+  { id: "lactose_free", label: "Sin lactosa" },
+  { id: "halal", label: "Halal" },
+  { id: "kosher", label: "Kosher" },
+  { id: "allergies", label: "Alergias" },
+  { id: "other", label: "Otra" },
+] as const;
+
+export const OCCUPATION_STATUS_IDS = ["student", "working"] as const;
+
+export type OccupationStatusId = (typeof OCCUPATION_STATUS_IDS)[number];
+
+export const OCCUPATION_STATUS_OPTIONS: readonly {
+  id: OccupationStatusId;
+  label: string;
+}[] = [
+  { id: "student", label: "Estudiante" },
+  { id: "working", label: "Trabajo" },
+] as const;
+
+export function formatOccupationStatuses(statuses: readonly string[]): string {
+  return statuses
+    .map(
+      (status) =>
+        OCCUPATION_STATUS_OPTIONS.find(({ id }) => id === status)?.label ??
+        status
+    )
+    .join(", ");
+}
+
+export function formatHeardFromStored(storedValues: readonly string[]): string {
+  return storedValues
+    .map((stored) => {
+      if (stored.startsWith("other:")) {
+        const detail = stored.slice(6).trim();
+        return detail.length > 0 ? `Otro: ${detail}` : "Otro";
+      }
+      if (stored === "instagram") {
+        return "Instagram";
+      }
+      const row = HEARD_FROM_OPTIONS.find((option) => option.id === stored);
+      return row?.label ?? stored;
+    })
+    .join(", ");
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const PROTOCOL_FULL_URI_START_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
 const HOSTNAME_CHARS_ONLY_RE = /^[a-z0-9.-]+$/i;
@@ -345,25 +400,55 @@ const signupBodySchema = z
       .string()
       .max(SIGNUP_MAX.longText)
       .transform((s) => s.trim()),
+    dietaryRestrictions: z.preprocess(
+      (value) => (Array.isArray(value) ? value : []),
+      z
+        .array(z.enum(DIETARY_RESTRICTION_IDS))
+        .max(DIETARY_RESTRICTION_IDS.length)
+        .transform((values) => [...new Set(values)])
+    ),
+    dietaryDetails: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.longText)
+        .transform((value) => value.trim())
+    ),
+    dietaryDataConsent: z.boolean().optional().default(false),
+    isUnderThirty: z.boolean().optional().default(false),
+    occupationStatuses: z.preprocess(
+      (value) => (Array.isArray(value) ? value : []),
+      z
+        .array(z.enum(OCCUPATION_STATUS_IDS))
+        .max(OCCUPATION_STATUS_IDS.length)
+        .transform((values) => [...new Set(values)])
+    ),
+    studyInstitution: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.name)
+        .transform((value) => value.trim())
+    ),
+    employer: z.preprocess(
+      (value) => (typeof value === "string" ? value : ""),
+      z
+        .string()
+        .max(SIGNUP_MAX.name)
+        .transform((value) => value.trim())
+    ),
     wantsAmbassador: z.boolean().optional().default(false),
     ambassadorMotivation: z
       .string()
       .max(SIGNUP_MAX.longText)
       .transform((s) => s.trim()),
-    ambassadorStudyWhere: z
-      .string()
-      .max(SIGNUP_MAX.longText)
-      .transform((s) => s.trim()),
-    heardFromSource: z.preprocess(
-      (v) => (typeof v === "string" ? v.trim() : ""),
+    heardFromSources: z.preprocess(
+      (value) => (Array.isArray(value) ? value : []),
       z
-        .string()
+        .array(z.enum(HEARD_FROM_SOURCE_IDS))
         .min(1, { message: "heard_from_required" })
-        .refine(
-          (s) => (HEARD_FROM_SOURCE_IDS as readonly string[]).includes(s),
-          { message: "heard_from_invalid" }
-        )
-        .transform((s) => s as HeardFromSourceId)
+        .max(HEARD_FROM_SOURCE_IDS.length)
+        .transform((values) => [...new Set(values)])
     ),
     heardFromOther: z.preprocess(
       (v) => (typeof v === "string" ? v : ""),
@@ -373,6 +458,15 @@ const signupBodySchema = z
         .transform((s) => s.trim())
     ),
     referralCode: referralCodeField,
+    invitationToken: z.preprocess(
+      (value) => (typeof value === "string" ? value.trim() : ""),
+      z
+        .string()
+        .max(64)
+        .refine((value) => value === "" || UUID_RE.test(value), {
+          message: "invalid_invitation",
+        })
+    ),
   })
   .superRefine((data, ctx) => {
     const has =
@@ -387,23 +481,53 @@ const signupBodySchema = z
         path: ["xUrl"],
       });
     }
-    if (data.wantsAmbassador) {
-      if (data.ambassadorMotivation.length === 0) {
-        ctx.addIssue({
-          code: "custom",
-          message: "ambassador_motivation_required",
-          path: ["ambassadorMotivation"],
-        });
-      }
-      if (data.ambassadorStudyWhere.length === 0) {
-        ctx.addIssue({
-          code: "custom",
-          message: "ambassador_study_where_required",
-          path: ["ambassadorStudyWhere"],
-        });
-      }
+    if (data.wantsAmbassador && data.ambassadorMotivation.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "ambassador_motivation_required",
+        path: ["ambassadorMotivation"],
+      });
     }
-    if (data.heardFromSource === "other" && data.heardFromOther.length === 0) {
+    const hasDietaryData =
+      data.dietaryRestrictions.length > 0 || data.dietaryDetails.length > 0;
+    if (hasDietaryData && !data.dietaryDataConsent) {
+      ctx.addIssue({
+        code: "custom",
+        message: "dietary_consent_required",
+        path: ["dietaryDataConsent"],
+      });
+    }
+    if (!data.isUnderThirty) {
+      ctx.addIssue({
+        code: "custom",
+        message: "under_thirty_required",
+        path: ["isUnderThirty"],
+      });
+    }
+    if (
+      data.occupationStatuses.includes("student") &&
+      data.studyInstitution.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "study_institution_required",
+        path: ["studyInstitution"],
+      });
+    }
+    if (
+      data.occupationStatuses.includes("working") &&
+      data.employer.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "employer_required",
+        path: ["employer"],
+      });
+    }
+    if (
+      data.heardFromSources.includes("other") &&
+      data.heardFromOther.length === 0
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "heard_from_other_required",
@@ -411,11 +535,10 @@ const signupBodySchema = z
       });
     }
   })
-  .transform(({ heardFromSource, heardFromOther, ...rest }) => {
-    const heardFrom =
-      heardFromSource === "other"
-        ? `other:${heardFromOther.trim()}`
-        : heardFromSource;
+  .transform(({ heardFromSources, heardFromOther, ...rest }) => {
+    const heardFrom = heardFromSources.map((source) =>
+      source === "other" ? `other:${heardFromOther.trim()}` : source
+    );
     return { ...rest, heardFrom };
   });
 
@@ -445,110 +568,31 @@ export function parseSignupBody(
   if (msg === "fullName_required") {
     return { ok: false, error: "fullName_required", status: 400 };
   }
+  if (msg === "study_institution_required") {
+    return { ok: false, error: "study_institution_required", status: 400 };
+  }
+  if (msg === "employer_required") {
+    return { ok: false, error: "employer_required", status: 400 };
+  }
+  if (msg === "dietary_consent_required") {
+    return { ok: false, error: "dietary_consent_required", status: 400 };
+  }
+  if (msg === "under_thirty_required") {
+    return { ok: false, error: "under_thirty_required", status: 400 };
+  }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, error: "heard_from_required", status: 400 };
   }
   if (msg === "ambassador_motivation_required") {
     return { ok: false, error: "ambassador_motivation_required", status: 400 };
   }
-  if (msg === "ambassador_study_where_required") {
-    return { ok: false, error: "ambassador_study_where_required", status: 400 };
-  }
   if (msg === "heard_from_other_required") {
     return { ok: false, error: "heard_from_other_required", status: 400 };
   }
-  return { ok: false, error: "invalid_request", status: 400 };
-}
-
-const preSignupBodySchema = z
-  .object({
-    fullName: z
-      .string()
-      .max(SIGNUP_MAX.name)
-      .transform((s) => s.trim())
-      .refine((s) => s.length > 0, { message: "fullName_required" }),
-    email: z
-      .string()
-      .max(SIGNUP_MAX.email)
-      .transform((s) => s.trim().toLowerCase())
-      .refine((s) => EMAIL_RE.test(s), { message: "invalid_email" }),
-    xUrl: socialField("x"),
-    linkedinUrl: socialField("linkedin"),
-    githubUrl: socialField("github"),
-    webUrl: socialField("web"),
-    referralCode: referralCodeField,
-  })
-  .superRefine((data, ctx) => {
-    const has =
-      data.xUrl.length > 0 ||
-      data.linkedinUrl.length > 0 ||
-      data.githubUrl.length > 0 ||
-      data.webUrl.length > 0;
-    if (!has) {
-      ctx.addIssue({
-        code: "custom",
-        message: "social_required",
-        path: ["xUrl"],
-      });
-    }
-  });
-
-export type PreSignupBodyParsed = z.infer<typeof preSignupBodySchema>;
-
-export function parsePreSignupBody(
-  body: unknown
-):
-  | { ok: true; data: PreSignupBodyParsed }
-  | { ok: false; error: string; status: number } {
-  const r = preSignupBodySchema.safeParse(body);
-  if (r.success) {
-    return { ok: true, data: r.data };
-  }
-  const msg = r.error.issues[0]?.message ?? "validation_error";
-  if (msg === "social_required") {
-    return { ok: false, error: "social_required", status: 400 };
-  }
-  if (msg === "invalid_social_url") {
-    return { ok: false, error: "invalid_social_url", status: 400 };
-  }
-  if (msg === "invalid_email") {
-    return { ok: false, error: "invalid_email", status: 400 };
-  }
-  if (msg === "fullName_required") {
-    return { ok: false, error: "fullName_required", status: 400 };
+  if (msg === "invalid_invitation") {
+    return { ok: false, error: "invalid_invitation", status: 400 };
   }
   return { ok: false, error: "invalid_request", status: 400 };
-}
-
-export function parsePreSignupBodyClient(body: unknown):
-  | { ok: true; data: PreSignupBodyParsed }
-  | {
-      ok: false;
-      code:
-        | "social_required"
-        | "invalid_social_url"
-        | "invalid_email"
-        | "fullName"
-        | "generic";
-    } {
-  const r = preSignupBodySchema.safeParse(body);
-  if (r.success) {
-    return { ok: true, data: r.data };
-  }
-  const msg = r.error.issues[0]?.message;
-  if (msg === "social_required") {
-    return { ok: false, code: "social_required" };
-  }
-  if (msg === "invalid_social_url") {
-    return { ok: false, code: "invalid_social_url" };
-  }
-  if (msg === "invalid_email") {
-    return { ok: false, code: "invalid_email" };
-  }
-  if (msg === "fullName_required") {
-    return { ok: false, code: "fullName" };
-  }
-  return { ok: false, code: "generic" };
 }
 
 export function parseSignupBodyClient(body: unknown):
@@ -560,8 +604,11 @@ export function parseSignupBodyClient(body: unknown):
         | "invalid_social_url"
         | "invalid_email"
         | "fullName"
+        | "study_institution"
+        | "employer"
+        | "dietary_consent"
+        | "under_thirty"
         | "ambassador_motivation"
-        | "ambassador_study_where"
         | "heard_from"
         | "heard_from_other"
         | "generic";
@@ -583,14 +630,23 @@ export function parseSignupBodyClient(body: unknown):
   if (msg === "fullName_required") {
     return { ok: false, code: "fullName" };
   }
+  if (msg === "study_institution_required") {
+    return { ok: false, code: "study_institution" };
+  }
+  if (msg === "employer_required") {
+    return { ok: false, code: "employer" };
+  }
+  if (msg === "dietary_consent_required") {
+    return { ok: false, code: "dietary_consent" };
+  }
+  if (msg === "under_thirty_required") {
+    return { ok: false, code: "under_thirty" };
+  }
   if (msg === "heard_from_required" || msg === "heard_from_invalid") {
     return { ok: false, code: "heard_from" };
   }
   if (msg === "ambassador_motivation_required") {
     return { ok: false, code: "ambassador_motivation" };
-  }
-  if (msg === "ambassador_study_where_required") {
-    return { ok: false, code: "ambassador_study_where" };
   }
   if (msg === "heard_from_other_required") {
     return { ok: false, code: "heard_from_other" };

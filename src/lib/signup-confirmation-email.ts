@@ -1,97 +1,94 @@
-import { render } from "@react-email/render";
-import nodemailer, { type Transporter } from "nodemailer";
-import { SignupConfirmation } from "../emails/signup-confirmation";
+import { type CreateEmailOptions, Resend } from "resend";
+import { envFromRuntime, siteOriginFromRuntime } from "./runtime-env";
 
-function envFromRuntime(name: string): string | undefined {
-  const proc = (
-    globalThis as unknown as {
-      process?: { env?: Record<string, string | undefined> };
-    }
-  ).process;
-  const v = proc?.env?.[name];
-  if (typeof v === "string" && v.trim()) {
-    return v.trim();
-  }
-  const ime = (
-    import.meta as unknown as { env?: Record<string, string | undefined> }
-  ).env;
-  const w = ime?.[name];
-  return typeof w === "string" && w.trim() ? w.trim() : undefined;
+interface ResendConfig {
+  apiKey: string;
+  from: string;
 }
 
-interface SmtpConfig {
-  fromAddress: string;
-  fromName: string;
-  host: string;
-  pass: string;
-  port: number;
-  secure: boolean;
-  user: string;
-}
-
-function readSmtpConfig(): SmtpConfig | null {
-  const host = envFromRuntime("SMTP_HOST");
-  const user = envFromRuntime("SMTP_USER");
-  const pass = envFromRuntime("SMTP_PASS");
-  if (!(host && user && pass)) {
+function readResendConfig(): ResendConfig | null {
+  const apiKey = envFromRuntime("RESEND_API_KEY");
+  const from = envFromRuntime("RESEND_FROM");
+  if (!(apiKey && from)) {
     return null;
   }
-  const portRaw = envFromRuntime("SMTP_PORT") ?? "465";
-  const port = Number.parseInt(portRaw, 10);
-  if (!Number.isFinite(port) || port <= 0 || port > 65_535) {
-    return null;
-  }
-  const secure =
-    (envFromRuntime("SMTP_SECURE") ?? (port === 465 ? "true" : "false")) ===
-    "true";
-  const fromAddress = envFromRuntime("SMTP_FROM") ?? user;
-  const fromName = envFromRuntime("SMTP_FROM_NAME") ?? "HackSpain";
-  return { host, port, secure, user, pass, fromName, fromAddress };
+  return { apiKey, from };
 }
 
-let cachedTransporter: Transporter | null = null;
-let cachedKey = "";
+let cachedResend: Resend | null = null;
+let cachedApiKey = "";
 
-function getTransporter(cfg: SmtpConfig): Transporter {
-  const key = `${cfg.host}|${cfg.port}|${cfg.secure}|${cfg.user}`;
-  if (cachedTransporter && cachedKey === key) {
-    return cachedTransporter;
+function getResend(apiKey: string): Resend {
+  if (cachedResend && cachedApiKey === apiKey) {
+    return cachedResend;
   }
-  cachedTransporter = nodemailer.createTransport({
-    host: cfg.host,
-    port: cfg.port,
-    secure: cfg.secure,
-    auth: { user: cfg.user, pass: cfg.pass },
-  });
-  cachedKey = key;
-  return cachedTransporter;
+  cachedResend = new Resend(apiKey);
+  cachedApiKey = apiKey;
+  return cachedResend;
 }
 
 export interface ConfirmationEmailInput {
   email: string;
   fullName: string;
+  signupId: string;
   wantsAmbassador: boolean;
 }
 
 export type ConfirmationEmailResult =
   | { ok: true; messageId: string }
-  | { ok: false; reason: "smtp_disabled" | "send_failed"; detail?: string };
+  | {
+      ok: false;
+      reason: "resend_disabled" | "send_failed";
+      detail?: string;
+    };
 
-export async function renderSignupConfirmationHtml(
-  input: Pick<ConfirmationEmailInput, "fullName" | "wantsAmbassador">
-): Promise<{ html: string; text: string }> {
-  const node = SignupConfirmation({
-    fullName: input.fullName,
-    wantsAmbassador: input.wantsAmbassador,
-  });
-  const [html, text] = await Promise.all([
-    render(node),
-    render(node, { plainText: true }),
-  ]);
-  return { html, text };
+interface SendEmailInput {
+  category: string;
+  entityReference: string;
+  idempotencyKey: string;
+  subject: string;
+  text: string;
+  to: string;
 }
 
-const PRE_SIGNUP_ORGANIZER_NAMES = ["Samu", "Guli", "Leo"] as const;
+async function sendEmail(
+  input: SendEmailInput
+): Promise<ConfirmationEmailResult> {
+  const config = readResendConfig();
+  if (!config) {
+    return { ok: false, reason: "resend_disabled" };
+  }
+
+  const payload: CreateEmailOptions = {
+    from: config.from,
+    headers: { "X-Entity-Ref-ID": input.entityReference },
+    subject: input.subject,
+    tags: [{ name: "category", value: input.category }],
+    text: input.text,
+    to: input.to,
+  };
+
+  try {
+    const result = await getResend(config.apiKey).emails.send(payload, {
+      idempotencyKey: input.idempotencyKey,
+    });
+    if (result.error) {
+      return {
+        ok: false,
+        reason: "send_failed",
+        detail: `${result.error.name}: ${result.error.message}`,
+      };
+    }
+    return { ok: true, messageId: result.data.id };
+  } catch (error) {
+    const detail =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error).slice(0, 256);
+    return { ok: false, reason: "send_failed", detail };
+  }
+}
+
 const WHITESPACE_SPLIT_RE = /\s+/;
 
 function firstNameFrom(fullName: string): string {
@@ -103,84 +100,85 @@ function firstNameFrom(fullName: string): string {
   return first.length > 24 ? first.slice(0, 24) : first;
 }
 
-function pickOrganizerName(): string {
-  const i = Math.floor(Math.random() * PRE_SIGNUP_ORGANIZER_NAMES.length);
-  return PRE_SIGNUP_ORGANIZER_NAMES[i] ?? PRE_SIGNUP_ORGANIZER_NAMES[0];
+function signupFormUrl(): string {
+  return new URL("/signup", siteOriginFromRuntime()).toString();
 }
 
-export interface PreSignupEmailInput {
+function signupCancellationUrl(cancellationToken: string): string {
+  const url = new URL("/cancelacion", siteOriginFromRuntime());
+  url.searchParams.set("token", cancellationToken);
+  return url.toString();
+}
+
+function signupConfirmationText(input: ConfirmationEmailInput): string {
+  const firstName = firstNameFrom(input.fullName);
+  const ambassadorNote = input.wantsAmbassador
+    ? "\n\nTambién hemos anotado que te interesa participar como embajador/a. Si tu perfil encaja, te escribiremos con los siguientes pasos."
+    : "";
+
+  return `Hola ${firstName},
+
+Gracias por apuntarte a HackSpain 2026! Hemos recibido tu solicitud correctamente.
+
+Vamos a revisar cada candidatura personalmente. Cuando tengamos novedades sobre tu plaza, te escribiremos a este mismo correo.${ambassadorNote}
+
+Mientras tanto, puedes seguirnos para estar al día:
+
+X: https://x.com/hackspain26
+Instagram: https://www.instagram.com/hackspain26/
+
+Si quieres compartir la inscripción con alguien, usa este enlace:
+${signupFormUrl()}
+
+Nos vemos pronto,
+El equipo de HackSpain
+
+Has recibido este correo porque enviaste una solicitud desde ${siteOriginFromRuntime()}. Si no has sido tú, puedes ignorarlo.`;
+}
+
+export interface SignupCancellationEmailInput {
+  cancellationToken: string;
   email: string;
   fullName: string;
+  requestedAt: string;
+  signupId: string;
 }
 
-export async function sendPreSignupConfirmationEmail(
-  input: PreSignupEmailInput
-): Promise<ConfirmationEmailResult> {
-  const cfg = readSmtpConfig();
-  if (!cfg) {
-    return { ok: false, reason: "smtp_disabled" };
-  }
-
-  const organizerName = pickOrganizerName();
-  const firstName = firstNameFrom(input.fullName);
-  const text = `Hola ${firstName},
-
-Soy ${organizerName}, del equipo de HackSpain. Solo quería confirmarte que tus datos nos han llegado bien, muchísimas gracias por el interés tan pronto, significa un montón.
-
-Te iremos escribiendo por aquí con todas las novedades a medida que las tengamos.
-
-Mientras tanto, te recomendamos seguirnos en Twitter para no perderte nada: https://x.com/hackspain26
-
-Nos vemos pronto
-${organizerName}`;
-
-  try {
-    const transporter = getTransporter(cfg);
-    const info = await transporter.sendMail({
-      from: {
-        name: `${organizerName} de HackSpain`,
-        address: cfg.user,
-      },
-      to: input.email,
-      subject: "Hemos recibido tu pre-inscripción",
-      text,
-      headers: {
-        "X-Entity-Ref-ID": `hackspain-pre-signup-${Date.now()}`,
-      },
-    });
-    return { ok: true, messageId: info.messageId };
-  } catch (e) {
-    const detail =
-      e instanceof Error ? `${e.name}: ${e.message}` : String(e).slice(0, 256);
-    return { ok: false, reason: "send_failed", detail };
-  }
-}
-
-export async function sendSignupConfirmationEmail(
+export function sendSignupConfirmationEmail(
   input: ConfirmationEmailInput
 ): Promise<ConfirmationEmailResult> {
-  const cfg = readSmtpConfig();
-  if (!cfg) {
-    return { ok: false, reason: "smtp_disabled" };
-  }
+  return sendEmail({
+    category: "signup_confirmation",
+    entityReference: `hackspain-signup-${input.signupId}`,
+    idempotencyKey: `signup-confirmation/${input.signupId}`,
+    subject: "Hemos recibido tu solicitud — HackSpain 2026",
+    text: signupConfirmationText(input),
+    to: input.email,
+  });
+}
 
-  try {
-    const { html, text } = await renderSignupConfirmationHtml(input);
-    const transporter = getTransporter(cfg);
-    const info = await transporter.sendMail({
-      from: { name: cfg.fromName, address: cfg.fromAddress },
-      to: input.email,
-      subject: "Hemos recibido tu solicitud — HackSpain 2026",
-      html,
-      text,
-      headers: {
-        "X-Entity-Ref-ID": `hackspain-signup-${Date.now()}`,
-      },
-    });
-    return { ok: true, messageId: info.messageId };
-  } catch (e) {
-    const detail =
-      e instanceof Error ? `${e.name}: ${e.message}` : String(e).slice(0, 256);
-    return { ok: false, reason: "send_failed", detail };
-  }
+export function sendSignupCancellationEmail(
+  input: SignupCancellationEmailInput
+): Promise<ConfirmationEmailResult> {
+  const firstName = firstNameFrom(input.fullName);
+  const cancellationUrl = signupCancellationUrl(input.cancellationToken);
+  const text = `Hola ${firstName},
+
+Hemos recibido una solicitud para cancelar tu participación en HackSpain 2026.
+
+Confirma la cancelación desde este enlace personal:
+${cancellationUrl}
+
+Abrir el enlace no cancela nada: tendrás que confirmar la acción en la página. Si no has solicitado la cancelación, puedes ignorar este correo y tu participación no cambiará.
+
+El equipo de HackSpain`;
+
+  return sendEmail({
+    category: "signup_cancellation",
+    entityReference: `hackspain-signup-cancellation-${input.signupId}`,
+    idempotencyKey: `signup-cancellation/${input.signupId}/${input.requestedAt}`,
+    subject: "Confirma la cancelación — HackSpain 2026",
+    text,
+    to: input.email,
+  });
 }

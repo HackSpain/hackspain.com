@@ -1,12 +1,16 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { ambassadorApplications, hackathonSignups } from "./schema";
+import { envFromRuntime } from "../lib/runtime-env";
+import { hackathonPreSignups, hackathonSignups } from "./schema";
 
-const schema = { ambassadorApplications, hackathonSignups };
+const schema = {
+  hackathonPreSignups,
+  hackathonSignups,
+};
 
 function requireDatabaseUrl(): string {
-  const url = import.meta.env.DATABASE_URL;
-  if (!url || typeof url !== "string") {
+  const url = envFromRuntime("DATABASE_URL");
+  if (!url) {
     throw new Error("DATABASE_URL is not set");
   }
   return url;

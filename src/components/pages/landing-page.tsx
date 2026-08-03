@@ -4,15 +4,27 @@ import {
   keywordsForSectionIndex,
   seoForSectionIndex,
 } from "../../data/landing-meta";
-import { parsePath, pathRootFromSectionIndex } from "../../data/section-routes";
+import {
+  GRAND_PRIZE_SECTION_INDEX,
+  parsePath,
+  pathRootFromSectionIndex,
+  TRACKS_SECTION_INDEX,
+} from "../../data/section-routes";
 import { InlineSvg } from "../media/inline-svg";
 import { artboardFor } from "../mosaic/artboard";
 import { cellsForProfile } from "../mosaic/cells";
 import { MosaicBackground } from "../mosaic/mosaic-background";
 import { useLayoutProfile } from "../mosaic/use-layout-profile";
+import { isOverlayOpen } from "../overlay/overlay-lock";
 import { useReferralAwareHref } from "../referral/use-referral-href";
 import { illustrationsForSection } from "../sections/illustration-themes";
-import { PartnerLogoCell, usePartnerRotation } from "../sections/partner-logos";
+import {
+  GRAND_PRIZE_SPONSORS,
+  PARTNER_CELL_COUNT,
+  PartnerLogoCell,
+  TRACK_SPONSORS,
+  usePartnerRotation,
+} from "../sections/partner-logos";
 import { buildSections, buildSectionsCompact } from "../sections/sections";
 import { INK, NUM_SECTIONS, SPRING, slideVariants } from "../theme/constants";
 import { vp } from "../ui/panel";
@@ -21,6 +33,7 @@ const SECTION_NAV = [
   "Inicio",
   "Misión",
   "Tracks originales",
+  "Gran premio",
   "Apúntate",
 ] as const;
 
@@ -78,7 +91,7 @@ export function LandingPage({ initialSection = 0 }: Props) {
 
   const artboard = useMemo(() => artboardFor(profile), [profile]);
   const cells = useMemo(() => cellsForProfile(profile), [profile]);
-  const signupHref = useReferralAwareHref("/pre-signup");
+  const signupHref = useReferralAwareHref("/signup");
 
   const sections = useMemo(
     () =>
@@ -91,7 +104,19 @@ export function LandingPage({ initialSection = 0 }: Props) {
     () => illustrationsForSection(section, profile),
     [section, profile]
   );
-  const partners = usePartnerRotation();
+  // The tracks and gran premio sections each hand the open row over to their
+  // own five sponsors and hold it there; everywhere else it rotates through all
+  // partners.
+  const pinnedSponsors = useMemo(() => {
+    if (section === TRACKS_SECTION_INDEX) {
+      return TRACK_SPONSORS;
+    }
+    if (section === GRAND_PRIZE_SECTION_INDEX) {
+      return GRAND_PRIZE_SPONSORS;
+    }
+    return;
+  }, [section]);
+  const partners = usePartnerRotation(PARTNER_CELL_COUNT, pinnedSponsors);
 
   useEffect(() => {
     applySeoToDocument(initialSection);
@@ -152,7 +177,12 @@ export function LandingPage({ initialSection = 0 }: Props) {
   const isCompact = profile === "compact";
 
   useEffect(() => {
+    // A full-screen overlay scrolls its own content, so section snapping — and
+    // in particular the wheel preventDefault below — has to stand down.
     const onWheel = (e: WheelEvent) => {
+      if (isOverlayOpen()) {
+        return;
+      }
       e.preventDefault();
       if (Math.abs(e.deltaY) <= 5) {
         return;
@@ -164,6 +194,9 @@ export function LandingPage({ initialSection = 0 }: Props) {
       touchY = e.touches[0].clientY;
     };
     const onTouchEnd = (e: TouchEvent) => {
+      if (isOverlayOpen()) {
+        return;
+      }
       const dy = touchY - e.changedTouches[0].clientY;
       if (Math.abs(dy) <= 40) {
         return;
@@ -171,6 +204,9 @@ export function LandingPage({ initialSection = 0 }: Props) {
       advance(dy > 0 ? 1 : -1);
     };
     const onKey = (e: KeyboardEvent) => {
+      if (isOverlayOpen()) {
+        return;
+      }
       if (e.key === "ArrowDown" || e.key === " ") {
         e.preventDefault();
         advance(1);
@@ -239,11 +275,11 @@ export function LandingPage({ initialSection = 0 }: Props) {
     profile === "compact"
       ? baseCurrent
       : {
-          o1: <PartnerLogoCell partner={partners[0]} />,
-          o2: <PartnerLogoCell partner={partners[1]} />,
-          o3: <PartnerLogoCell partner={partners[2]} />,
-          o4: <PartnerLogoCell partner={partners[3]} />,
-          o5: <PartnerLogoCell partner={partners[4]} />,
+          o1: <PartnerLogoCell delay={0} partner={partners[0]} />,
+          o2: <PartnerLogoCell delay={0.05} partner={partners[1]} />,
+          o3: <PartnerLogoCell delay={0.1} partner={partners[2]} />,
+          o4: <PartnerLogoCell delay={0.15} partner={partners[3]} />,
+          o5: <PartnerLogoCell delay={0.2} partner={partners[4]} />,
           ...baseCurrent,
         };
   const liveLabel = SECTION_NAV[section] ?? SECTION_NAV[0];

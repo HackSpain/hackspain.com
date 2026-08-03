@@ -9,15 +9,19 @@ import sunRaw from "../../assets/illustration-sun.svg?raw";
 import trophyRaw from "../../assets/illustration-trophy.svg?raw";
 import windmillRaw from "../../assets/illustration-windmill.svg?raw";
 import logoRaw from "../../assets/logo.svg?raw";
+import acurioSvg from "../../assets/sponsors/acurio.svg";
 import cursorPng from "../../assets/sponsors/cursor.png";
 import embatPng from "../../assets/sponsors/embat.png";
+import enzoSvg from "../../assets/sponsors/enzo.svg";
 import exaPng from "../../assets/sponsors/exa.png";
 import exponentialPng from "../../assets/sponsors/exponential.png";
 import falPng from "../../assets/sponsors/fal.png";
 import googlePng from "../../assets/sponsors/google.png";
 import happyrobotPng from "../../assets/sponsors/happyrobot.png";
+import jmeSvg from "../../assets/sponsors/jme.svg";
+import kfundPng from "../../assets/sponsors/kfund.png";
+import kiboSvg from "../../assets/sponsors/kibo.svg";
 import maisaPng from "../../assets/sponsors/maisa.png";
-// import kfundPng from "../../assets/sponsors/kfund.png";
 import onecoworkSvg from "../../assets/sponsors/onecowork.svg";
 import prosperAiSvg from "../../assets/sponsors/prosper_ai.svg";
 import thekerSvg from "../../assets/sponsors/theker.svg";
@@ -42,8 +46,14 @@ export const maisaLogo = maisaPng;
 
 export const exaLogo = exaPng;
 export const falLogo = falPng;
-// export const kfundLogo = kfundPng;
 export const cursorLogo = cursorPng;
+
+/** Grand prize backers — see data/grand-prize-sponsors.ts. */
+export const kfundLogo = kfundPng;
+export const jmeLogo = jmeSvg;
+export const kiboLogo = kiboSvg;
+export const enzoLogo = enzoSvg;
+export const acurioLogo = acurioSvg;
 export const embatLogo = embatPng;
 export const exponentialLogo = exponentialPng;
 export const upmLogo = upmPng;

@@ -10,6 +10,12 @@ interface ImportMetaEnv {
   readonly DISCORD_WEBHOOK_URL?: string;
   /** Sentry DSN (public; embedded in client bundle). */
   readonly PUBLIC_SENTRY_DSN?: string;
+  /** Server-only API key for transactional email delivery through Resend. */
+  readonly RESEND_API_KEY?: string;
+  /** Verified Resend sender, including its optional display name. */
+  readonly RESEND_FROM?: string;
+  /** Canonical public origin used in transactional email links. */
+  readonly SITE_URL?: string;
 }
 
 interface ImportMeta {

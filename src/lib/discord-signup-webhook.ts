@@ -1,4 +1,7 @@
-import { formatHeardFromStored } from "./signup-validation";
+import {
+  formatHeardFromStored,
+  formatOccupationStatuses,
+} from "./signup-validation";
 
 const DISCORD_WEBHOOK_PREFIXES = [
   "https://discord.com/api/webhooks/",
@@ -40,82 +43,19 @@ function fieldVal(s: string, max: number): string {
   return t.length === 0 ? "—" : t;
 }
 
-export interface PreSignupDiscordPayload {
-  email: string;
-  fullName: string;
-  githubUrl: string;
-  linkedinUrl: string;
-  webUrl: string;
-  xUrl: string;
-}
-
-export async function notifyDiscordNewPreSignup(
-  data: PreSignupDiscordPayload
-): Promise<void> {
-  const url = getWebhookUrl();
-  if (!url) {
-    return;
-  }
-
-  const max = 1024;
-  const embed = {
-    title: "New HackSpain pre-signup",
-    color: 0x2d_d4_bf,
-    fields: [
-      { name: "Name", value: fieldVal(data.fullName, max), inline: true },
-      { name: "Email", value: fieldVal(data.email, max), inline: true },
-      { name: "X", value: fieldVal(data.xUrl, max), inline: false },
-      {
-        name: "LinkedIn",
-        value: fieldVal(data.linkedinUrl, max),
-        inline: false,
-      },
-      { name: "GitHub", value: fieldVal(data.githubUrl, max), inline: false },
-      { name: "Web", value: fieldVal(data.webUrl, max), inline: false },
-    ],
-    timestamp: new Date().toISOString(),
-  };
-
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12_000);
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
-      signal: ctrl.signal,
-    });
-    if (res.ok) {
-      console.info("Discord new pre-signup webhook ok", res.status);
-    } else {
-      const t = await res.text().catch(() => "");
-      console.error(
-        "Discord pre-signup webhook failed:",
-        res.status,
-        t.slice(0, 500)
-      );
-    }
-  } catch (e) {
-    const detail =
-      e instanceof Error
-        ? `${e.name}: ${e.message}${e.cause == null ? "" : ` (cause: ${String(e.cause)})`}`
-        : String(e);
-    console.error("Discord pre-signup webhook error:", detail);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 export interface SignupDiscordPayload {
   achievements: string;
   ambassadorMotivation: string;
-  ambassadorStudyWhere: string;
+  cameFromPreSignup: boolean;
   email: string;
+  employer: string;
   freeTime: string;
   fullName: string;
   githubUrl: string;
-  heardFrom: string;
+  heardFrom: string[];
   linkedinUrl: string;
+  occupationStatuses: string[];
+  studyInstitution: string;
   wantsAmbassador: boolean;
   webUrl: string;
   xUrl: string;
@@ -136,6 +76,11 @@ export async function notifyDiscordNewSignup(
     fields: [
       { name: "Name", value: fieldVal(data.fullName, max), inline: true },
       { name: "Email", value: fieldVal(data.email, max), inline: true },
+      {
+        name: "Came from pre-signup",
+        value: data.cameFromPreSignup ? "True" : "False",
+        inline: true,
+      },
       {
         name: "How they found us",
         value: fieldVal(formatHeardFromStored(data.heardFrom), max),
@@ -160,6 +105,21 @@ export async function notifyDiscordNewSignup(
         inline: false,
       },
       {
+        name: "Studies or works",
+        value: fieldVal(formatOccupationStatuses(data.occupationStatuses), max),
+        inline: true,
+      },
+      {
+        name: "University / centre",
+        value: fieldVal(data.studyInstitution, max),
+        inline: true,
+      },
+      {
+        name: "Company / organisation",
+        value: fieldVal(data.employer, max),
+        inline: true,
+      },
+      {
         name: "Ambassador interest",
         value: data.wantsAmbassador ? "Yes" : "No",
         inline: true,
@@ -169,11 +129,6 @@ export async function notifyDiscordNewSignup(
             {
               name: "Why ambassador",
               value: fieldVal(data.ambassadorMotivation, max),
-              inline: false,
-            },
-            {
-              name: "Where they study",
-              value: fieldVal(data.ambassadorStudyWhere, max),
               inline: false,
             },
           ]
@@ -211,8 +166,6 @@ export async function notifyDiscordNewSignup(
 export async function notifyDiscordSignupApiIssue(payload: {
   status: 400 | 500;
   error: string;
-  detail?: string;
-  emailHint?: string;
 }): Promise<void> {
   const url = getWebhookUrl();
   if (!url) {
@@ -228,24 +181,6 @@ export async function notifyDiscordSignupApiIssue(payload: {
     fields: [
       { name: "HTTP", value: String(payload.status), inline: true },
       { name: "error", value: fieldVal(payload.error, 256), inline: true },
-      ...(payload.emailHint
-        ? [
-            {
-              name: "Email (if sent)",
-              value: fieldVal(payload.emailHint, 320),
-              inline: false,
-            },
-          ]
-        : []),
-      ...(payload.detail
-        ? [
-            {
-              name: "Detail",
-              value: fieldVal(payload.detail, 1024),
-              inline: false,
-            },
-          ]
-        : []),
     ],
     timestamp: new Date().toISOString(),
   };

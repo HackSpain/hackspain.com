@@ -43,6 +43,62 @@
       "when": 1782401491240,
       "tag": "0005_marvelous_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784023200000,
+      "tag": "0006_full_signup_approvals",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784117790888,
+      "tag": "0007_signup_form_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784279252111,
+      "tag": "0008_puzzling_thor_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785344495000,
+      "tag": "0009_pre_signup_share_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785344496000,
+      "tag": "0010_pre_signup_reminder_sent",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785344497000,
+      "tag": "0011_signup_dietary_consent",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785490256122,
+      "tag": "0012_daffy_doomsday",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785773594622,
+      "tag": "0013_remove_legacy_signup_data",
+      "breakpoints": true
     }
   ]
 }
