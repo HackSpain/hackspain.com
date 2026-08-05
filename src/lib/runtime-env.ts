@@ -30,3 +30,12 @@ export function siteOriginFromRuntime(): string {
     return "https://hackspain.com";
   }
 }
+
+/**
+ * Origin for links handed to someone else to open, like a post drafted on X.
+ * Nothing serves the public origin from a development machine, so there the link
+ * points back at the dev server and stays clickable while building the flow.
+ */
+export function sharedLinkOriginFromRuntime(requestOrigin: string): string {
+  return import.meta.env.DEV ? requestOrigin : siteOriginFromRuntime();
+}

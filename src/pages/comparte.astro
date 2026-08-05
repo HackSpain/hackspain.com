@@ -1,0 +1,62 @@
+---
+export const prerender = false;
+
+import { BadgeShowcase } from "../components/share/badge-showcase";
+import Layout from "../layouts/layout.astro";
+import {
+  badgeOgImagePath,
+  badgeShareParamsFrom,
+  OG_BADGE_HEIGHT,
+  OG_BADGE_WIDTH,
+} from "../lib/badge-share-params";
+import { findSharedBadge } from "../lib/badge-signup-lookup";
+
+const requested = badgeShareParamsFrom(new URL(Astro.request.url).searchParams);
+
+// The query string is public and anyone can invent one, so it only decides which
+// record to look for. Everything shown below comes from the signup itself, and a
+// link matching nobody goes to the event instead of printing a made-up badge.
+const badge = await findSharedBadge(requested);
+
+if (!badge) {
+  return Astro.redirect("/", 302);
+}
+
+const { fullName, githubHandle, photoDataUri, photoVersion } = badge;
+
+// The whole point of this page: a link preview showing that person's own badge,
+// drawn on demand from the record we just resolved. The photo version rides
+// along so a changed photo is a different URL, and not a week-old cache hit.
+const ogImagePath = badgeOgImagePath(badge, photoVersion);
+
+// Layout resolves a path against the canonical origin, which is right in
+// production but unreachable while developing — nothing is serving hackspain.com
+// from this machine. An absolute URL passes through untouched, so in development
+// the preview points back at this server and can actually be opened.
+const ogImage = {
+  path: import.meta.env.DEV
+    ? new URL(ogImagePath, Astro.url.origin).href
+    : ogImagePath,
+  width: OG_BADGE_WIDTH,
+  height: OG_BADGE_HEIGHT,
+};
+---
+
+<Layout
+  canonicalPathOverride="/comparte"
+  description={`${fullName} va a HackSpain 2026, del 18 al 20 de septiembre en Madrid. 48 horas para construir con 250 hackers.`}
+  includeStructuredData={false}
+  ogImage={ogImage}
+  ogImageAlt={`Acreditación de HackSpain 2026 a nombre de ${fullName}`}
+  robotsDirectives="noindex, follow"
+  title={`${fullName} va a HackSpain 2026`}
+>
+  <main class="relative h-dvh w-full" id="main">
+    <BadgeShowcase
+      client:only="react"
+      fullName={fullName}
+      githubHandle={githubHandle}
+      photoDataUri={photoDataUri}
+    />
+  </main>
+</Layout>

@@ -62,6 +62,16 @@ export const hackathonSignups = pgTable(
       withTimezone: true,
     }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    /**
+     * The photo they chose for their badge, as a data URI, downscaled in the
+     * browser before it is sent. Stored so the social image can print it: that
+     * image is drawn on the server, which cannot see a photo living in a tab.
+     */
+    badgePhoto: text("badge_photo"),
+    /** Doubles as the cache key for the social image. */
+    badgePhotoUpdatedAt: timestamp("badge_photo_updated_at", {
+      withTimezone: true,
+    }),
   },
   (table) => [
     check(
