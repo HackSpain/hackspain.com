@@ -1,0 +1,108 @@
+---
+export const prerender = false;
+
+import { and, eq } from "drizzle-orm";
+import { ConfirmationPage } from "../components/share/confirmation-page";
+import { getDb } from "../db";
+import { hackathonSignups } from "../db/schema";
+import Layout from "../layouts/layout.astro";
+import { githubHandleFromUrl } from "../lib/github-handle";
+import { envFromRuntime, siteOriginFromRuntime } from "../lib/runtime-env";
+
+type PageState = "confirmed" | "invalid" | "not_accepted";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const token =
+  new URL(Astro.request.url).searchParams.get("token")?.trim() ?? "";
+
+let state: PageState = "invalid";
+let fullName = "";
+let githubHandle: string | null = null;
+
+if (token && UUID_PATTERN.test(token)) {
+  const db = getDb();
+
+  // Opening the link is the confirmation, so the accepted -> confirmed move
+  // happens here. Scoping the update to 'accepted' makes it idempotent: a
+  // second visit updates nothing and still lands on the badge below.
+  await db
+    .update(hackathonSignups)
+    .set({ approvalStatus: "confirmed" })
+    .where(
+      and(
+        eq(hackathonSignups.managementToken, token),
+        eq(hackathonSignups.approvalStatus, "accepted")
+      )
+    );
+
+  const [signup] = await db
+    .select({
+      approvalStatus: hackathonSignups.approvalStatus,
+      fullName: hackathonSignups.fullName,
+      githubUrl: hackathonSignups.githubUrl,
+    })
+    .from(hackathonSignups)
+    .where(eq(hackathonSignups.managementToken, token))
+    .limit(1);
+
+  if (signup) {
+    fullName = signup.fullName;
+    githubHandle = githubHandleFromUrl(signup.githubUrl);
+    state =
+      signup.approvalStatus === "confirmed" ? "confirmed" : "not_accepted";
+  }
+}
+
+const whatsappUrl = envFromRuntime("PUBLIC_WHATSAPP_GROUP_URL") ?? null;
+const shareUrl = siteOriginFromRuntime();
+
+const badgeProps = { fullName, githubHandle, shareUrl, whatsappUrl };
+
+const PAGE_TITLES: Record<PageState, string> = {
+  confirmed: "Plaza confirmada",
+  invalid: "Enlace no válido",
+  not_accepted: "Plaza no disponible",
+};
+---
+
+<Layout
+  allowScroll={state !== "confirmed"}
+  canonicalPathOverride="/confirmacion"
+  description="Confirma tu plaza en HackSpain 2026."
+  includeStructuredData={false}
+  robotsDirectives="noindex, nofollow"
+  title={`${PAGE_TITLES[state]} — HackSpain 2026`}
+>
+  {state === "confirmed" ? (
+      <main class="relative h-dvh w-full" id="main">
+        <ConfirmationPage {...badgeProps} client:only="react" />
+      </main>
+    ) : (
+      <main
+        class="relative flex min-h-dvh w-full items-center justify-center bg-hs-paper px-4"
+        id="main"
+      >
+        <div class="hs-grain pointer-events-none absolute inset-0" />
+        <div class="relative z-10 mx-auto max-w-md border-[3px] border-hs-ink bg-hs-cream p-6 text-center shadow-[6px_6px_0_0_var(--color-hs-ink)]">
+          <h1 class="font-bungee text-2xl text-hs-ink leading-none">
+            {PAGE_TITLES[state]}
+          </h1>
+          <p class="mt-3 font-sans text-hs-brown text-sm">
+            {
+              state === "invalid"
+                ? "Este enlace no es válido o ha caducado. Revisa el correo que te enviamos con tu enlace personal."
+                : "Este enlace todavía no tiene una plaza que confirmar. Si crees que es un error, respóndenos al correo de tu solicitud."
+            }
+          </p>
+          <a
+            class="mt-5 inline-flex items-center justify-center border-[3px] border-hs-ink bg-hs-gold px-6 py-2.5 font-bungee text-hs-ink text-sm"
+            href="/"
+          >
+            Ir a HackSpain
+          </a>
+        </div>
+      </main>
+    )}
+</Layout>

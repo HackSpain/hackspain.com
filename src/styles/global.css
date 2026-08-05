@@ -164,6 +164,62 @@ body {
   animation: hs-logo-scroll 14s linear infinite;
 }
 
+/*
+ * Trotting horse, keyed out of a green-screen clip and baked into a 16-tile
+ * strip. Fifteen of those tiles are the gait cycle; the sixteenth exists only
+ * so that stepping the background from 0% to 100% lands on whole frames — with
+ * a 15-tile strip the stops fall between frames and the legs judder.
+ */
+@keyframes hs-horse-trot {
+  to {
+    background-position-x: 100%;
+  }
+}
+
+.hs-horse-trot {
+  background-image: url("/horse-trot.png");
+  background-repeat: no-repeat;
+  background-size: 1600% 100%;
+  /* 15 frames at the clip's own 24fps. */
+  animation: hs-horse-trot 0.625s steps(15) infinite;
+}
+
+/*
+ * Crossing the plain: it enters from the left, walks out past the right edge,
+ * and waits off-screen before coming round again. The hold at the end is what
+ * creates that pause — the jump back to the left happens out of view.
+ *
+ * The pace is set so a stride advances the horse about its own body length: any
+ * faster and the hooves visibly skate over the ground.
+ */
+@keyframes hs-horse-cross {
+  0% {
+    transform: translateX(-25vw);
+  }
+  70% {
+    transform: translateX(105vw);
+  }
+  100% {
+    transform: translateX(105vw);
+  }
+}
+
+.hs-horse-cross {
+  animation: hs-horse-cross 15s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-horse-trot,
+  .hs-horse-cross {
+    animation: none;
+  }
+
+  /* Parked mid-plain, since it is no longer walking on. */
+  .hs-horse-cross {
+    transform: translateX(55vw);
+  }
+}
+
 /* Dry ploughed furrows running to the horizon on the share backdrop. */
 .hs-plain-furrows {
   background-image: repeating-linear-gradient(

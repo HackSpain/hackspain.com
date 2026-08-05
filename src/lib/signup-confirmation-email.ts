@@ -182,3 +182,48 @@ El equipo de HackSpain`;
     to: input.email,
   });
 }
+
+export interface SignupAcceptanceEmailInput {
+  email: string;
+  fullName: string;
+  managementToken: string;
+  signupId: string;
+}
+
+function signupAcceptanceUrl(managementToken: string): string {
+  const url = new URL("/confirmacion", siteOriginFromRuntime());
+  url.searchParams.set("token", managementToken);
+  return url.toString();
+}
+
+/**
+ * Sent when a place is granted. The link is the confirmation: opening it moves
+ * the signup from accepted to confirmed and hands over the 3D badge.
+ */
+export function sendSignupAcceptanceEmail(
+  input: SignupAcceptanceEmailInput
+): Promise<ConfirmationEmailResult> {
+  const firstName = firstNameFrom(input.fullName);
+  const acceptanceUrl = signupAcceptanceUrl(input.managementToken);
+  const text = `Hola ${firstName},
+
+Tienes plaza en HackSpain 2026.
+
+Confirma que vienes desde tu enlace personal — ahí te espera tu acreditación:
+${acceptanceUrl}
+
+18—20 de septiembre de 2026, UPM ETSIT, Madrid.
+
+Si al final no puedes venir, dínoslo cuanto antes para dar la plaza a otra persona.
+
+El equipo de HackSpain`;
+
+  return sendEmail({
+    category: "signup_acceptance",
+    entityReference: `hackspain-signup-acceptance-${input.signupId}`,
+    idempotencyKey: `signup-acceptance/${input.signupId}`,
+    subject: "Tienes plaza — HackSpain 2026",
+    text,
+    to: input.email,
+  });
+}

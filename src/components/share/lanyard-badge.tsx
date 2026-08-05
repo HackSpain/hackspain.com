@@ -30,7 +30,7 @@ import {
   SRGBColorSpace,
   Vector3,
 } from "three";
-import type { BadgeRole } from "./badge-roles";
+import { BADGE_PALETTE } from "./badge-roles";
 import {
   CARD_BACK_MATERIAL,
   CARD_EDGE_MATERIAL,
@@ -40,12 +40,16 @@ import {
 import {
   BADGE_BACK_TEXTURE_HEIGHT,
   BADGE_BACK_TEXTURE_WIDTH,
+  BADGE_PORTRAIT_LEFT,
+  BADGE_PORTRAIT_SIZE,
+  BADGE_PORTRAIT_TOP,
   BADGE_TEXTURE_HEIGHT,
   BADGE_TEXTURE_WIDTH,
   drawBadgeBackTexture,
   drawBadgeTexture,
   drawLanyardTexture,
 } from "./draw-badge-texture";
+import { loadAvatarImage } from "./load-avatar-image";
 import { loadLogoImage } from "./load-logo-image";
 
 extend({ MeshLineGeometry, MeshLineMaterial });
@@ -61,6 +65,19 @@ const CARD_WIDTH = 1.6;
 const CARD_HEIGHT = 2.25;
 const CARD_DEPTH = 0.045;
 const CARD_RADIUS = 0.09;
+const PHOTO_TARGET_WIDTH =
+  (BADGE_PORTRAIT_SIZE / BADGE_TEXTURE_WIDTH) * CARD_WIDTH;
+const PHOTO_TARGET_HEIGHT =
+  (BADGE_PORTRAIT_SIZE / BADGE_TEXTURE_HEIGHT) * CARD_HEIGHT;
+const PHOTO_TARGET_X =
+  ((BADGE_PORTRAIT_LEFT + BADGE_PORTRAIT_SIZE / 2) / BADGE_TEXTURE_WIDTH -
+    0.5) *
+  CARD_WIDTH;
+const PHOTO_TARGET_Y =
+  (0.5 -
+    (BADGE_PORTRAIT_TOP + BADGE_PORTRAIT_SIZE / 2) / BADGE_TEXTURE_HEIGHT) *
+  CARD_HEIGHT;
+const PHOTO_TARGET_Z = CARD_DEPTH / 2 + 0.002;
 /** Sits just inside the printed slot, so the band ends where it is punched. */
 const JOINT_ANCHOR_Y = 1.02;
 const BAND_WIDTH = 0.36;
@@ -92,13 +109,20 @@ const LANYARD_TEXTURE_WIDTH = 512;
 const LANYARD_TEXTURE_HEIGHT = 64;
 
 interface BadgeContent {
+  /**
+   * A photo dropped onto the page. Held in memory only and never uploaded, so
+   * it lives exactly as long as the tab does. Wins over the GitHub avatar.
+   */
+  droppedPhoto: HTMLImageElement | null;
   firstName: string;
+  /** GitHub handle, when they gave one — their avatar goes on the badge. */
+  githubHandle: string | null;
   lastName: string;
-  role: BadgeRole;
 }
 
 interface BadgeProps {
   content: BadgeContent;
+  onPhotoClick: () => void;
   wind: RefObject<number>;
 }
 
@@ -120,11 +144,17 @@ function createPrintTexture(canvas: HTMLCanvasElement) {
   return texture;
 }
 
-function useBadgeTexture({ role, firstName, lastName }: BadgeContent) {
+function useBadgeTexture({
+  githubHandle,
+  droppedPhoto,
+  firstName,
+  lastName,
+}: BadgeContent) {
   const [assets, setAssets] = useState<{
+    avatar: HTMLImageElement | null;
     logo: HTMLImageElement | null;
     fontsReady: boolean;
-  }>({ logo: null, fontsReady: false });
+  }>({ avatar: null, logo: null, fontsReady: false });
 
   const canvas = useMemo(
     () => createTextureCanvas(BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT),
@@ -160,18 +190,38 @@ function useBadgeTexture({ role, firstName, lastName }: BadgeContent) {
   }, []);
 
   useEffect(() => {
-    drawBadgeTexture(canvas, { role, firstName, lastName }, assets.logo);
+    if (!githubHandle) {
+      setAssets((current) => ({ ...current, avatar: null }));
+      return;
+    }
+    let cancelled = false;
+    loadAvatarImage(githubHandle).then((image) => {
+      if (!cancelled) {
+        setAssets((current) => ({ ...current, avatar: image }));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubHandle]);
+
+  useEffect(() => {
+    drawBadgeTexture(
+      canvas,
+      { avatar: droppedPhoto ?? assets.avatar, firstName, lastName },
+      assets.logo
+    );
     texture.needsUpdate = true;
-    drawBadgeBackTexture(backCanvas, role, assets.logo);
+    drawBadgeBackTexture(backCanvas, assets.logo);
     backTexture.needsUpdate = true;
   }, [
     canvas,
     texture,
     backCanvas,
     backTexture,
-    role,
     firstName,
     lastName,
+    droppedPhoto,
     assets,
   ]);
 
@@ -265,7 +315,7 @@ function TiltGravity({ tilt }: { tilt: RefObject<number | null> }) {
   return null;
 }
 
-function Badge({ content, wind }: BadgeProps) {
+function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   const band = useRef<Mesh>(null);
   const fixed = useRef<RapierRigidBody>(null);
   const j1 = useRef<RapierRigidBody>(null);
@@ -328,9 +378,11 @@ function Badge({ content, wind }: BadgeProps) {
     const faces: MeshPhysicalMaterial[] = [];
     faces[CARD_FRONT_MATERIAL] = printedMaterial({ map: badgeTexture });
     faces[CARD_BACK_MATERIAL] = printedMaterial({ map: backTexture });
-    faces[CARD_EDGE_MATERIAL] = printedMaterial({ color: content.role.stripe });
+    faces[CARD_EDGE_MATERIAL] = printedMaterial({
+      color: BADGE_PALETTE.stripe,
+    });
     return faces;
-  }, [badgeTexture, backTexture, content.role]);
+  }, [badgeTexture, backTexture]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
@@ -512,6 +564,19 @@ function Badge({ content, wind }: BadgeProps) {
             }}
           >
             <mesh geometry={geometry} material={materials} />
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: WebGL hit target over the printed photo area; the native file input owns the actual file-picker interaction. */}
+            <mesh
+              onClick={(event) => {
+                event.stopPropagation();
+                onPhotoClick();
+              }}
+              onPointerDown={(event) => event.stopPropagation()}
+              onPointerUp={(event) => event.stopPropagation()}
+              position={[PHOTO_TARGET_X, PHOTO_TARGET_Y, PHOTO_TARGET_Z]}
+            >
+              <planeGeometry args={[PHOTO_TARGET_WIDTH, PHOTO_TARGET_HEIGHT]} />
+              <meshBasicMaterial depthWrite={false} opacity={0} transparent />
+            </mesh>
           </group>
         </RigidBody>
       </group>
@@ -570,6 +635,7 @@ function ResponsiveCamera() {
 
 export default function LanyardBadge({
   content,
+  onPhotoClick,
   tilt,
   wind,
 }: LanyardBadgeProps) {
@@ -583,7 +649,7 @@ export default function LanyardBadge({
       <ambientLight intensity={AMBIENT_INTENSITY} />
       <Physics gravity={[0, -GRAVITY, 0]} interpolate timeStep={1 / 60}>
         <TiltGravity tilt={tilt} />
-        <Badge content={content} wind={wind} />
+        <Badge content={content} onPhotoClick={onPhotoClick} wind={wind} />
       </Physics>
       <Environment blur={0.75} environmentIntensity={ENVIRONMENT_INTENSITY}>
         <Lightformer

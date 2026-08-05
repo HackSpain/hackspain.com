@@ -1,4 +1,4 @@
-import type { BadgeRole } from "./badge-roles";
+import { BADGE_PALETTE } from "./badge-roles";
 
 export const BADGE_TEXTURE_WIDTH = 1024;
 export const BADGE_TEXTURE_HEIGHT = 1440;
@@ -26,20 +26,27 @@ const NAME_LINE_HEIGHT = 96;
 const NAME_BASELINE_OFFSET = 118;
 const NAME_RULE_OFFSET = 62;
 
+export const BADGE_PORTRAIT_SIZE = 470;
+export const BADGE_PORTRAIT_TOP = 566;
+export const BADGE_PORTRAIT_LEFT = BODY_INSET + 42;
+const PORTRAIT_RADIUS = 16;
+const PLACEHOLDER_DASH = [22, 18];
+const PLACEHOLDER_LINE_GAP = 48;
+
 interface BadgeTextureContent {
+  avatar: CanvasImageSource | null;
   firstName: string;
   lastName: string;
-  role: BadgeRole;
 }
 
 /** The lanyard slot punched through the top strip of the badge. */
-function drawSlot(ctx: CanvasRenderingContext2D, role: BadgeRole) {
+function drawSlot(ctx: CanvasRenderingContext2D) {
   const x = (BADGE_TEXTURE_WIDTH - SLOT_WIDTH) / 2;
   const y = SLOT_CENTER_Y - SLOT_HEIGHT / 2;
 
   ctx.beginPath();
   ctx.roundRect(x, y, SLOT_WIDTH, SLOT_HEIGHT, SLOT_HEIGHT / 2);
-  ctx.fillStyle = role.clip;
+  ctx.fillStyle = BADGE_PALETTE.clip;
   ctx.fill();
   ctx.strokeStyle = INK;
   ctx.lineWidth = OUTLINE_WIDTH;
@@ -71,12 +78,12 @@ function drawHeader(
   ctx.fillRect(0, HEADER_BOTTOM, BADGE_TEXTURE_WIDTH, OUTLINE_WIDTH);
 }
 
-function drawStripe(ctx: CanvasRenderingContext2D, role: BadgeRole) {
+function drawStripe(ctx: CanvasRenderingContext2D) {
   const stripeX = BADGE_TEXTURE_WIDTH - BODY_INSET - STRIPE_WIDTH;
   const stripeY = HEADER_BOTTOM + OUTLINE_WIDTH + BODY_INSET;
   const stripeHeight = BADGE_TEXTURE_HEIGHT - BODY_INSET - stripeY;
 
-  ctx.fillStyle = role.stripe;
+  ctx.fillStyle = BADGE_PALETTE.stripe;
   ctx.fillRect(stripeX, stripeY, STRIPE_WIDTH, stripeHeight);
   ctx.strokeStyle = INK;
   ctx.lineWidth = OUTLINE_WIDTH;
@@ -85,17 +92,78 @@ function drawStripe(ctx: CanvasRenderingContext2D, role: BadgeRole) {
   ctx.save();
   ctx.translate(stripeX + STRIPE_WIDTH / 2, stripeY + stripeHeight / 2);
   ctx.rotate(Math.PI / 2);
-  ctx.fillStyle = role.stripeText;
+  ctx.fillStyle = BADGE_PALETTE.stripeText;
   ctx.font = '900 138px "DM Sans", system-ui, sans-serif';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(role.label, 0, 6, stripeHeight - 56);
+  ctx.fillText(BADGE_PALETTE.label, 0, 6, stripeHeight - 56);
+  ctx.restore();
+}
+
+/** Their GitHub avatar, framed like the photo on a printed pass. */
+function drawPortrait(
+  ctx: CanvasRenderingContext2D,
+  avatar: CanvasImageSource
+) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(
+    BADGE_PORTRAIT_LEFT,
+    BADGE_PORTRAIT_TOP,
+    BADGE_PORTRAIT_SIZE,
+    BADGE_PORTRAIT_SIZE,
+    PORTRAIT_RADIUS
+  );
+  ctx.clip();
+  ctx.drawImage(
+    avatar,
+    BADGE_PORTRAIT_LEFT,
+    BADGE_PORTRAIT_TOP,
+    BADGE_PORTRAIT_SIZE,
+    BADGE_PORTRAIT_SIZE
+  );
+  ctx.restore();
+}
+
+/**
+ * Stands in for the portrait when there is no avatar: a dashed frame inviting a
+ * photo to be dropped onto the badge. Drawn into the texture rather than laid
+ * over the page, because the card swings — an HTML overlay could not follow it.
+ */
+function drawPortraitPlaceholder(ctx: CanvasRenderingContext2D) {
+  ctx.save();
+  ctx.setLineDash(PLACEHOLDER_DASH);
+  ctx.beginPath();
+  ctx.roundRect(
+    BADGE_PORTRAIT_LEFT,
+    BADGE_PORTRAIT_TOP,
+    BADGE_PORTRAIT_SIZE,
+    BADGE_PORTRAIT_SIZE,
+    PORTRAIT_RADIUS
+  );
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = OUTLINE_WIDTH;
+  ctx.stroke();
+
+  const textX = BADGE_PORTRAIT_LEFT + 42;
+  const textCenterY = BADGE_PORTRAIT_TOP + BADGE_PORTRAIT_SIZE / 2;
+  ctx.setLineDash([]);
+  ctx.fillStyle = INK;
+  ctx.font = '700 44px "DM Sans", system-ui, sans-serif';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(
+    "ARRASTRA TU FOTO",
+    textX,
+    textCenterY - PLACEHOLDER_LINE_GAP / 2
+  );
+  ctx.font = '600 26px "DM Sans", system-ui, sans-serif';
+  ctx.fillText("O HAZ CLIC", textX, textCenterY + PLACEHOLDER_LINE_GAP / 2);
   ctx.restore();
 }
 
 function drawName(
   ctx: CanvasRenderingContext2D,
-  role: BadgeRole,
   firstName: string,
   lastName: string
 ) {
@@ -103,7 +171,7 @@ function drawName(
   const maxWidth = BADGE_TEXTURE_WIDTH - BODY_INSET * 2 - STRIPE_WIDTH - 84;
   const baseline = BADGE_TEXTURE_HEIGHT - BODY_INSET - NAME_BASELINE_OFFSET;
 
-  ctx.fillStyle = role.nameText;
+  ctx.fillStyle = BADGE_PALETTE.nameText;
   ctx.font = '700 96px "DM Sans", system-ui, sans-serif';
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -136,7 +204,7 @@ function drawCardBorder(ctx: CanvasRenderingContext2D) {
 
 export function drawBadgeTexture(
   canvas: HTMLCanvasElement,
-  { role, firstName, lastName }: BadgeTextureContent,
+  { firstName, lastName, avatar }: BadgeTextureContent,
   logo: CanvasImageSource | null
 ) {
   const ctx = canvas.getContext("2d");
@@ -145,10 +213,10 @@ export function drawBadgeTexture(
   }
 
   ctx.clearRect(0, 0, BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
-  ctx.fillStyle = role.background;
+  ctx.fillStyle = BADGE_PALETTE.background;
   ctx.fillRect(0, 0, BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
 
-  drawSlot(ctx, role);
+  drawSlot(ctx);
   drawHeader(ctx, logo);
 
   const bodyY = HEADER_BOTTOM + OUTLINE_WIDTH + BODY_INSET;
@@ -161,8 +229,13 @@ export function drawBadgeTexture(
     BADGE_TEXTURE_HEIGHT - BODY_INSET - bodyY
   );
 
-  drawStripe(ctx, role);
-  drawName(ctx, role, firstName, lastName);
+  drawStripe(ctx);
+  if (avatar) {
+    drawPortrait(ctx, avatar);
+  } else {
+    drawPortraitPlaceholder(ctx);
+  }
+  drawName(ctx, firstName, lastName);
   drawCardBorder(ctx);
 }
 
@@ -188,7 +261,6 @@ const BACK_LINES = [
 
 export function drawBadgeBackTexture(
   canvas: HTMLCanvasElement,
-  role: BadgeRole,
   logo: CanvasImageSource | null
 ) {
   const ctx = canvas.getContext("2d");
@@ -196,7 +268,7 @@ export function drawBadgeBackTexture(
     return;
   }
 
-  ctx.fillStyle = role.background;
+  ctx.fillStyle = BADGE_PALETTE.background;
   ctx.fillRect(0, 0, BADGE_BACK_TEXTURE_WIDTH, BADGE_BACK_TEXTURE_HEIGHT);
 
   let cursorY = BACK_LOGO_TOP;
@@ -217,7 +289,7 @@ export function drawBadgeBackTexture(
   );
   cursorY += BACK_RULE_GAP;
 
-  ctx.fillStyle = role.nameText;
+  ctx.fillStyle = BADGE_PALETTE.nameText;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const line of BACK_LINES) {
