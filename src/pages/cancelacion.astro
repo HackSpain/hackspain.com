@@ -2,7 +2,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import Logo from "../assets/logo.svg";
 import { getDb } from "../db";
-import { hackathonSignups } from "../db/schema";
+import { hackathonPreSignups, hackathonSignups } from "../db/schema";
 import Layout from "../layouts/layout.astro";
 import { sendSignupCancellationLink } from "../lib/signup-cancellation-link";
 
@@ -13,6 +13,9 @@ type PageState =
   | "cancelled"
   | "confirm"
   | "invalid"
+  | "pre_signup_already_cancelled"
+  | "pre_signup_cancelled"
+  | "pre_signup_confirm"
   | "request"
   | "request_submitted";
 
@@ -23,6 +26,8 @@ const EMAIL_MAX_LENGTH = 320;
 
 const requestUrl = new URL(Astro.request.url);
 let token = requestUrl.searchParams.get("token")?.trim() ?? "";
+let preSignupToken =
+  requestUrl.searchParams.get("pre_signup_token")?.trim() ?? "";
 let formAction = "";
 let requestedEmail = "";
 
@@ -30,9 +35,14 @@ if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
   const submittedAction = formData.get("action");
   const submittedToken = formData.get("token");
+  const submittedPreSignupToken = formData.get("pre_signup_token");
   const submittedEmail = formData.get("email");
   formAction = typeof submittedAction === "string" ? submittedAction : "";
   token = typeof submittedToken === "string" ? submittedToken.trim() : "";
+  preSignupToken =
+    typeof submittedPreSignupToken === "string"
+      ? submittedPreSignupToken.trim()
+      : "";
   requestedEmail =
     typeof submittedEmail === "string"
       ? submittedEmail.trim().toLowerCase()
@@ -41,7 +51,7 @@ if (Astro.request.method === "POST") {
 
 let fullName = "";
 let emailError = "";
-let state: PageState = token ? "invalid" : "request";
+let state: PageState = token || preSignupToken ? "invalid" : "request";
 
 if (Astro.request.method === "POST" && formAction === "request_link") {
   const emailIsValid =
@@ -60,7 +70,49 @@ if (Astro.request.method === "POST" && formAction === "request_link") {
   }
 }
 
-if (token && UUID_PATTERN.test(token)) {
+if (preSignupToken && UUID_PATTERN.test(preSignupToken)) {
+  const db = getDb();
+
+  if (Astro.request.method === "POST" && formAction === "cancel_pre_signup") {
+    const [cancelledPreSignup] = await db
+      .update(hackathonPreSignups)
+      .set({ cancelledAt: new Date() })
+      .where(
+        and(
+          eq(hackathonPreSignups.cancellationToken, preSignupToken),
+          isNull(hackathonPreSignups.cancelledAt),
+          isNull(hackathonPreSignups.signupCompletedAt)
+        )
+      )
+      .returning({ fullName: hackathonPreSignups.fullName });
+
+    if (cancelledPreSignup) {
+      fullName = cancelledPreSignup.fullName;
+      state = "pre_signup_cancelled";
+    }
+  }
+
+  if (state !== "pre_signup_cancelled") {
+    const [preSignup] = await db
+      .select({
+        cancelledAt: hackathonPreSignups.cancelledAt,
+        fullName: hackathonPreSignups.fullName,
+        signupCompletedAt: hackathonPreSignups.signupCompletedAt,
+      })
+      .from(hackathonPreSignups)
+      .where(eq(hackathonPreSignups.cancellationToken, preSignupToken))
+      .limit(1);
+
+    if (preSignup) {
+      fullName = preSignup.fullName;
+      if (preSignup.cancelledAt) {
+        state = "pre_signup_already_cancelled";
+      } else if (!preSignup.signupCompletedAt) {
+        state = "pre_signup_confirm";
+      }
+    }
+  }
+} else if (token && UUID_PATTERN.test(token)) {
   const db = getDb();
 
   if (Astro.request.method === "POST" && formAction === "cancel") {
@@ -123,6 +175,9 @@ const PAGE_TITLES: Record<PageState, string> = {
   cancelled: "Participación cancelada",
   confirm: "Cancelar participación",
   invalid: "Enlace no válido",
+  pre_signup_already_cancelled: "La preinscripción ya estaba cancelada",
+  pre_signup_cancelled: "Preinscripción cancelada",
+  pre_signup_confirm: "Cancelar preinscripción",
   request: "Cancelar participación",
   request_submitted: "Revisa tu correo",
 };
@@ -248,6 +303,39 @@ const title = PAGE_TITLES[state];
         </>
       )}
 
+      {state === "pre_signup_confirm" && (
+        <>
+          <p class="mt-5 text-lg leading-relaxed">
+            {firstName ? `Hola ${firstName}. ` : ""}
+            Si confirmas, cancelaremos tu preinscripción y no recibirás más
+            recordatorios para completar el signup.
+          </p>
+          <p class="mt-3 font-bold">
+            Esta acción no se puede deshacer desde este enlace.
+          </p>
+          <form class="mt-8 flex flex-col gap-3 sm:flex-row" method="post">
+            <input name="action" type="hidden" value="cancel_pre_signup" />
+            <input
+              name="pre_signup_token"
+              type="hidden"
+              value={preSignupToken}
+            />
+            <button
+              class="inline-flex items-center justify-center border-[3px] border-hs-ink bg-hs-red px-6 py-3 font-bungee text-sm text-white transition-[filter] hover:brightness-90 focus-visible:outline-2 focus-visible:outline-hs-navy focus-visible:outline-offset-2"
+              type="submit"
+            >
+              Sí, cancelar mi preinscripción
+            </button>
+            <a
+              class="inline-flex items-center justify-center border-[3px] border-hs-ink bg-hs-gold px-6 py-3 font-bungee text-hs-ink text-sm transition-[filter] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-hs-navy focus-visible:outline-offset-2"
+              href="/"
+            >
+              No cancelar
+            </a>
+          </form>
+        </>
+      )}
+
       {state === "cancelled" && (
         <>
           <p class="mt-5 text-lg leading-relaxed">
@@ -268,6 +356,37 @@ const title = PAGE_TITLES[state];
         <>
           <p class="mt-5 text-lg leading-relaxed">
             No tienes que hacer nada más. Ya habíamos registrado esta cancelación.
+          </p>
+          <a
+            class="mt-8 inline-flex items-center justify-center border-[3px] border-hs-ink bg-hs-gold px-6 py-3 font-bungee text-hs-ink text-sm transition-[filter] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-hs-navy focus-visible:outline-offset-2"
+            href="/"
+          >
+            Volver al inicio
+          </a>
+        </>
+      )}
+
+      {state === "pre_signup_cancelled" && (
+        <>
+          <p class="mt-5 text-lg leading-relaxed">
+            {firstName ? `Gracias por avisarnos, ${firstName}. ` : "Gracias por avisarnos. "}
+            Tu preinscripción ha quedado cancelada y no recibirás más recordatorios
+            para completar el signup.
+          </p>
+          <a
+            class="mt-8 inline-flex items-center justify-center border-[3px] border-hs-ink bg-hs-gold px-6 py-3 font-bungee text-hs-ink text-sm transition-[filter] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-hs-navy focus-visible:outline-offset-2"
+            href="/"
+          >
+            Volver al inicio
+          </a>
+        </>
+      )}
+
+      {state === "pre_signup_already_cancelled" && (
+        <>
+          <p class="mt-5 text-lg leading-relaxed">
+            No tienes que hacer nada más. Ya habíamos registrado la cancelación de
+            esta preinscripción.
           </p>
           <a
             class="mt-8 inline-flex items-center justify-center border-[3px] border-hs-ink bg-hs-gold px-6 py-3 font-bungee text-hs-ink text-sm transition-[filter] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-hs-navy focus-visible:outline-offset-2"

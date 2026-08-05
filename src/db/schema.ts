@@ -84,7 +84,12 @@ export const hackathonPreSignups = pgTable("hackathon_pre_signups", {
   webUrl: text("web_url"),
   referralCode: text("referral_code"),
   signupToken: uuid("signup_token").defaultRandom().notNull().unique(),
+  cancellationToken: uuid("cancellation_token")
+    .defaultRandom()
+    .notNull()
+    .unique(),
   signupCompletedAt: timestamp("signup_completed_at", {
     withTimezone: true,
   }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
 });

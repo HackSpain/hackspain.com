@@ -120,6 +120,13 @@
       "when": 1785929319215,
       "tag": "0016_rename_signup_management_token",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785931403985,
+      "tag": "0017_add_pre_signup_cancellation",
+      "breakpoints": true
     }
   ]
 }
