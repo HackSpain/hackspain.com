@@ -1,49 +1,40 @@
 import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../db";
 import { hackathonSignups } from "../db/schema";
-import { sendSignupCancellationEmail } from "../lib/signup-confirmation-email";
-
-interface SignupCancellationLinkWorkflowInput {
-  email: string;
-}
+import { sendSignupCancellationEmail } from "./signup-confirmation-email";
 
 interface ReservedSignupCancellation {
-  cancellationToken: string;
   email: string;
   fullName: string;
+  managementToken: string;
   requestedAt: string;
   signupId: string;
 }
 
+type SignupCancellationLinkResult = "failed" | "sent" | "skipped";
+
 const RESEND_COOLDOWN_MS = 60 * 60 * 1000;
 
-export async function handleSignupCancellationLink(
-  input: SignupCancellationLinkWorkflowInput
-) {
-  "use workflow";
-
-  const signup = await reserveSignupCancellationEmailStep(input.email);
+export async function sendSignupCancellationLink(
+  email: string
+): Promise<SignupCancellationLinkResult> {
+  const signup = await reserveSignupCancellationEmail(email);
   if (!signup) {
-    return { status: "skipped" };
+    return "skipped";
   }
 
-  const emailWasSent = await sendSignupCancellationEmailStep(signup);
-  if (!emailWasSent) {
-    await releaseSignupCancellationEmailStep(
-      signup.signupId,
-      signup.requestedAt
-    );
-    return { status: "failed" };
+  const emailResult = await sendSignupCancellationEmail(signup);
+  if (emailResult.ok) {
+    return "sent";
   }
 
-  return { status: "sent" };
+  await releaseSignupCancellationEmail(signup.signupId, signup.requestedAt);
+  return "failed";
 }
 
-async function reserveSignupCancellationEmailStep(
+async function reserveSignupCancellationEmail(
   email: string
 ): Promise<ReservedSignupCancellation | null> {
-  "use step";
-
   const db = getDb();
   const requestedAt = new Date();
   const resendCutoff = new Date(requestedAt.getTime() - RESEND_COOLDOWN_MS);
@@ -53,7 +44,11 @@ async function reserveSignupCancellationEmailStep(
     .where(
       and(
         eq(hackathonSignups.email, email),
-        inArray(hackathonSignups.approvalStatus, ["approved", "pending"]),
+        inArray(hackathonSignups.approvalStatus, [
+          "accepted",
+          "confirmed",
+          "pending",
+        ]),
         isNull(hackathonSignups.cancelledAt),
         or(
           isNull(hackathonSignups.cancellationEmailSentAt),
@@ -62,30 +57,19 @@ async function reserveSignupCancellationEmailStep(
       )
     )
     .returning({
-      cancellationToken: hackathonSignups.cancellationToken,
       email: hackathonSignups.email,
       fullName: hackathonSignups.fullName,
+      managementToken: hackathonSignups.managementToken,
       signupId: hackathonSignups.id,
     });
 
   return signup ? { ...signup, requestedAt: requestedAt.toISOString() } : null;
 }
 
-async function sendSignupCancellationEmailStep(
-  signup: ReservedSignupCancellation
-): Promise<boolean> {
-  "use step";
-
-  const result = await sendSignupCancellationEmail(signup);
-  return result.ok;
-}
-
-async function releaseSignupCancellationEmailStep(
+async function releaseSignupCancellationEmail(
   signupId: string,
   requestedAt: string
 ): Promise<void> {
-  "use step";
-
   const db = getDb();
   await db
     .update(hackathonSignups)

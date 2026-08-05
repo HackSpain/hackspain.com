@@ -1,11 +1,10 @@
 ---
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { start } from "workflow/api";
 import Logo from "../assets/logo.svg";
 import { getDb } from "../db";
 import { hackathonSignups } from "../db/schema";
 import Layout from "../layouts/layout.astro";
-import { handleSignupCancellationLink } from "../workflows/signup-cancellation-link";
+import { sendSignupCancellationLink } from "../lib/signup-cancellation-link";
 
 export const prerender = false;
 
@@ -52,9 +51,9 @@ if (Astro.request.method === "POST" && formAction === "request_link") {
   if (emailIsValid) {
     state = "request_submitted";
     try {
-      await start(handleSignupCancellationLink, [{ email: requestedEmail }]);
+      await sendSignupCancellationLink(requestedEmail);
     } catch {
-      console.error("[signup-cancellation] Failed to start email workflow");
+      console.error("[signup-cancellation] Failed to send cancellation link");
     }
   } else {
     emailError = "Introduce un email válido.";
@@ -73,8 +72,12 @@ if (token && UUID_PATTERN.test(token)) {
       })
       .where(
         and(
-          eq(hackathonSignups.cancellationToken, token),
-          inArray(hackathonSignups.approvalStatus, ["approved", "pending"]),
+          eq(hackathonSignups.managementToken, token),
+          inArray(hackathonSignups.approvalStatus, [
+            "accepted",
+            "confirmed",
+            "pending",
+          ]),
           isNull(hackathonSignups.cancelledAt)
         )
       )
@@ -94,17 +97,19 @@ if (token && UUID_PATTERN.test(token)) {
         fullName: hackathonSignups.fullName,
       })
       .from(hackathonSignups)
-      .where(eq(hackathonSignups.cancellationToken, token))
+      .where(eq(hackathonSignups.managementToken, token))
       .limit(1);
 
     if (signup) {
       fullName = signup.fullName;
-      const signupIsCancelled =
-        signup.cancelledAt !== null || signup.approvalStatus === "cancelled";
-      if (signupIsCancelled) {
+      if (
+        signup.cancelledAt !== null ||
+        signup.approvalStatus === "cancelled"
+      ) {
         state = "already_cancelled";
       } else if (
-        signup.approvalStatus === "approved" ||
+        signup.approvalStatus === "accepted" ||
+        signup.approvalStatus === "confirmed" ||
         signup.approvalStatus === "pending"
       ) {
         state = "confirm";

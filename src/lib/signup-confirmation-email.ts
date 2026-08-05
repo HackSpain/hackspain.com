@@ -104,9 +104,9 @@ function signupFormUrl(): string {
   return new URL("/signup", siteOriginFromRuntime()).toString();
 }
 
-function signupCancellationUrl(cancellationToken: string): string {
+function signupManagementUrl(managementToken: string): string {
   const url = new URL("/cancelacion", siteOriginFromRuntime());
-  url.searchParams.set("token", cancellationToken);
+  url.searchParams.set("token", managementToken);
   return url.toString();
 }
 
@@ -137,9 +137,9 @@ Has recibido este correo porque enviaste una solicitud desde ${siteOriginFromRun
 }
 
 export interface SignupCancellationEmailInput {
-  cancellationToken: string;
   email: string;
   fullName: string;
+  managementToken: string;
   requestedAt: string;
   signupId: string;
 }
@@ -161,13 +161,13 @@ export function sendSignupCancellationEmail(
   input: SignupCancellationEmailInput
 ): Promise<ConfirmationEmailResult> {
   const firstName = firstNameFrom(input.fullName);
-  const cancellationUrl = signupCancellationUrl(input.cancellationToken);
+  const managementUrl = signupManagementUrl(input.managementToken);
   const text = `Hola ${firstName},
 
 Hemos recibido una solicitud para cancelar tu participación en HackSpain 2026.
 
-Confirma la cancelación desde este enlace personal:
-${cancellationUrl}
+Gestiona la cancelación desde este enlace personal:
+${managementUrl}
 
 Abrir el enlace no cancela nada: tendrás que confirmar la acción en la página. Si no has solicitado la cancelación, puedes ignorar este correo y tu participación no cambiará.
 

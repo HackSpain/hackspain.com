@@ -12,7 +12,6 @@ Public marketing site for [HackSpain](https://hackspain.com) — Hack Spain 2026
 | **Data** | [PostgreSQL](https://www.postgresql.org/) ([Neon](https://neon.tech/)) with [Drizzle ORM](https://orm.drizzle.team/) |
 | **Forms & validation** | [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/) |
 | **Email** | Resend API, plain text and HTML |
-| **Background jobs** | [Workflow](https://useworkflow.dev/) (`workflow/astro`) for follow-up flows |
 | **Observability** | [Sentry](https://sentry.io/), [@vercel/analytics](https://vercel.com/docs/analytics), [@vercel/speed-insights](https://vercel.com/docs/speed-insights) |
 | **Bot protection** | [BotID](https://botid.vercel.app/) on signup endpoints |
 | **Tooling** | TypeScript, [Ultracite](https://www.ultracite.dev/) / Biome (`pnpm check`, `pnpm fix`), [Knip](https://knip.dev/) |
@@ -59,7 +58,7 @@ Schema and client live in `src/db/`. Drizzle Kit is configured in `drizzle.confi
 | `pnpm db:migrate` | Run migrations |
 | `pnpm db:push` | Push schema (useful in development) |
 
-## Signup workflow
+## Signup flow
 
 The public application form lives at `/signup`. New applications are stored as
 pending until they are reviewed. Historical pre-signup records can prefill the
@@ -71,6 +70,10 @@ in `RESEND_FROM`, then set `RESEND_API_KEY` and `RESEND_FROM` in Vercel. The
 sender uses the isolated `updates.hackspain.com` subdomain and intentionally
 does not advertise a separate reply address.
 
+Each signup has a private management token. `/cancelacion?token=…` uses it to
+cancel an active application, while the tokenless page can email the private
+link again.
+
 ## Project layout
 
 ```text
@@ -80,6 +83,5 @@ src/
 ├── db/             # Drizzle client and schema
 ├── layouts/        # Astro layouts
 ├── lib/            # Shared server and client utilities
-├── pages/          # File-based routes
-└── workflows/      # Workflow definitions (e.g. cancellation email delivery)
+└── pages/          # File-based routes
 ```

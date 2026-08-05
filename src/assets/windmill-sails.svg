@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -140 280 280" fill="none" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true">
+  <!--
+    The viewBox is centred on the axle, so rotating this file about its own
+    centre turns the sails on their hub. Markup is repeated rather than <use>d
+    so several windmills can be inlined on one page without clashing ids.
+  -->
+  <g transform="rotate(0)">
+    <rect x="-14" y="-134" width="28" height="114" fill="var(--color-hs-cream)" stroke="var(--color-hs-ink)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M0 -134 V-20 M-14 -117 H14 M-14 -100 H14 M-14 -83 H14 M-14 -66 H14 M-14 -49 H14 M-14 -32 H14" stroke="var(--color-hs-ink)" stroke-width="3" />
+  </g>
+  <g transform="rotate(90)">
+    <rect x="-14" y="-134" width="28" height="114" fill="var(--color-hs-cream)" stroke="var(--color-hs-ink)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M0 -134 V-20 M-14 -117 H14 M-14 -100 H14 M-14 -83 H14 M-14 -66 H14 M-14 -49 H14 M-14 -32 H14" stroke="var(--color-hs-ink)" stroke-width="3" />
+  </g>
+  <g transform="rotate(180)">
+    <rect x="-14" y="-134" width="28" height="114" fill="var(--color-hs-cream)" stroke="var(--color-hs-ink)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M0 -134 V-20 M-14 -117 H14 M-14 -100 H14 M-14 -83 H14 M-14 -66 H14 M-14 -49 H14 M-14 -32 H14" stroke="var(--color-hs-ink)" stroke-width="3" />
+  </g>
+  <g transform="rotate(270)">
+    <rect x="-14" y="-134" width="28" height="114" fill="var(--color-hs-cream)" stroke="var(--color-hs-ink)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M0 -134 V-20 M-14 -117 H14 M-14 -100 H14 M-14 -83 H14 M-14 -66 H14 M-14 -49 H14 M-14 -32 H14" stroke="var(--color-hs-ink)" stroke-width="3" />
+  </g>
+  <circle cx="0" cy="0" r="17" fill="var(--color-hs-ink)" />
+  <circle cx="0" cy="0" r="7" fill="var(--color-hs-gold)" />
+</svg>

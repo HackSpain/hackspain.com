@@ -163,3 +163,15 @@ body {
 .hs-logo-reel {
   animation: hs-logo-scroll 14s linear infinite;
 }
+
+/* Dry ploughed furrows running to the horizon on the share backdrop. */
+.hs-plain-furrows {
+  background-image: repeating-linear-gradient(
+    92deg,
+    color-mix(in srgb, var(--color-hs-brown) 12%, transparent) 0,
+    color-mix(in srgb, var(--color-hs-brown) 12%, transparent) 2px,
+    transparent 2px,
+    transparent 22px
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, black 45%);
+}

@@ -1,0 +1,18 @@
+---
+export const prerender = true;
+
+import { SharePage } from "../components/share/share-page";
+import Layout from "../layouts/layout.astro";
+---
+
+<Layout
+  sectionIndex={0}
+  title="Tu acreditación | HackSpain"
+  description="Crea tu acreditación 3D de HackSpain, arrástrala y compártela con tu nombre y tu rol."
+  ogImageAlt="Acreditación de HackSpain"
+  canonicalPathOverride="/share"
+>
+  <main id="main" class="relative h-dvh w-full">
+    <SharePage client:only="react" />
+  </main>
+</Layout>

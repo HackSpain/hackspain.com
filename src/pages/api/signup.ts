@@ -204,7 +204,6 @@ export const POST: APIRoute = async ({ request }) => {
   let relatedPreSignupId: string | null = null;
   let relatedPreSignupReferralCode: string | null = null;
   const signupId = crypto.randomUUID();
-  const signupCancellationToken = crypto.randomUUID();
 
   try {
     const db = getDb();
@@ -272,7 +271,6 @@ export const POST: APIRoute = async ({ request }) => {
         referralCode: emptyToNull(
           referralCode || relatedPreSignupReferralCode || ""
         ),
-        cancellationToken: signupCancellationToken,
       });
     } catch (e: unknown) {
       if (isPostgresUniqueViolation(e)) {

@@ -99,6 +99,27 @@
       "when": 1785773594622,
       "tag": "0013_remove_legacy_signup_data",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785843686542,
+      "tag": "0014_remove_pre_signup_share_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1785927115952,
+      "tag": "0015_normalize_signup_approval_statuses",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785929319215,
+      "tag": "0016_rename_signup_management_token",
+      "breakpoints": true
     }
   ]
 }

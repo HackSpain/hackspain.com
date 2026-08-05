@@ -40,7 +40,10 @@ import {
   type OccupationStatusId,
   parseSignupBodyClient,
 } from "../../lib/signup-validation";
-import { FormField, Input, SocialPrefixInput, Textarea } from "../form";
+import { FormField } from "../form/form-field";
+import { Input } from "../form/input";
+import { SocialPrefixInput } from "../form/social-prefix-input";
+import { Textarea } from "../form/textarea";
 import { MosaicBackground } from "../mosaic/mosaic-background";
 import { useLayoutProfile } from "../mosaic/use-layout-profile";
 import { X_SVG } from "../theme/constants";
