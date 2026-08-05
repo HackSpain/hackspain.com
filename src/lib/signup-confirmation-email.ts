@@ -4,6 +4,7 @@ import { envFromRuntime, siteOriginFromRuntime } from "./runtime-env";
 interface ResendConfig {
   apiKey: string;
   from: string;
+  replyTo?: string;
 }
 
 function readResendConfig(): ResendConfig | null {
@@ -12,7 +13,10 @@ function readResendConfig(): ResendConfig | null {
   if (!(apiKey && from)) {
     return null;
   }
-  return { apiKey, from };
+  // Without this, replies go to `from` — a send-only address on the Resend
+  // subdomain that no human reads. Point them at the monitored mailbox instead.
+  const replyTo = envFromRuntime("RESEND_REPLY_TO");
+  return { apiKey, from, replyTo: replyTo || undefined };
 }
 
 let cachedResend: Resend | null = null;
@@ -62,6 +66,7 @@ async function sendEmail(
   const payload: CreateEmailOptions = {
     from: config.from,
     headers: { "X-Entity-Ref-ID": input.entityReference },
+    ...(config.replyTo ? { replyTo: config.replyTo } : {}),
     subject: input.subject,
     tags: [{ name: "category", value: input.category }],
     text: input.text,
