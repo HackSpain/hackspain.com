@@ -23,6 +23,7 @@ import {
   CanvasTexture,
   CatmullRomCurve3,
   DoubleSide,
+  Euler,
   type Mesh,
   MeshPhysicalMaterial,
   Quaternion,
@@ -78,9 +79,40 @@ const PHOTO_TARGET_Y =
     (BADGE_PORTRAIT_TOP + BADGE_PORTRAIT_SIZE / 2) / BADGE_TEXTURE_HEIGHT) *
   CARD_HEIGHT;
 const PHOTO_TARGET_Z = CARD_DEPTH / 2 + 0.002;
-/** Sits just inside the printed slot, so the band ends where it is punched. */
-const JOINT_ANCHOR_Y = 1.02;
-const BAND_WIDTH = 0.36;
+const BAND_WIDTH = 0.52;
+/**
+ * The metal clip between band and card: a slim crimp on top that takes the
+ * band's end, and under it the ring it holds, threading the punched slot.
+ * Purely cosmetic — the physics still runs through the joint.
+ */
+const CLIP_CRIMP_WIDTH = 0.18;
+const CLIP_CRIMP_HEIGHT = 0.16;
+const CLIP_CRIMP_DEPTH = 0.07;
+const CLIP_RING_RADIUS = 0.1;
+const CLIP_RING_TUBE = 0.03;
+/**
+ * Card-local placement. The printed slot spans y 0.966–1.041 and the card's
+ * top edge sits at 1.125: centred at 1.10, the ring's lower tube passes
+ * through the slot and its top clears the edge, encircling the strip the way
+ * a real ring hangs a card. The crimp overlaps the ring's crown from above.
+ */
+const CLIP_RING_CENTER_Y = 1.1;
+const CLIP_CRIMP_CENTER_Y =
+  CLIP_RING_CENTER_Y + CLIP_RING_RADIUS + CLIP_CRIMP_HEIGHT / 2;
+/** Just inside the crimp's mouth, so the band ends swallowed by the clip. */
+const JOINT_ANCHOR_Y = CLIP_CRIMP_CENTER_Y + CLIP_CRIMP_HEIGHT / 4;
+/**
+ * The last two points of the drawn band, both read off the card rather than
+ * off the rope it hangs from. The solver leaves the rope a little loose against
+ * the card, and a spline takes its direction at the end from the next point
+ * along: with only the endpoint pinned, that slack still swung the final
+ * stretch a hair every frame and grazed it past the metal. Pinning the exit as
+ * well fixes the tangent, so the band leaves the clip along the clip's own
+ * axis — which is what a clamped strap does — and the seam stays buried.
+ */
+const BAND_END_Y = CLIP_CRIMP_CENTER_Y - CLIP_CRIMP_HEIGHT / 4;
+const BAND_EXIT_Y = CLIP_CRIMP_CENTER_Y + CLIP_CRIMP_HEIGHT / 2 + 0.14;
+const CLIP_COLOR = "#ccd2d9";
 const CURVE_SEGMENTS = 32;
 const MIN_LERP_SPEED = 10;
 const MAX_LERP_SPEED = 50;
@@ -96,15 +128,35 @@ const MAX_CARD_SPEED = 10;
 const FACING_GAIN = 6;
 const FACING_DAMPING = 5;
 const ROPE_SEGMENT_LENGTH = 1;
+/**
+ * Where the band is pinned, above the top of the frame. The card comes to rest
+ * a rope's length below it, so this is what sets how high the badge hangs: it
+ * used to park a little under the middle of the view, close to the panel along
+ * the bottom.
+ */
+const ANCHOR_HEIGHT = 4.95;
 const GRAVITY = 40;
 /**
- * The badge is a pendulum four units long, so a tilt of x degrees parks it at
- * 4·sin(x) sideways. A phone screen only shows about 2.4 units either side of
- * centre, so anything past ~28° swings it out of frame.
+ * The badge hangs from a pivot 4.3 units above its middle, so a tilt of x
+ * degrees parks it 4.3·sin(x) to the side. A phone now frames about 1.33 units
+ * either side of centre and the card fills 0.8 of that, so much past six degrees
+ * walks its edge out of the picture. It was 28° when a phone was framed from far
+ * enough back to show twice the width.
  */
-const MAX_TILT_DEGREES = 28;
+const MAX_TILT_DEGREES = 6;
 const TILT_SMOOTHING = 6;
 const DEGREES_TO_RADIANS = Math.PI / 180;
+/**
+ * How far the card turns out of the screen while it is held. Pinched in the
+ * middle it stays square; pinched at an edge it turns to face the hand, and the
+ * foreshortening that shows is what makes it read as a solid object rather than
+ * a picture of one. Deliberately small — enough to catch the light along an
+ * edge, not enough to become a spin.
+ */
+const MAX_DRAG_YAW = 22 * DEGREES_TO_RADIANS;
+const MAX_DRAG_PITCH = 12 * DEGREES_TO_RADIANS;
+/** Per second, so the turn eases in rather than snapping on the first frame. */
+const DRAG_TURN_SMOOTHING = 8;
 const LANYARD_TEXTURE_WIDTH = 512;
 const LANYARD_TEXTURE_HEIGHT = 64;
 
@@ -289,6 +341,11 @@ function shortestAngle(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
 }
 
+/** A grab past the printed edge (the rounded corners) still counts as the edge. */
+function clampToEdge(fraction: number): number {
+  return Math.max(-1, Math.min(1, fraction));
+}
+
 /**
  * Turns the phone's tilt into the direction gravity pulls, so the badge swings
  * against the real world rather than always straight down the screen. The angle
@@ -333,10 +390,18 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   const ang = useMemo(() => new Vector3(), []);
   const axis = useMemo(() => new Vector3(), []);
   const quat = useMemo(() => new Quaternion(), []);
+  const bandEnd = useMemo(() => new Vector3(), []);
+  const bandExit = useMemo(() => new Vector3(), []);
+  const cardQuat = useMemo(() => new Quaternion(), []);
+  const grabWorld = useMemo(() => new Vector3(), []);
+  const dragTurn = useMemo(() => new Quaternion(), []);
+  const dragTarget = useMemo(() => new Quaternion(), []);
+  const dragEuler = useMemo(() => new Euler(), []);
   const lerped1 = useMemo(() => new Vector3(), []);
   const lerped2 = useMemo(() => new Vector3(), []);
   const curve = useMemo(() => {
     const catmull = new CatmullRomCurve3([
+      new Vector3(),
       new Vector3(),
       new Vector3(),
       new Vector3(),
@@ -346,10 +411,14 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     // up, which is exactly what happens as the chain swings — the band whips
     // far past the anchor for a frame. Chordal keeps the spline inside its hull.
     catmull.curveType = "chordal";
+    // Only feeds the arc-length table the sampling below reads; 32 samples do
+    // not need the default 200 entries, and this is rebuilt every frame.
+    catmull.arcLengthDivisions = 64;
     return catmull;
   }, []);
 
-  const [dragged, setDragged] = useState<Vector3 | null>(null);
+  /** Where on the card it is being held, in the card's own frame. Null when free. */
+  const [grab, setGrab] = useState<Vector3 | null>(null);
   const [hovered, setHovered] = useState(false);
 
   const { size, camera } = useThree();
@@ -371,11 +440,11 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     if (!hovered) {
       return;
     }
-    document.body.style.cursor = dragged ? "grabbing" : "grab";
+    document.body.style.cursor = grab ? "grabbing" : "grab";
     return () => {
       document.body.style.cursor = "auto";
     };
-  }, [hovered, dragged]);
+  }, [hovered, grab]);
 
   const geometry = useMemo(
     () => createCardGeometry(CARD_WIDTH, CARD_HEIGHT, CARD_DEPTH, CARD_RADIUS),
@@ -392,7 +461,19 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     return faces;
   }, [badgeTexture, backTexture]);
 
+  const clipMaterial = useMemo(
+    () =>
+      new MeshPhysicalMaterial({
+        color: CLIP_COLOR,
+        metalness: 1,
+        roughness: 0.28,
+      }),
+    []
+  );
+
   useEffect(() => () => geometry.dispose(), [geometry]);
+
+  useEffect(() => () => clipMaterial.dispose(), [clipMaterial]);
 
   useEffect(
     () => () => {
@@ -414,17 +495,36 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     // against it is meaningless, so cap it at a couple of frames.
     const frameDelta = Math.min(delta, MAX_FRAME_DELTA);
 
-    if (dragged) {
+    if (grab) {
       vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(camera);
       dir.copy(vec).sub(camera.position).normalize();
       vec.add(dir.multiplyScalar(camera.position.length()));
       for (const body of [card, j1, j2, j3, fixed]) {
         body.current?.wakeUp();
       }
+
+      // How far from the middle it was grabbed decides how far it turns, so a
+      // card taken by the corner shows its depth and one taken by the middle
+      // stays square. The side being held is the side that comes forward.
+      dragTarget.setFromEuler(
+        dragEuler.set(
+          clampToEdge(grab.y / (CARD_HEIGHT / 2)) * MAX_DRAG_PITCH,
+          -clampToEdge(grab.x / (CARD_WIDTH / 2)) * MAX_DRAG_YAW,
+          0
+        )
+      );
+      dragTurn.slerp(dragTarget, Math.min(1, frameDelta * DRAG_TURN_SMOOTHING));
+      card.current.setNextKinematicRotation(dragTurn);
+
+      // Turning happens about the centre of mass, so the translation has to put
+      // the held point back under the cursor afterwards. That is what makes the
+      // card pivot around the corner being pinched instead of sliding out from
+      // under it.
+      grabWorld.copy(grab).applyQuaternion(dragTurn);
       card.current.setNextKinematicTranslation({
-        x: vec.x - dragged.x,
-        y: vec.y - dragged.y,
-        z: vec.z - dragged.z,
+        x: vec.x - grabWorld.x,
+        y: vec.y - grabWorld.y,
+        z: vec.z - grabWorld.z,
       });
     } else {
       const velocity = card.current.linvel();
@@ -471,19 +571,36 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
       lerped.lerp(target, alpha);
     }
 
-    const head = j3.current.translation();
+    const cardAt = card.current.translation();
+    const cardFacing = card.current.rotation();
+    cardQuat.set(cardFacing.x, cardFacing.y, cardFacing.z, cardFacing.w);
+    vec.set(cardAt.x, cardAt.y, cardAt.z);
+    bandEnd.set(0, BAND_END_Y, 0).applyQuaternion(cardQuat).add(vec);
+    bandExit.set(0, BAND_EXIT_Y, 0).applyQuaternion(cardQuat).add(vec);
+
     const tail = fixed.current.translation();
-    curve.points[0].set(head.x, head.y, head.z);
-    curve.points[1].copy(lerped2);
-    curve.points[2].copy(lerped1);
-    curve.points[3].set(tail.x, tail.y, tail.z);
+    curve.points[0].copy(bandEnd);
+    curve.points[1].copy(bandExit);
+    curve.points[2].copy(lerped2);
+    curve.points[3].copy(lerped1);
+    curve.points[4].set(tail.x, tail.y, tail.z);
 
     const geometry = band.current?.geometry as
       | (BufferGeometry & {
           setPoints?: (points: Vector3[]) => void;
         })
       | undefined;
-    geometry?.setPoints?.(curve.getPoints(CURVE_SEGMENTS));
+    /*
+     * Spaced by length, not by control point. `getPoints` splits its samples
+     * evenly between the segments however long each one is, and the printed
+     * strap is laid out per sample — so the short segment inside the clip was
+     * taking a quarter of the lettering and squeezing it into a fraction of an
+     * inch, which is what read as blur there. Arc-length sampling keeps the
+     * letters one size the whole way down. The table it reads is rebuilt each
+     * frame because the points move under it.
+     */
+    curve.needsUpdate = true;
+    geometry?.setPoints?.(curve.getSpacedPoints(CURVE_SEGMENTS));
 
     const angular = card.current.angvel();
     const rotation = card.current.rotation();
@@ -498,7 +615,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     const yawError = shortestAngle(-2 * Math.atan2(rotation.y, rotation.w));
 
     // Spin about the card's own up axis, not the world's. The joint pins a
-    // point 1.02 above the centre of mass: that point sits on the card's own
+    // point JOINT_ANCHOR_Y above the centre of mass: that point sits on the card's own
     // axis, so turning around it is free, while turning around world Y drags
     // the pin sideways whenever the card hangs at an angle — and the solver
     // cancels most of it. That is why it used to stall a third of the way.
@@ -526,7 +643,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
 
   return (
     <>
-      <group position={[0, 4.6, 0]}>
+      <group position={[0, ANCHOR_HEIGHT, 0]}>
         <RigidBody ref={fixed} {...segmentProps} type="fixed" />
         <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps}>
           <BallCollider args={[0.1]} />
@@ -541,7 +658,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
           position={[2, 0, 0]}
           ref={card}
           {...segmentProps}
-          type={dragged ? "kinematicPosition" : "dynamic"}
+          type={grab ? "kinematicPosition" : "dynamic"}
         >
           <CuboidCollider
             args={[CARD_WIDTH / 2, CARD_HEIGHT / 2, CARD_DEPTH / 2]}
@@ -553,11 +670,20 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
               };
               target.setPointerCapture(event.pointerId);
               const translation = card.current?.translation();
-              if (translation) {
-                setDragged(
+              const rotation = card.current?.rotation();
+              if (translation && rotation) {
+                // The turn starts from wherever the card already is, so taking
+                // hold of a swinging badge eases into the tilt instead of
+                // snapping to it.
+                dragTurn.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                // Stored in the card's frame rather than the world's: which
+                // part of the card is held is what sets the tilt, and it has to
+                // stay that part while the card turns underneath.
+                setGrab(
                   new Vector3()
                     .copy(event.point)
                     .sub(vec.set(translation.x, translation.y, translation.z))
+                    .applyQuaternion(quat.copy(dragTurn).invert())
                 );
               }
             }}
@@ -568,10 +694,30 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
                 releasePointerCapture: (id: number) => void;
               };
               target.releasePointerCapture(event.pointerId);
-              setDragged(null);
+              setGrab(null);
             }}
           >
             <mesh geometry={geometry} material={materials} />
+            <group>
+              <mesh
+                material={clipMaterial}
+                position={[0, CLIP_CRIMP_CENTER_Y, 0]}
+              >
+                <boxGeometry
+                  args={[CLIP_CRIMP_WIDTH, CLIP_CRIMP_HEIGHT, CLIP_CRIMP_DEPTH]}
+                />
+              </mesh>
+              {/* In the YZ plane so it passes through the card, not across it. */}
+              <mesh
+                material={clipMaterial}
+                position={[0, CLIP_RING_CENTER_Y, 0]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <torusGeometry
+                  args={[CLIP_RING_RADIUS, CLIP_RING_TUBE, 12, 24]}
+                />
+              </mesh>
+            </group>
             {onPhotoClick && (
               /* biome-ignore lint/a11y/noStaticElementInteractions: WebGL hit target over the printed photo area; the native file input owns the actual file-picker interaction. */
               <mesh
@@ -599,7 +745,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
         expands — so the band popped out of view at the edges. And `depthTest`
         off left it drawn in plain scene order, flipping in front of and behind
         the card as the sort changed. Unculled and depth-tested, it is stable
-        and simply disappears behind the card where the slot is punched.
+        and simply disappears into the crimp that clamps the band's end.
       */}
       <mesh frustumCulled={false} ref={band}>
         <meshLineGeometry />
@@ -617,8 +763,25 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   );
 }
 
-const BASE_CAMERA_DISTANCE = 13;
-const MAX_CAMERA_DISTANCE = 24;
+const BASE_CAMERA_DISTANCE = 11;
+/**
+ * Framing treats nothing as narrower than this, whatever the screen's real
+ * shape. The pull-back used to track the aspect ratio exactly, which holds the
+ * world's width steady across screens — but a phone is over twice as tall as it
+ * is wide, so it was framed from nearly double the distance and the card came
+ * out at a quarter of the frame's height against nearly half on a wide window.
+ * Framed at this shape instead, the card stays close to its desktop size, and
+ * the tilt below is cut to fit the narrower view that leaves.
+ */
+const NARROWEST_FRAMING_ASPECT = 0.85;
+const CAMERA_FOV = 25;
+/**
+ * How far down the frame the badge hangs, as a share of the frame's height. The
+ * plain behind it is placed in screen percentages too, so measuring the drop
+ * this way keeps the badge the same distance above the horizon whichever way the
+ * screen is turned, even though the camera stands further off on a phone.
+ */
+const BADGE_DROP = 0.07;
 
 /**
  * Lighting only shapes the clip and the laminate highlights — the printed faces
@@ -628,17 +791,23 @@ const MAX_CAMERA_DISTANCE = 24;
 const AMBIENT_INTENSITY = 0.9;
 const ENVIRONMENT_INTENSITY = 0.4;
 
-/** Pulls the camera back on portrait screens so the badge always fits. */
+/** Pulls the camera back on portrait screens, but only so far. */
 function ResponsiveCamera() {
   const { camera, size } = useThree();
 
   useEffect(() => {
     const aspect = size.width / size.height;
     const isPortrait = aspect < 1;
-    camera.position.z = isPortrait
-      ? Math.min(MAX_CAMERA_DISTANCE, BASE_CAMERA_DISTANCE / aspect)
-      : BASE_CAMERA_DISTANCE;
-    camera.position.y = isPortrait ? 0.1 : 0.4;
+    // Narrow screens are framed as though they were squarer than they are, and
+    // wide ones are left alone.
+    camera.position.z =
+      BASE_CAMERA_DISTANCE /
+      Math.min(1, Math.max(aspect, NARROWEST_FRAMING_ASPECT));
+    // Raising the camera drops the badge down the frame without changing
+    // anything about how it hangs or swings.
+    const framedHeight =
+      2 * camera.position.z * Math.tan((CAMERA_FOV / 2) * DEGREES_TO_RADIANS);
+    camera.position.y = (isPortrait ? 0.1 : 0.4) + framedHeight * BADGE_DROP;
     camera.updateProjectionMatrix();
   }, [camera, size]);
 
@@ -653,7 +822,7 @@ export default function LanyardBadge({
 }: LanyardBadgeProps) {
   return (
     <Canvas
-      camera={{ fov: 25, position: [0, 0, BASE_CAMERA_DISTANCE] }}
+      camera={{ fov: CAMERA_FOV, position: [0, 0, BASE_CAMERA_DISTANCE] }}
       flat
       gl={{ alpha: true, antialias: true }}
     >
