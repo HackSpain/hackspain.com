@@ -26,6 +26,13 @@ const PALETTE = {
 
 const SANS = "'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif";
 
+/**
+ * Leads with the action, because the mail is worthless if the place is never
+ * confirmed. Kept to 35 characters so it survives the truncation on a phone,
+ * and it names HackSpain because the from address carries no display name.
+ */
+export const ACCEPTANCE_EMAIL_SUBJECT = "Confirma tu plaza en HackSpain 2026";
+
 export interface AcceptanceEmailContent {
   cancelUrl: string;
   confirmUrl: string;
@@ -100,7 +107,7 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light only" />
-<title>Tienes plaza — HackSpain 2026</title>
+<title>${ACCEPTANCE_EMAIL_SUBJECT}</title>
 </head>
 <body style="margin:0;padding:0;background:${PALETTE.ink};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Tienes plaza en HackSpain 2026. Confirma tu asistencia.</div>

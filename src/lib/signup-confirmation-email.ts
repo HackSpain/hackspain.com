@@ -1,5 +1,6 @@
 import { type CreateEmailOptions, Resend } from "resend";
 import {
+  ACCEPTANCE_EMAIL_SUBJECT,
   acceptanceEmailHtml,
   acceptanceEmailText,
 } from "./acceptance-email-template";
@@ -232,7 +233,7 @@ export function sendSignupAcceptanceEmail(
     entityReference: `hackspain-signup-acceptance-${input.signupId}`,
     html: acceptanceEmailHtml(content),
     idempotencyKey: `signup-acceptance/${input.signupId}`,
-    subject: "Tienes plaza — HackSpain 2026",
+    subject: ACCEPTANCE_EMAIL_SUBJECT,
     text: acceptanceEmailText(content),
     to: input.email,
   });
