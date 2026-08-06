@@ -300,9 +300,11 @@ export function OgBadge({ avatarDataUri, fullName }: Props) {
                 style={{
                   color: BADGE_PALETTE.stripeText,
                   display: "flex",
-                  fontFamily: "DM Sans",
-                  fontSize: 30,
-                  fontWeight: 900,
+                  // Matches the printed stripe on the 3D badge. Bungee ships a
+                  // single weight, so 400 is the only one registered for it.
+                  fontFamily: "Bungee",
+                  fontSize: 26,
+                  fontWeight: 400,
                   transform: "rotate(90deg)",
                   whiteSpace: "nowrap",
                 }}
