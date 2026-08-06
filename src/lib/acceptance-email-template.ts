@@ -26,6 +26,15 @@ const PALETTE = {
 
 const SANS = "'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif";
 
+/**
+ * The good news, then the ask. `Confirma` lands at character 15, so it is still
+ * visible when a phone truncates the line around 35 — the ask survives even
+ * though the whole subject does not. Names HackSpain because RESEND_FROM
+ * carries no display name, so the inbox shows a bare noreply address.
+ */
+export const ACCEPTANCE_EMAIL_SUBJECT =
+  "Estás dentro. Confirma tu plaza en HackSpain 2026";
+
 export interface AcceptanceEmailContent {
   cancelUrl: string;
   confirmUrl: string;
@@ -100,7 +109,7 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light only" />
-<title>Tienes plaza — HackSpain 2026</title>
+<title>${ACCEPTANCE_EMAIL_SUBJECT}</title>
 </head>
 <body style="margin:0;padding:0;background:${PALETTE.ink};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Tienes plaza en HackSpain 2026. Confirma tu asistencia.</div>
