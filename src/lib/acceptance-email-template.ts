@@ -135,11 +135,18 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
                 Estás dentro. Nos han llegado más de 500 solicitudes y la tuya nos ha convencido, así que nos hace mucha ilusión decirte que tienes plaza en HackSpain 2026.
               </p>
               <p style="margin:0 0 16px;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
-                Vas a pasar un fin de semana construyendo junto a algunos de los mejores <strong>hackers jóvenes de España</strong> y con las <strong>startups y emprendedore que están definiendo el ecosistema</strong>: 36 horas, cinco tracks y un gran premio.
+                Vas a pasar un fin de semana construyendo junto a algunos de los mejores <strong>hackers jóvenes de España</strong> y con los <strong>emprendedores y las startups que están definiendo el ecosistema</strong>: 36 horas, cinco tracks y un gran premio.
               </p>
               <p style="margin:0;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
                 Solo falta una cosa.
               </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:24px 26px 2px;">
+              <div style="font-family:${SANS};font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${PALETTE.teal};padding-bottom:14px;">Siguientes pasos</div>
+              ${NEXT_STEPS.map((step, index) => stepRow(step, index, index === NEXT_STEPS.length - 1)).join("")}
             </td>
           </tr>
 
@@ -158,13 +165,6 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
               <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${PALETTE.brown};">
                 No aparecer, o cancelar sin avisar con <strong>al menos un mes de antelación</strong>, supone quedar <strong>excluido de futuros eventos de HackSpain y de Exponential</strong>. Si ves que no vas a poder venir, cancela cuanto antes — sin problema y sin rencor.
               </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:26px 26px 28px;">
-              <div style="font-family:${SANS};font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${PALETTE.teal};padding-bottom:16px;">Siguientes pasos</div>
-              ${NEXT_STEPS.map((step, index) => stepRow(step, index, index === NEXT_STEPS.length - 1)).join("")}
             </td>
           </tr>
 
@@ -213,7 +213,13 @@ export function acceptanceEmailText(content: AcceptanceEmailContent): string {
 
 Tienes plaza en HackSpain 2026. ¡Enhorabuena!
 
-Nos han llegado más de 500 solicitudes y la tuya nos ha convencido. Vas a pasar un fin de semana construyendo junto a algunos de los mejores hackers jóvenes de España y con las startups que están definiendo el ecosistema: 36 horas, cinco tracks y un gran premio.
+Nos han llegado más de 500 solicitudes y la tuya nos ha convencido. Vas a pasar un fin de semana construyendo junto a algunos de los mejores hackers jóvenes de España y con los emprendedores y las startups que están definiendo el ecosistema: 36 horas, cinco tracks y un gran premio.
+
+SIGUIENTES PASOS
+
+1. Únete al grupo de WhatsApp. Al confirmar verás el enlace en pantalla. Entra en cuanto puedas: toda la comunicación del evento pasa por ahí — horarios, cambios de última hora, equipos y avisos. Si no estás en el grupo, te lo vas a perder.
+
+2. Comparte tu acreditación. En la misma pantalla te espera tu acreditación. Publícala en LinkedIn o X: cuanta más gente la vea, más cracks se animan a venir — y eso hace mejor el hackathon para todos.
 
 CONFIRMA TU ASISTENCIA
 ${content.confirmUrl}
@@ -222,12 +228,6 @@ ANTES DE CONFIRMAR, LEE ESTO
 Al confirmar, contamos contigo. Con más de 500 solicitudes, tu plaza es una plaza que otra persona no va a tener. Además compramos comida y merch por adelantado para cada asistente confirmado.
 
 No aparecer, o cancelar sin avisar con al menos un mes de antelación, supone quedar excluido de futuros eventos de HackSpain y de Exponential. Si ves que no vas a poder venir, cancela cuanto antes — sin problema y sin rencor.
-
-SIGUIENTES PASOS
-
-1. Únete al grupo de WhatsApp. Al confirmar verás el enlace en pantalla. Entra en cuanto puedas: toda la comunicación del evento pasa por ahí — horarios, cambios de última hora, equipos y avisos. Si no estás en el grupo, te lo vas a perder.
-
-2. Comparte tu acreditación. En la misma pantalla te espera tu acreditación. Publícala en LinkedIn o X: cuanta más gente la vea, más cracks se animan a venir — y eso hace mejor el hackathon para todos.
 
 ¿NO VAS A PODER VENIR? CANCELA TU PLAZA
 ${content.cancelUrl}
