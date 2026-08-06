@@ -145,6 +145,8 @@ const GRAVITY = 40;
  */
 const MAX_TILT_DEGREES = 6;
 const TILT_SMOOTHING = 6;
+/** Ignores sensor noise while still waking the badge for deliberate movement. */
+const TILT_WAKE_THRESHOLD_DEGREES = 0.25;
 const DEGREES_TO_RADIANS = Math.PI / 180;
 /**
  * How far the card turns out of the screen while it is held. Pinched in the
@@ -355,15 +357,26 @@ function clampToEdge(fraction: number): number {
 function TiltGravity({ tilt }: { tilt: RefObject<number | null> }) {
   const { world } = useRapier();
   const applied = useRef(0);
+  const lastWakeTilt = useRef<number | null>(null);
 
   useFrame((_state, delta) => {
     const gamma = tilt.current;
     if (gamma === null) {
       return;
     }
-    const target =
-      Math.max(-MAX_TILT_DEGREES, Math.min(MAX_TILT_DEGREES, gamma)) *
-      DEGREES_TO_RADIANS;
+    const targetDegrees = Math.max(
+      -MAX_TILT_DEGREES,
+      Math.min(MAX_TILT_DEGREES, gamma)
+    );
+    if (
+      lastWakeTilt.current === null ||
+      Math.abs(targetDegrees - lastWakeTilt.current) >=
+        TILT_WAKE_THRESHOLD_DEGREES
+    ) {
+      world.forEachRigidBody((body) => body.wakeUp());
+      lastWakeTilt.current = targetDegrees;
+    }
+    const target = targetDegrees * DEGREES_TO_RADIANS;
     applied.current +=
       (target - applied.current) *
       Math.min(1, Math.min(delta, MAX_FRAME_DELTA) * TILT_SMOOTHING);
@@ -664,6 +677,8 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
             args={[CARD_WIDTH / 2, CARD_HEIGHT / 2, CARD_DEPTH / 2]}
           />
           <group
+            onLostPointerCapture={() => setGrab(null)}
+            onPointerCancel={() => setGrab(null)}
             onPointerDown={(event) => {
               const target = event.target as Element & {
                 setPointerCapture: (id: number) => void;
@@ -825,6 +840,7 @@ export default function LanyardBadge({
       camera={{ fov: CAMERA_FOV, position: [0, 0, BASE_CAMERA_DISTANCE] }}
       flat
       gl={{ alpha: true, antialias: true }}
+      style={{ touchAction: "none" }}
     >
       <ResponsiveCamera />
       <ambientLight intensity={AMBIENT_INTENSITY} />

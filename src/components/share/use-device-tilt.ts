@@ -32,6 +32,7 @@ function orientationApi(): PermissionCapableOrientation | null {
  */
 export function useDeviceTilt(): DeviceTilt {
   const tilt = useRef<number | null>(null);
+  const neutralTilt = useRef<number | null>(null);
   const [needsPermission, setNeedsPermission] = useState(false);
   const [listening, setListening] = useState(false);
 
@@ -52,10 +53,26 @@ export function useDeviceTilt(): DeviceTilt {
       return;
     }
     const onOrientation = (event: DeviceOrientationEvent) => {
-      tilt.current = event.gamma;
+      if (event.gamma === null) {
+        return;
+      }
+      if (neutralTilt.current === null) {
+        neutralTilt.current = event.gamma;
+        tilt.current = 0;
+        return;
+      }
+      tilt.current = event.gamma - neutralTilt.current;
+    };
+    const recalibrate = () => {
+      neutralTilt.current = null;
+      tilt.current = null;
     };
     window.addEventListener("deviceorientation", onOrientation);
-    return () => window.removeEventListener("deviceorientation", onOrientation);
+    window.addEventListener("orientationchange", recalibrate);
+    return () => {
+      window.removeEventListener("deviceorientation", onOrientation);
+      window.removeEventListener("orientationchange", recalibrate);
+    };
   }, [listening]);
 
   const requestAccess = useCallback(async () => {
