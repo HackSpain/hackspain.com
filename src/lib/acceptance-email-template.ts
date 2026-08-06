@@ -27,11 +27,13 @@ const PALETTE = {
 const SANS = "'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif";
 
 /**
- * Leads with the action, because the mail is worthless if the place is never
- * confirmed. Kept to 35 characters so it survives the truncation on a phone,
- * and it names HackSpain because the from address carries no display name.
+ * The good news, then the ask. `Confirma` lands at character 15, so it is still
+ * visible when a phone truncates the line around 35 — the ask survives even
+ * though the whole subject does not. Names HackSpain because RESEND_FROM
+ * carries no display name, so the inbox shows a bare noreply address.
  */
-export const ACCEPTANCE_EMAIL_SUBJECT = "Confirma tu plaza en HackSpain 2026";
+export const ACCEPTANCE_EMAIL_SUBJECT =
+  "Estás dentro. Confirma tu plaza en HackSpain 2026";
 
 export interface AcceptanceEmailContent {
   cancelUrl: string;
