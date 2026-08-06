@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { splitBadgeName } from "../../lib/badge-name";
 import { OG_BADGE_HEIGHT, OG_BADGE_WIDTH } from "../../lib/badge-share-params";
 import { copyToClipboard } from "../../lib/copy-to-clipboard";
+import { InlineSvg } from "../media/inline-svg";
+import { WHATSAPP_SVG } from "../theme/constants";
 import { hsButtonClass } from "../ui/button-styles";
 import { badgePhotoDataUri } from "./badge-photo-file";
 import LanyardBadge from "./lanyard-badge";
@@ -161,15 +163,9 @@ export function ConfirmationPage({
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-6 sm:px-8 sm:pt-10">
         <div className="pointer-events-auto mx-auto max-w-3xl select-none text-center">
-          <h1 className="font-bungee text-[clamp(1.6rem,5.5vw,3rem)] text-hs-ink leading-none">
+          <h1 className="inline-block border-[3px] border-hs-ink bg-hs-cream px-5 py-3 font-bungee text-[clamp(1.6rem,5.5vw,3rem)] text-hs-ink leading-none shadow-[6px_6px_0_0_var(--color-hs-ink)]">
             Plaza confirmada
           </h1>
-          <p className="mx-auto mt-3 max-w-md font-sans text-hs-brown text-sm sm:text-base">
-            {firstName
-              ? `${firstName}, tu acreditación ya es tuya.`
-              : "Tu acreditación ya es tuya."}{" "}
-            Arrástrala y lánzala. Nos vemos el 18 de septiembre en Madrid.
-          </p>
           <p className="mt-2 hidden font-bungee text-hs-brown text-xs uppercase tracking-wide [@media(pointer:coarse)]:block">
             Inclina el móvil y se balancea sola
           </p>
@@ -306,11 +302,20 @@ export function ConfirmationPage({
 
           {whatsappUrl && (
             <a
-              className={hsButtonClass("gold", "md", "w-full text-center")}
+              className={hsButtonClass(
+                "gold",
+                "md",
+                "w-full gap-2 text-center"
+              )}
               href={whatsappUrl}
               rel="noopener"
               target="_blank"
             >
+              <InlineSvg
+                className="h-4 w-4 text-[#25D366]"
+                decorative
+                svg={WHATSAPP_SVG}
+              />
               Entrar al grupo de WhatsApp
             </a>
           )}

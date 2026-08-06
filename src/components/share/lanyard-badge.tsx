@@ -78,9 +78,40 @@ const PHOTO_TARGET_Y =
     (BADGE_PORTRAIT_TOP + BADGE_PORTRAIT_SIZE / 2) / BADGE_TEXTURE_HEIGHT) *
   CARD_HEIGHT;
 const PHOTO_TARGET_Z = CARD_DEPTH / 2 + 0.002;
-/** Sits just inside the printed slot, so the band ends where it is punched. */
-const JOINT_ANCHOR_Y = 1.02;
-const BAND_WIDTH = 0.36;
+const BAND_WIDTH = 0.52;
+/**
+ * The metal clip between band and card: a slim crimp on top that takes the
+ * band's end, and under it the ring it holds, threading the punched slot.
+ * Purely cosmetic — the physics still runs through the joint.
+ */
+const CLIP_CRIMP_WIDTH = 0.18;
+const CLIP_CRIMP_HEIGHT = 0.16;
+const CLIP_CRIMP_DEPTH = 0.07;
+const CLIP_RING_RADIUS = 0.1;
+const CLIP_RING_TUBE = 0.03;
+/**
+ * Card-local placement. The printed slot spans y 0.966–1.041 and the card's
+ * top edge sits at 1.125: centred at 1.10, the ring's lower tube passes
+ * through the slot and its top clears the edge, encircling the strip the way
+ * a real ring hangs a card. The crimp overlaps the ring's crown from above.
+ */
+const CLIP_RING_CENTER_Y = 1.1;
+const CLIP_CRIMP_CENTER_Y =
+  CLIP_RING_CENTER_Y + CLIP_RING_RADIUS + CLIP_CRIMP_HEIGHT / 2;
+/** Just inside the crimp's mouth, so the band ends swallowed by the clip. */
+const JOINT_ANCHOR_Y = CLIP_CRIMP_CENTER_Y + CLIP_CRIMP_HEIGHT / 4;
+/**
+ * The last two points of the drawn band, both read off the card rather than
+ * off the rope it hangs from. The solver leaves the rope a little loose against
+ * the card, and a spline takes its direction at the end from the next point
+ * along: with only the endpoint pinned, that slack still swung the final
+ * stretch a hair every frame and grazed it past the metal. Pinning the exit as
+ * well fixes the tangent, so the band leaves the clip along the clip's own
+ * axis — which is what a clamped strap does — and the seam stays buried.
+ */
+const BAND_END_Y = CLIP_CRIMP_CENTER_Y - CLIP_CRIMP_HEIGHT / 4;
+const BAND_EXIT_Y = CLIP_CRIMP_CENTER_Y + CLIP_CRIMP_HEIGHT / 2 + 0.14;
+const CLIP_COLOR = "#ccd2d9";
 const CURVE_SEGMENTS = 32;
 const MIN_LERP_SPEED = 10;
 const MAX_LERP_SPEED = 50;
@@ -96,6 +127,13 @@ const MAX_CARD_SPEED = 10;
 const FACING_GAIN = 6;
 const FACING_DAMPING = 5;
 const ROPE_SEGMENT_LENGTH = 1;
+/**
+ * Where the band is pinned, above the top of the frame. The card comes to rest
+ * a rope's length below it, so this is what sets how high the badge hangs: it
+ * used to park a little under the middle of the view, close to the panel along
+ * the bottom.
+ */
+const ANCHOR_HEIGHT = 4.95;
 const GRAVITY = 40;
 /**
  * The badge is a pendulum four units long, so a tilt of x degrees parks it at
@@ -333,10 +371,14 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   const ang = useMemo(() => new Vector3(), []);
   const axis = useMemo(() => new Vector3(), []);
   const quat = useMemo(() => new Quaternion(), []);
+  const bandEnd = useMemo(() => new Vector3(), []);
+  const bandExit = useMemo(() => new Vector3(), []);
+  const cardQuat = useMemo(() => new Quaternion(), []);
   const lerped1 = useMemo(() => new Vector3(), []);
   const lerped2 = useMemo(() => new Vector3(), []);
   const curve = useMemo(() => {
     const catmull = new CatmullRomCurve3([
+      new Vector3(),
       new Vector3(),
       new Vector3(),
       new Vector3(),
@@ -346,6 +388,9 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     // up, which is exactly what happens as the chain swings — the band whips
     // far past the anchor for a frame. Chordal keeps the spline inside its hull.
     catmull.curveType = "chordal";
+    // Only feeds the arc-length table the sampling below reads; 32 samples do
+    // not need the default 200 entries, and this is rebuilt every frame.
+    catmull.arcLengthDivisions = 64;
     return catmull;
   }, []);
 
@@ -392,7 +437,19 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     return faces;
   }, [badgeTexture, backTexture]);
 
+  const clipMaterial = useMemo(
+    () =>
+      new MeshPhysicalMaterial({
+        color: CLIP_COLOR,
+        metalness: 1,
+        roughness: 0.28,
+      }),
+    []
+  );
+
   useEffect(() => () => geometry.dispose(), [geometry]);
+
+  useEffect(() => () => clipMaterial.dispose(), [clipMaterial]);
 
   useEffect(
     () => () => {
@@ -471,19 +528,36 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
       lerped.lerp(target, alpha);
     }
 
-    const head = j3.current.translation();
+    const cardAt = card.current.translation();
+    const cardFacing = card.current.rotation();
+    cardQuat.set(cardFacing.x, cardFacing.y, cardFacing.z, cardFacing.w);
+    vec.set(cardAt.x, cardAt.y, cardAt.z);
+    bandEnd.set(0, BAND_END_Y, 0).applyQuaternion(cardQuat).add(vec);
+    bandExit.set(0, BAND_EXIT_Y, 0).applyQuaternion(cardQuat).add(vec);
+
     const tail = fixed.current.translation();
-    curve.points[0].set(head.x, head.y, head.z);
-    curve.points[1].copy(lerped2);
-    curve.points[2].copy(lerped1);
-    curve.points[3].set(tail.x, tail.y, tail.z);
+    curve.points[0].copy(bandEnd);
+    curve.points[1].copy(bandExit);
+    curve.points[2].copy(lerped2);
+    curve.points[3].copy(lerped1);
+    curve.points[4].set(tail.x, tail.y, tail.z);
 
     const geometry = band.current?.geometry as
       | (BufferGeometry & {
           setPoints?: (points: Vector3[]) => void;
         })
       | undefined;
-    geometry?.setPoints?.(curve.getPoints(CURVE_SEGMENTS));
+    /*
+     * Spaced by length, not by control point. `getPoints` splits its samples
+     * evenly between the segments however long each one is, and the printed
+     * strap is laid out per sample — so the short segment inside the clip was
+     * taking a quarter of the lettering and squeezing it into a fraction of an
+     * inch, which is what read as blur there. Arc-length sampling keeps the
+     * letters one size the whole way down. The table it reads is rebuilt each
+     * frame because the points move under it.
+     */
+    curve.needsUpdate = true;
+    geometry?.setPoints?.(curve.getSpacedPoints(CURVE_SEGMENTS));
 
     const angular = card.current.angvel();
     const rotation = card.current.rotation();
@@ -498,7 +572,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     const yawError = shortestAngle(-2 * Math.atan2(rotation.y, rotation.w));
 
     // Spin about the card's own up axis, not the world's. The joint pins a
-    // point 1.02 above the centre of mass: that point sits on the card's own
+    // point JOINT_ANCHOR_Y above the centre of mass: that point sits on the card's own
     // axis, so turning around it is free, while turning around world Y drags
     // the pin sideways whenever the card hangs at an angle — and the solver
     // cancels most of it. That is why it used to stall a third of the way.
@@ -526,7 +600,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
 
   return (
     <>
-      <group position={[0, 4.6, 0]}>
+      <group position={[0, ANCHOR_HEIGHT, 0]}>
         <RigidBody ref={fixed} {...segmentProps} type="fixed" />
         <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps}>
           <BallCollider args={[0.1]} />
@@ -572,6 +646,26 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
             }}
           >
             <mesh geometry={geometry} material={materials} />
+            <group>
+              <mesh
+                material={clipMaterial}
+                position={[0, CLIP_CRIMP_CENTER_Y, 0]}
+              >
+                <boxGeometry
+                  args={[CLIP_CRIMP_WIDTH, CLIP_CRIMP_HEIGHT, CLIP_CRIMP_DEPTH]}
+                />
+              </mesh>
+              {/* In the YZ plane so it passes through the card, not across it. */}
+              <mesh
+                material={clipMaterial}
+                position={[0, CLIP_RING_CENTER_Y, 0]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <torusGeometry
+                  args={[CLIP_RING_RADIUS, CLIP_RING_TUBE, 12, 24]}
+                />
+              </mesh>
+            </group>
             {onPhotoClick && (
               /* biome-ignore lint/a11y/noStaticElementInteractions: WebGL hit target over the printed photo area; the native file input owns the actual file-picker interaction. */
               <mesh
@@ -599,7 +693,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
         expands — so the band popped out of view at the edges. And `depthTest`
         off left it drawn in plain scene order, flipping in front of and behind
         the card as the sort changed. Unculled and depth-tested, it is stable
-        and simply disappears behind the card where the slot is punched.
+        and simply disappears into the crimp that clamps the band's end.
       */}
       <mesh frustumCulled={false} ref={band}>
         <meshLineGeometry />
