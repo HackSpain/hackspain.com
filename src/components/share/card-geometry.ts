@@ -71,6 +71,35 @@ function normalizeUvs(
 }
 
 /**
+ * Both caps come out of `normalizeUvs` with the same mapping, which is right for
+ * the front and mirrored for the back: turning the card over puts object +x on
+ * the viewer's left, while u still grows with +x, so the reverse reads
+ * right-to-left. Mirroring u on the back-facing triangles turns it back round.
+ *
+ * Done on the geometry rather than by flipping the texture, so anything mapped
+ * to that face later is oriented correctly too. Safe per-triangle because
+ * ExtrudeGeometry is non-indexed — no UV is shared with another triangle.
+ */
+function mirrorBackFaceUvs(geometry: ExtrudeGeometry): void {
+  const position = geometry.attributes.position;
+  const uv = geometry.attributes.uv;
+
+  for (let triangle = 0; triangle < position.count / 3; triangle++) {
+    const first = triangle * 3;
+    // Edge walls sit at a facing of zero and carry no map: leave them alone.
+    if (triangleFacing(geometry, first) >= -FACING_EPSILON) {
+      continue;
+    }
+    for (let corner = 0; corner < 3; corner++) {
+      const index = first + corner;
+      uv.setX(index, 1 - uv.getX(index));
+    }
+  }
+
+  uv.needsUpdate = true;
+}
+
+/**
  * Splits the extrusion into front / back / edge draw groups by triangle facing,
  * so each side of the card can carry its own material.
  */
@@ -128,6 +157,7 @@ export function createCardGeometry(
 
   geometry.translate(0, 0, -depth / 2);
   normalizeUvs(geometry, width, height);
+  mirrorBackFaceUvs(geometry);
   assignFaceGroups(geometry);
 
   return geometry;
