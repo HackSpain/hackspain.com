@@ -110,8 +110,8 @@ const LANYARD_TEXTURE_HEIGHT = 64;
 
 interface BadgeContent {
   /**
-   * A photo dropped onto the page. Held in memory only and never uploaded, so
-   * it lives exactly as long as the tab does. Wins over the GitHub avatar.
+   * The photo printed in the portrait frame, whether just dropped onto the page
+   * or saved on an earlier visit. Wins over the GitHub avatar.
    */
   droppedPhoto: HTMLImageElement | null;
   firstName: string;
@@ -122,7 +122,8 @@ interface BadgeContent {
 
 interface BadgeProps {
   content: BadgeContent;
-  onPhotoClick: () => void;
+  /** Left out when the badge is only on display, as on a shared link. */
+  onPhotoClick?: () => void;
   wind: RefObject<number>;
 }
 
@@ -144,12 +145,10 @@ function createPrintTexture(canvas: HTMLCanvasElement) {
   return texture;
 }
 
-function useBadgeTexture({
-  githubHandle,
-  droppedPhoto,
-  firstName,
-  lastName,
-}: BadgeContent) {
+function useBadgeTexture(
+  { githubHandle, droppedPhoto, firstName, lastName }: BadgeContent,
+  photoInvite: boolean
+) {
   const [assets, setAssets] = useState<{
     avatar: HTMLImageElement | null;
     logo: HTMLImageElement | null;
@@ -208,7 +207,12 @@ function useBadgeTexture({
   useEffect(() => {
     drawBadgeTexture(
       canvas,
-      { avatar: droppedPhoto ?? assets.avatar, firstName, lastName },
+      {
+        avatar: droppedPhoto ?? assets.avatar,
+        firstName,
+        lastName,
+        photoInvite,
+      },
       assets.logo
     );
     texture.needsUpdate = true;
@@ -222,6 +226,7 @@ function useBadgeTexture({
     firstName,
     lastName,
     droppedPhoto,
+    photoInvite,
     assets,
   ]);
 
@@ -348,7 +353,10 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   const [hovered, setHovered] = useState(false);
 
   const { size, camera } = useThree();
-  const { texture: badgeTexture, backTexture } = useBadgeTexture(content);
+  const { texture: badgeTexture, backTexture } = useBadgeTexture(
+    content,
+    onPhotoClick !== undefined
+  );
   const lanyardTexture = useLanyardTexture();
 
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], ROPE_SEGMENT_LENGTH]);
@@ -564,19 +572,23 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
             }}
           >
             <mesh geometry={geometry} material={materials} />
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: WebGL hit target over the printed photo area; the native file input owns the actual file-picker interaction. */}
-            <mesh
-              onClick={(event) => {
-                event.stopPropagation();
-                onPhotoClick();
-              }}
-              onPointerDown={(event) => event.stopPropagation()}
-              onPointerUp={(event) => event.stopPropagation()}
-              position={[PHOTO_TARGET_X, PHOTO_TARGET_Y, PHOTO_TARGET_Z]}
-            >
-              <planeGeometry args={[PHOTO_TARGET_WIDTH, PHOTO_TARGET_HEIGHT]} />
-              <meshBasicMaterial depthWrite={false} opacity={0} transparent />
-            </mesh>
+            {onPhotoClick && (
+              /* biome-ignore lint/a11y/noStaticElementInteractions: WebGL hit target over the printed photo area; the native file input owns the actual file-picker interaction. */
+              <mesh
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onPhotoClick();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
+                position={[PHOTO_TARGET_X, PHOTO_TARGET_Y, PHOTO_TARGET_Z]}
+              >
+                <planeGeometry
+                  args={[PHOTO_TARGET_WIDTH, PHOTO_TARGET_HEIGHT]}
+                />
+                <meshBasicMaterial depthWrite={false} opacity={0} transparent />
+              </mesh>
+            )}
           </group>
         </RigidBody>
       </group>

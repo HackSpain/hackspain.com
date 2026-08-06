@@ -37,6 +37,12 @@ interface BadgeTextureContent {
   avatar: CanvasImageSource | null;
   firstName: string;
   lastName: string;
+  /**
+   * Whether dropping a photo is on offer. A badge someone else shared is only
+   * there to be looked at, so it gets an empty frame instead of an invitation
+   * to act that would do nothing.
+   */
+  photoInvite: boolean;
 }
 
 /** The lanyard slot punched through the top strip of the badge. */
@@ -129,10 +135,17 @@ function drawPortrait(
  * Stands in for the portrait when there is no avatar: a dashed frame inviting a
  * photo to be dropped onto the badge. Drawn into the texture rather than laid
  * over the page, because the card swings — an HTML overlay could not follow it.
+ * Without the invitation it is just an empty frame, so the card keeps its
+ * printed proportions.
  */
-function drawPortraitPlaceholder(ctx: CanvasRenderingContext2D) {
+function drawPortraitPlaceholder(
+  ctx: CanvasRenderingContext2D,
+  photoInvite: boolean
+) {
   ctx.save();
-  ctx.setLineDash(PLACEHOLDER_DASH);
+  if (photoInvite) {
+    ctx.setLineDash(PLACEHOLDER_DASH);
+  }
   ctx.beginPath();
   ctx.roundRect(
     BADGE_PORTRAIT_LEFT,
@@ -144,6 +157,11 @@ function drawPortraitPlaceholder(ctx: CanvasRenderingContext2D) {
   ctx.strokeStyle = INK;
   ctx.lineWidth = OUTLINE_WIDTH;
   ctx.stroke();
+
+  if (!photoInvite) {
+    ctx.restore();
+    return;
+  }
 
   const textX = BADGE_PORTRAIT_LEFT + 42;
   const textCenterY = BADGE_PORTRAIT_TOP + BADGE_PORTRAIT_SIZE / 2;
@@ -204,7 +222,7 @@ function drawCardBorder(ctx: CanvasRenderingContext2D) {
 
 export function drawBadgeTexture(
   canvas: HTMLCanvasElement,
-  { firstName, lastName, avatar }: BadgeTextureContent,
+  { firstName, lastName, avatar, photoInvite }: BadgeTextureContent,
   logo: CanvasImageSource | null
 ) {
   const ctx = canvas.getContext("2d");
@@ -233,7 +251,7 @@ export function drawBadgeTexture(
   if (avatar) {
     drawPortrait(ctx, avatar);
   } else {
-    drawPortraitPlaceholder(ctx);
+    drawPortraitPlaceholder(ctx, photoInvite);
   }
   drawName(ctx, firstName, lastName);
   drawCardBorder(ctx);

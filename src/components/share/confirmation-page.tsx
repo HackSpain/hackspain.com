@@ -1,39 +1,53 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { splitBadgeName } from "../../lib/badge-name";
+import { OG_BADGE_HEIGHT, OG_BADGE_WIDTH } from "../../lib/badge-share-params";
+import { copyToClipboard } from "../../lib/copy-to-clipboard";
 import { hsButtonClass } from "../ui/button-styles";
+import { badgePhotoDataUri } from "./badge-photo-file";
 import LanyardBadge from "./lanyard-badge";
 import { ShareBackdrop } from "./share-backdrop";
 import { useDeviceTilt } from "./use-device-tilt";
 import { useDroppedPhoto } from "./use-dropped-photo";
+import { useImageFromSrc } from "./use-image-from-src";
 
-const WHITESPACE_RE = /\s+/;
-const SHARE_TEXT = "Voy a HackSpain 2026. Nos vemos en Madrid.";
+const POST_TEXT =
+  "¡Voy a HackSpain 2026! Ya tengo mi acreditación: 48 horas construyendo en Madrid con 250 hackers más. Nos vemos allí.";
+/** Keeps the link clear of the text so the post shows it as its own line. */
+const POST_LINK_SEPARATOR = "\n\n";
 const COPIED_RESET_MS = 2000;
+const BADGE_DOWNLOAD_NAME = "acreditacion-hackspain-2026.png";
 
-function splitName(fullName: string): {
-  firstName: string;
-  lastName: string;
-} {
-  const parts = fullName.trim().split(WHITESPACE_RE).filter(Boolean);
-  if (parts.length === 0) {
-    return { firstName: "", lastName: "" };
-  }
-  if (parts.length === 1) {
-    return { firstName: parts[0], lastName: "" };
-  }
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
-}
+type CopyState = "copied" | "failed" | "idle";
+
+const COPY_LABELS: Record<CopyState, string> = {
+  copied: "¡Copiado!",
+  failed: "Cópialo tú",
+  idle: "Copiar enlace",
+};
 
 interface Props {
+  /** Same-origin path to the badge image, so it can be downloaded directly. */
+  badgeImagePath: string;
   fullName: string;
   githubHandle: string | null;
+  /** Authorises saving a badge photo against their own signup. */
+  managementToken: string;
+  /** The photo already saved on their badge, so a reload keeps showing it. */
+  photoDataUri: string | null;
+  /** Version of the photo already stored, if they set one before. */
+  photoVersion: number | null;
   /** Public page the share buttons point at. */
   shareUrl: string;
   whatsappUrl: string | null;
 }
 
 export function ConfirmationPage({
+  badgeImagePath,
   fullName,
   githubHandle,
+  managementToken,
+  photoDataUri,
+  photoVersion: storedPhotoVersion,
   shareUrl,
   whatsappUrl,
 }: Props) {
@@ -42,20 +56,84 @@ export function ConfirmationPage({
     useDroppedPhoto();
   const fileInput = useRef<HTMLInputElement>(null);
   const wind = useRef(0);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<CopyState>("idle");
+  const [linkedinOpen, setLinkedinOpen] = useState(false);
+  const [photoVersion, setPhotoVersion] = useState(storedPhotoVersion);
+  const [savingPhoto, setSavingPhoto] = useState(false);
 
-  const { firstName, lastName } = splitName(fullName);
+  const { firstName, lastName } = splitBadgeName(fullName);
 
-  const linkedinHref = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-  const xHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}&url=${encodeURIComponent(shareUrl)}`;
+  /** Whatever they saved earlier, until they drop something new over it. */
+  const savedPhoto = useImageFromSrc(photoDataUri);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(`${SHARE_TEXT} ${shareUrl}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), COPIED_RESET_MS);
-    } catch {
-      setCopied(false);
+  /*
+   * The photo they drop only lives in this tab, but the social image is drawn on
+   * the server. So a small square copy is saved against their signup, and the
+   * badge someone else sees carries the photo they actually chose.
+   */
+  useEffect(() => {
+    if (!photo) {
+      return;
+    }
+
+    const dataUri = badgePhotoDataUri(photo);
+    if (!dataUri) {
+      return;
+    }
+
+    let cancelled = false;
+    setSavingPhoto(true);
+
+    fetch("/api/badge-photo", {
+      body: JSON.stringify({ photo: dataUri, token: managementToken }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { version?: number | null } | null) => {
+        if (!cancelled && body) {
+          setPhotoVersion(body.version ?? Date.now());
+        }
+      })
+      .catch(() => {
+        /* The badge on this page still shows it; only the shared copy lags. */
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSavingPhoto(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [photo, managementToken]);
+
+  /** Cache-busted so a new photo is not hidden behind the stored image. */
+  const badgeImageSrc = photoVersion
+    ? `${badgeImagePath}&v=${photoVersion}`
+    : badgeImagePath;
+
+  /** The same post wherever it goes: their words, then their badge link. */
+  const postDraft = `${POST_TEXT}${POST_LINK_SEPARATOR}${shareUrl}`;
+
+  /*
+   * The composer writes the post itself, but it cannot attach an image from a
+   * URL. So LinkedIn opens the steps below rather than a link, and this fires
+   * once the image is saved and ready to upload.
+   */
+  const linkedinHref = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(postDraft)}`;
+  /*
+   * The whole post goes in `text`, with no `url` alongside it: X appends that
+   * parameter with a space of its own, which would undo the separation above.
+   */
+  const xHref = `https://x.com/intent/tweet?text=${encodeURIComponent(postDraft)}`;
+
+  const handleCopyLink = async () => {
+    const succeeded = await copyToClipboard(shareUrl);
+    setCopyState(succeeded ? "copied" : "failed");
+    if (succeeded) {
+      setTimeout(() => setCopyState("idle"), COPIED_RESET_MS);
     }
   };
 
@@ -109,7 +187,12 @@ export function ConfirmationPage({
 
       <div className="absolute inset-0 z-10">
         <LanyardBadge
-          content={{ droppedPhoto: photo, firstName, githubHandle, lastName }}
+          content={{
+            droppedPhoto: photo ?? savedPhoto,
+            firstName,
+            githubHandle,
+            lastName,
+          }}
           onPhotoClick={() => fileInput.current?.click()}
           tilt={tilt}
           wind={wind}
@@ -122,34 +205,104 @@ export function ConfirmationPage({
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-6 sm:pb-10">
         <div className="pointer-events-auto mx-auto flex max-w-2xl flex-col gap-3 border-[3px] border-hs-ink bg-hs-cream/95 p-4 shadow-[6px_6px_0_0_var(--color-hs-ink)]">
-          <span className="font-bungee text-hs-ink text-xs uppercase tracking-wide">
-            Cuéntalo
-          </span>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <a
-              className={hsButtonClass("gold", "md", "flex-1 text-center")}
-              href={linkedinHref}
-              rel="noopener"
-              target="_blank"
-            >
-              LinkedIn
-            </a>
-            <a
-              className={hsButtonClass("gold", "md", "flex-1 text-center")}
-              href={xHref}
-              rel="noopener"
-              target="_blank"
-            >
-              Twitter
-            </a>
-            <button
-              className={hsButtonClass("teal", "md", "flex-1")}
-              onClick={handleCopy}
-              type="button"
-            >
-              {copied ? "¡Copiado!" : "Copiar enlace"}
-            </button>
+          {/* Opening LinkedIn takes over the panel: the other two ways out would
+              only compete with the steps, so they wait behind the back button. */}
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-bungee text-hs-ink text-xs uppercase tracking-wide">
+              {linkedinOpen ? "Compartir en LinkedIn" : "Cuéntalo"}
+            </span>
+            {linkedinOpen && (
+              <button
+                className={hsButtonClass("teal", "micro", "!py-2")}
+                onClick={() => setLinkedinOpen(false)}
+                type="button"
+              >
+                Volver
+              </button>
+            )}
           </div>
+
+          {!linkedinOpen && (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                aria-expanded={linkedinOpen}
+                className={hsButtonClass("gold", "md", "flex-1")}
+                onClick={() => setLinkedinOpen(true)}
+                type="button"
+              >
+                LinkedIn
+              </button>
+              <a
+                className={hsButtonClass("gold", "md", "flex-1 text-center")}
+                href={xHref}
+                rel="noopener"
+                target="_blank"
+              >
+                Twitter
+              </a>
+              <button
+                className={hsButtonClass("teal", "md", "flex-1")}
+                onClick={handleCopyLink}
+                type="button"
+              >
+                {COPY_LABELS[copyState]}
+              </button>
+            </div>
+          )}
+
+          {/* Some browsers refuse the clipboard outright, so the link itself is
+              offered rather than leaving a button that appears to do nothing. */}
+          {copyState === "failed" && !linkedinOpen && (
+            <input
+              aria-label="Enlace a tu acreditación"
+              className="w-full border-[3px] border-hs-ink bg-hs-paper px-3 py-2 font-sans text-hs-ink text-xs outline-none focus-visible:border-hs-navy"
+              onFocus={(event) => event.currentTarget.select()}
+              readOnly
+              value={shareUrl}
+            />
+          )}
+
+          {linkedinOpen && (
+            <div className="flex flex-col gap-3 border-hs-ink border-t-[3px] pt-3">
+              <img
+                alt={`Acreditación de HackSpain 2026 a nombre de ${fullName}`}
+                className="h-auto w-full border-[3px] border-hs-ink bg-hs-paper"
+                height={OG_BADGE_HEIGHT}
+                src={badgeImageSrc}
+                width={OG_BADGE_WIDTH}
+              />
+
+              <ol className="flex flex-col gap-2">
+                <li className="flex items-center justify-between gap-3">
+                  <span className="font-sans text-hs-ink text-sm">
+                    {savingPhoto
+                      ? "Guardando tu foto en la imagen..."
+                      : "1. Descarga la imagen"}
+                  </span>
+                  <a
+                    className={hsButtonClass("teal", "micro", "!py-2")}
+                    download={BADGE_DOWNLOAD_NAME}
+                    href={badgeImageSrc}
+                  >
+                    Descargar
+                  </a>
+                </li>
+                <li className="flex items-center justify-between gap-3">
+                  <span className="font-sans text-hs-ink text-sm">
+                    2. Súbela al post
+                  </span>
+                  <a
+                    className={hsButtonClass("gold", "micro", "!py-2")}
+                    href={linkedinHref}
+                    rel="noopener"
+                    target="_blank"
+                  >
+                    Abrir LinkedIn
+                  </a>
+                </li>
+              </ol>
+            </div>
+          )}
 
           {whatsappUrl && (
             <a

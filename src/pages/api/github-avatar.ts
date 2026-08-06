@@ -1,49 +1,35 @@
 import type { APIRoute } from "astro";
-import { isGithubHandle } from "../../lib/github-handle";
+import { fetchGithubAvatar } from "../../lib/github-avatar";
 
 export const prerender = false;
 
-const AVATAR_SIZE = 460;
-const UPSTREAM_TIMEOUT_MS = 4000;
 /** Avatars change rarely, and the badge is redrawn on every visit. */
 const CACHE_CONTROL = "public, max-age=86400, s-maxage=604800, immutable";
 
+const STATUS_RESPONSES = {
+  invalid_handle: { body: "Invalid handle", status: 400 },
+  not_found: { body: "Avatar not found", status: 404 },
+  unavailable: { body: "Avatar unavailable", status: 502 },
+} as const;
+
 /**
- * Proxies github.com/<handle>.png through our own origin. Drawing the avatar
- * straight from GitHub is not an option: that URL answers with a redirect that
- * carries no CORS headers, so the browser refuses the cross-origin image and
- * the badge canvas cannot use it at all.
+ * Proxies the avatar through our own origin so the badge canvas can use it:
+ * drawing it straight from GitHub is not an option, because that URL answers
+ * with a redirect that carries no CORS headers.
  */
 export const GET: APIRoute = async ({ url }) => {
   const handle = url.searchParams.get("user")?.trim() ?? "";
+  const result = await fetchGithubAvatar(handle);
 
-  if (!(handle && isGithubHandle(handle))) {
-    return new Response("Invalid handle", { status: 400 });
+  if (result.status !== "ok") {
+    const { body, status } = STATUS_RESPONSES[result.status];
+    return new Response(body, { status });
   }
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(
-      `https://github.com/${handle}.png?size=${AVATAR_SIZE}`,
-      {
-        headers: { accept: "image/*" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-      }
-    );
-  } catch {
-    return new Response("Avatar unavailable", { status: 502 });
-  }
-
-  const contentType = upstream.headers.get("content-type") ?? "";
-  if (!(upstream.ok && contentType.startsWith("image/"))) {
-    return new Response("Avatar not found", { status: 404 });
-  }
-
-  return new Response(upstream.body, {
+  return new Response(result.response.body, {
     headers: {
       "cache-control": CACHE_CONTROL,
-      "content-type": contentType,
+      "content-type": result.contentType,
     },
     status: 200,
   });

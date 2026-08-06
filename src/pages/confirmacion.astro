@@ -6,8 +6,12 @@ import { ConfirmationPage } from "../components/share/confirmation-page";
 import { getDb } from "../db";
 import { hackathonSignups } from "../db/schema";
 import Layout from "../layouts/layout.astro";
+import { badgeOgImagePath, badgeSharePath } from "../lib/badge-share-params";
 import { githubHandleFromUrl } from "../lib/github-handle";
-import { envFromRuntime, siteOriginFromRuntime } from "../lib/runtime-env";
+import {
+  envFromRuntime,
+  sharedLinkOriginFromRuntime,
+} from "../lib/runtime-env";
 
 type PageState = "confirmed" | "invalid" | "not_accepted";
 
@@ -20,6 +24,8 @@ const token =
 let state: PageState = "invalid";
 let fullName = "";
 let githubHandle: string | null = null;
+let photoDataUri: string | null = null;
+let photoVersion: number | null = null;
 
 if (token && UUID_PATTERN.test(token)) {
   const db = getDb();
@@ -40,6 +46,8 @@ if (token && UUID_PATTERN.test(token)) {
   const [signup] = await db
     .select({
       approvalStatus: hackathonSignups.approvalStatus,
+      badgePhoto: hackathonSignups.badgePhoto,
+      badgePhotoUpdatedAt: hackathonSignups.badgePhotoUpdatedAt,
       fullName: hackathonSignups.fullName,
       githubUrl: hackathonSignups.githubUrl,
     })
@@ -50,15 +58,38 @@ if (token && UUID_PATTERN.test(token)) {
   if (signup) {
     fullName = signup.fullName;
     githubHandle = githubHandleFromUrl(signup.githubUrl);
+    // Sent back so a reload keeps the photo they chose, instead of dropping to
+    // their avatar as if they had never set one.
+    photoDataUri = signup.badgePhoto;
+    photoVersion = signup.badgePhotoUpdatedAt?.getTime() ?? null;
     state =
       signup.approvalStatus === "confirmed" ? "confirmed" : "not_accepted";
   }
 }
 
 const whatsappUrl = envFromRuntime("PUBLIC_WHATSAPP_GROUP_URL") ?? null;
-const shareUrl = siteOriginFromRuntime();
 
-const badgeProps = { fullName, githubHandle, shareUrl, whatsappUrl };
+// Sharing points at /comparte rather than the homepage, so the link preview is
+// their own badge instead of the generic event card.
+const shareUrl = new URL(
+  badgeSharePath({ fullName, githubHandle }),
+  sharedLinkOriginFromRuntime(Astro.url.origin)
+).href;
+
+// Left as a path rather than a full URL: same-origin is what lets the browser
+// download the image instead of just navigating to it.
+const badgeImagePath = badgeOgImagePath({ fullName, githubHandle });
+
+const badgeProps = {
+  badgeImagePath,
+  fullName,
+  githubHandle,
+  managementToken: token,
+  photoDataUri,
+  photoVersion,
+  shareUrl,
+  whatsappUrl,
+};
 
 const PAGE_TITLES: Record<PageState, string> = {
   confirmed: "Plaza confirmada",

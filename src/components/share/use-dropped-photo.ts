@@ -27,8 +27,10 @@ function isImageDrag(event: DragEvent<HTMLElement>): boolean {
 
 /**
  * Accepts a photo dropped anywhere on the page and decodes it in the browser.
- * Nothing is uploaded or stored: the object URL is revoked as soon as the image
- * is decoded or replaced, so the photo only ever exists in this tab's memory.
+ * The object URL is revoked as soon as the image is decoded or replaced, so the
+ * file itself never outlives the drop. What the caller does with the decoded
+ * image is its own business: the confirmation page saves a small square copy so
+ * the badge in its link preview can show it.
  */
 export function useDroppedPhoto(): DroppedPhoto {
   const [photo, setPhoto] = useState<HTMLImageElement | null>(null);
