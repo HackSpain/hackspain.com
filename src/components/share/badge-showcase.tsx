@@ -32,18 +32,18 @@ export function BadgeShowcase({ fullName, githubHandle, photoDataUri }: Props) {
         <ShareBackdrop wind={wind} />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-6 sm:px-8 sm:pt-10">
-        <div className="pointer-events-auto mx-auto max-w-3xl select-none text-center">
-          <h1 className="font-bungee text-[clamp(1.6rem,5.5vw,3rem)] text-hs-ink leading-none">
-            {firstName} va a HackSpain 2026
-          </h1>
-          <p className="mx-auto mt-3 max-w-md font-sans text-hs-brown text-sm sm:text-base">
-            Su acreditación ya está impresa. Arrástrala y lánzala. Del 18 al 20
-            de septiembre en Madrid.
-          </p>
-          <p className="mt-2 hidden font-bungee text-hs-brown text-xs uppercase tracking-wide [@media(pointer:coarse)]:block">
-            Inclina el móvil y se balancea sola
-          </p>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-3 sm:px-8 sm:pt-6">
+        <div className="pointer-events-auto mx-auto w-fit max-w-full select-none text-center">
+          {/* Boxed like the headline on the confirmation page: the two share the
+              same scene, so they should be recognisably the same place. */}
+          <div className="border-[3px] border-hs-ink bg-hs-cream px-4 py-3 shadow-[6px_6px_0_0_var(--color-hs-ink)]">
+            <h1 className="font-bungee text-[clamp(1.35rem,4.6vw,2.4rem)] text-hs-ink leading-none">
+              {firstName} va a HackSpain 2026
+            </h1>
+            <p className="mt-2 font-sans text-hs-brown text-xs">
+              Del 18 al 20 de septiembre en Madrid.
+            </p>
+          </div>
           {needsPermission && (
             <button
               className={hsButtonClass("teal", "micro", "!py-2 mt-3")}
@@ -64,7 +64,7 @@ export function BadgeShowcase({ fullName, githubHandle, photoDataUri }: Props) {
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-6 sm:pb-10">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-3 sm:pb-5">
         <div className="pointer-events-auto mx-auto flex max-w-md flex-col items-center gap-3 border-[3px] border-hs-ink bg-hs-cream/95 p-4 text-center shadow-[6px_6px_0_0_var(--color-hs-ink)]">
           <span className="font-sans text-hs-brown text-sm">
             48 horas construyendo en la UPM, con 250 hackers más.
