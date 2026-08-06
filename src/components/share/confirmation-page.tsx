@@ -259,30 +259,48 @@ export function ConfirmationPage({
 
           {!linkedinOpen && (
             <div className="flex flex-col gap-2 sm:flex-row">
-              {/* Both marks inherit the button's ink, so they read as lettering
-                  rather than as the platforms' own badges. */}
-              <button
-                aria-expanded={linkedinOpen}
-                className={hsButtonClass("gold", "md", "flex-1 gap-2")}
-                onClick={() => setLinkedinOpen(true)}
-                type="button"
-              >
-                <InlineSvg className="h-4 w-4" decorative svg={LINKEDIN_SVG} />
-                LinkedIn
-              </button>
-              <a
-                className={hsButtonClass(
-                  "gold",
-                  "md",
-                  "flex-1 gap-2 text-center"
-                )}
-                href={xHref}
-                rel="noopener"
-                target="_blank"
-              >
-                <InlineSvg className="h-4 w-4" decorative svg={X_SVG} />
-                Twitter
-              </a>
+              {/* The two platforms share a row on mobile, which keeps this panel
+                  two rows tall instead of three and leaves the badge the height
+                  it needs. `contents` dissolves the wrapper from sm up, so the
+                  original three-across row is unchanged there. */}
+              <div className="flex gap-2 sm:contents">
+                {/* Both marks inherit the button's ink, so they read as lettering
+                    rather than as the platforms' own badges. */}
+                <button
+                  aria-expanded={linkedinOpen}
+                  className={hsButtonClass(
+                    "gold",
+                    "md",
+                    "!px-3 sm:!px-6 min-w-0 flex-1 gap-2"
+                  )}
+                  onClick={() => setLinkedinOpen(true)}
+                  type="button"
+                >
+                  <InlineSvg
+                    className="h-4 w-4 shrink-0"
+                    decorative
+                    svg={LINKEDIN_SVG}
+                  />
+                  LinkedIn
+                </button>
+                <a
+                  className={hsButtonClass(
+                    "gold",
+                    "md",
+                    "!px-3 sm:!px-6 min-w-0 flex-1 gap-2 text-center"
+                  )}
+                  href={xHref}
+                  rel="noopener"
+                  target="_blank"
+                >
+                  <InlineSvg
+                    className="h-4 w-4 shrink-0"
+                    decorative
+                    svg={X_SVG}
+                  />
+                  Twitter
+                </a>
+              </div>
               <button
                 className={hsButtonClass("teal", "md", "flex-1")}
                 onClick={handleCopyLink}
