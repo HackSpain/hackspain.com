@@ -23,6 +23,7 @@ import {
   CanvasTexture,
   CatmullRomCurve3,
   DoubleSide,
+  Euler,
   type Mesh,
   MeshPhysicalMaterial,
   Quaternion,
@@ -143,6 +144,17 @@ const GRAVITY = 40;
 const MAX_TILT_DEGREES = 28;
 const TILT_SMOOTHING = 6;
 const DEGREES_TO_RADIANS = Math.PI / 180;
+/**
+ * How far the card turns out of the screen while it is held. Pinched in the
+ * middle it stays square; pinched at an edge it turns to face the hand, and the
+ * foreshortening that shows is what makes it read as a solid object rather than
+ * a picture of one. Deliberately small — enough to catch the light along an
+ * edge, not enough to become a spin.
+ */
+const MAX_DRAG_YAW = 22 * DEGREES_TO_RADIANS;
+const MAX_DRAG_PITCH = 12 * DEGREES_TO_RADIANS;
+/** Per second, so the turn eases in rather than snapping on the first frame. */
+const DRAG_TURN_SMOOTHING = 8;
 const LANYARD_TEXTURE_WIDTH = 512;
 const LANYARD_TEXTURE_HEIGHT = 64;
 
@@ -327,6 +339,11 @@ function shortestAngle(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
 }
 
+/** A grab past the printed edge (the rounded corners) still counts as the edge. */
+function clampToEdge(fraction: number): number {
+  return Math.max(-1, Math.min(1, fraction));
+}
+
 /**
  * Turns the phone's tilt into the direction gravity pulls, so the badge swings
  * against the real world rather than always straight down the screen. The angle
@@ -374,6 +391,10 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   const bandEnd = useMemo(() => new Vector3(), []);
   const bandExit = useMemo(() => new Vector3(), []);
   const cardQuat = useMemo(() => new Quaternion(), []);
+  const grabWorld = useMemo(() => new Vector3(), []);
+  const dragTurn = useMemo(() => new Quaternion(), []);
+  const dragTarget = useMemo(() => new Quaternion(), []);
+  const dragEuler = useMemo(() => new Euler(), []);
   const lerped1 = useMemo(() => new Vector3(), []);
   const lerped2 = useMemo(() => new Vector3(), []);
   const curve = useMemo(() => {
@@ -394,7 +415,8 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     return catmull;
   }, []);
 
-  const [dragged, setDragged] = useState<Vector3 | null>(null);
+  /** Where on the card it is being held, in the card's own frame. Null when free. */
+  const [grab, setGrab] = useState<Vector3 | null>(null);
   const [hovered, setHovered] = useState(false);
 
   const { size, camera } = useThree();
@@ -416,11 +438,11 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     if (!hovered) {
       return;
     }
-    document.body.style.cursor = dragged ? "grabbing" : "grab";
+    document.body.style.cursor = grab ? "grabbing" : "grab";
     return () => {
       document.body.style.cursor = "auto";
     };
-  }, [hovered, dragged]);
+  }, [hovered, grab]);
 
   const geometry = useMemo(
     () => createCardGeometry(CARD_WIDTH, CARD_HEIGHT, CARD_DEPTH, CARD_RADIUS),
@@ -471,17 +493,36 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
     // against it is meaningless, so cap it at a couple of frames.
     const frameDelta = Math.min(delta, MAX_FRAME_DELTA);
 
-    if (dragged) {
+    if (grab) {
       vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(camera);
       dir.copy(vec).sub(camera.position).normalize();
       vec.add(dir.multiplyScalar(camera.position.length()));
       for (const body of [card, j1, j2, j3, fixed]) {
         body.current?.wakeUp();
       }
+
+      // How far from the middle it was grabbed decides how far it turns, so a
+      // card taken by the corner shows its depth and one taken by the middle
+      // stays square. The side being held is the side that comes forward.
+      dragTarget.setFromEuler(
+        dragEuler.set(
+          clampToEdge(grab.y / (CARD_HEIGHT / 2)) * MAX_DRAG_PITCH,
+          -clampToEdge(grab.x / (CARD_WIDTH / 2)) * MAX_DRAG_YAW,
+          0
+        )
+      );
+      dragTurn.slerp(dragTarget, Math.min(1, frameDelta * DRAG_TURN_SMOOTHING));
+      card.current.setNextKinematicRotation(dragTurn);
+
+      // Turning happens about the centre of mass, so the translation has to put
+      // the held point back under the cursor afterwards. That is what makes the
+      // card pivot around the corner being pinched instead of sliding out from
+      // under it.
+      grabWorld.copy(grab).applyQuaternion(dragTurn);
       card.current.setNextKinematicTranslation({
-        x: vec.x - dragged.x,
-        y: vec.y - dragged.y,
-        z: vec.z - dragged.z,
+        x: vec.x - grabWorld.x,
+        y: vec.y - grabWorld.y,
+        z: vec.z - grabWorld.z,
       });
     } else {
       const velocity = card.current.linvel();
@@ -615,7 +656,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
           position={[2, 0, 0]}
           ref={card}
           {...segmentProps}
-          type={dragged ? "kinematicPosition" : "dynamic"}
+          type={grab ? "kinematicPosition" : "dynamic"}
         >
           <CuboidCollider
             args={[CARD_WIDTH / 2, CARD_HEIGHT / 2, CARD_DEPTH / 2]}
@@ -627,11 +668,20 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
               };
               target.setPointerCapture(event.pointerId);
               const translation = card.current?.translation();
-              if (translation) {
-                setDragged(
+              const rotation = card.current?.rotation();
+              if (translation && rotation) {
+                // The turn starts from wherever the card already is, so taking
+                // hold of a swinging badge eases into the tilt instead of
+                // snapping to it.
+                dragTurn.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                // Stored in the card's frame rather than the world's: which
+                // part of the card is held is what sets the tilt, and it has to
+                // stay that part while the card turns underneath.
+                setGrab(
                   new Vector3()
                     .copy(event.point)
                     .sub(vec.set(translation.x, translation.y, translation.z))
+                    .applyQuaternion(quat.copy(dragTurn).invert())
                 );
               }
             }}
@@ -642,7 +692,7 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
                 releasePointerCapture: (id: number) => void;
               };
               target.releasePointerCapture(event.pointerId);
-              setDragged(null);
+              setGrab(null);
             }}
           >
             <mesh geometry={geometry} material={materials} />
