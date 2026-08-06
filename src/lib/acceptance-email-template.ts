@@ -144,14 +144,14 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
           </tr>
 
           <tr>
-            <td bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:24px 26px 2px;">
+            <td bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:24px 26px 0;">
               <div style="font-family:${SANS};font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${PALETTE.teal};padding-bottom:14px;">Siguientes pasos</div>
               ${NEXT_STEPS.map((step, index) => stepRow(step, index, index === NEXT_STEPS.length - 1)).join("")}
             </td>
           </tr>
 
           <tr>
-            <td align="center" bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:26px 26px 24px;">
+            <td align="center" bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:26px;">
               ${button({ background: PALETTE.teal, border: PALETTE.ink, foreground: "#ffffff", href: content.confirmUrl, label: "Confirmar asistencia" })}
             </td>
           </tr>
