@@ -781,7 +781,7 @@ const CAMERA_FOV = 25;
  * this way keeps the badge the same distance above the horizon whichever way the
  * screen is turned, even though the camera stands further off on a phone.
  */
-const BADGE_DROP = 0.085;
+const BADGE_DROP = 0.07;
 
 /**
  * Lighting only shapes the clip and the laminate highlights — the printed faces

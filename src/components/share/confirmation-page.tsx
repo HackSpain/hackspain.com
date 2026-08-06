@@ -6,6 +6,7 @@ import { InlineSvg } from "../media/inline-svg";
 import { LINKEDIN_SVG, WHATSAPP_SVG, X_SVG } from "../theme/constants";
 import { hsButtonClass } from "../ui/button-styles";
 import { badgePhotoDataUri } from "./badge-photo-file";
+import { ConfettiBurst } from "./confetti-burst";
 import LanyardBadge from "./lanyard-badge";
 import { ShareBackdrop } from "./share-backdrop";
 import { useDeviceTilt } from "./use-device-tilt";
@@ -221,6 +222,8 @@ export function ConfirmationPage({
         />
       </div>
 
+      <ConfettiBurst />
+
       {isDragging && (
         <div className="pointer-events-none absolute inset-0 z-30 border-[6px] border-hs-ink border-dashed bg-hs-gold/10" />
       )}
@@ -230,9 +233,19 @@ export function ConfirmationPage({
           {/* Opening LinkedIn takes over the panel: the other two ways out would
               only compete with the steps, so they wait behind the back button. */}
           <div className="flex items-center justify-between gap-3">
-            <span className="font-bungee text-hs-ink text-xs uppercase tracking-wide">
-              {linkedinOpen ? "Compartir en LinkedIn" : "Cuéntalo"}
-            </span>
+            <div>
+              <span className="font-bungee text-hs-ink text-xs uppercase tracking-wide">
+                {linkedinOpen ? "Compartir en LinkedIn" : "Compártelo"}
+              </span>
+              {/* Held back while the LinkedIn steps are open, where the panel is
+                  about getting the image posted rather than about why. */}
+              {!linkedinOpen && (
+                <p className="mt-1 font-sans text-hs-brown text-xs">
+                  Ayuda a que más builders se unan a HackSpain compartiendo tu
+                  participación.
+                </p>
+              )}
+            </div>
             {linkedinOpen && (
               <button
                 className={hsButtonClass("teal", "micro", "!py-2")}
