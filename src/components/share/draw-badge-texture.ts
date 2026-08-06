@@ -99,7 +99,9 @@ function drawStripe(ctx: CanvasRenderingContext2D) {
   ctx.translate(stripeX + STRIPE_WIDTH / 2, stripeY + stripeHeight / 2);
   ctx.rotate(Math.PI / 2);
   ctx.fillStyle = BADGE_PALETTE.stripeText;
-  ctx.font = '900 138px "DM Sans", system-ui, sans-serif';
+  // Bungee, the site's display face, and no weight: it ships a single one, so
+  // asking for 900 would only get a synthetic bold that distorts the letters.
+  ctx.font = '138px "Bungee", system-ui, sans-serif';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(BADGE_PALETTE.label, 0, 6, stripeHeight - 56);
