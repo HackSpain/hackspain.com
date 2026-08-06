@@ -134,11 +134,8 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
               <p style="margin:0 0 16px;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
                 Estás dentro. Nos han llegado más de 500 solicitudes y la tuya nos ha convencido, así que nos hace mucha ilusión decirte que tienes plaza en HackSpain 2026.
               </p>
-              <p style="margin:0 0 16px;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
-                Vas a pasar un fin de semana construyendo junto a algunos de los mejores <strong>hackers jóvenes de España</strong> y con los <strong>emprendedores y las startups que están definiendo el ecosistema</strong>: 36 horas, cinco tracks y un gran premio.
-              </p>
               <p style="margin:0;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
-                Solo falta una cosa.
+                Vas a pasar un fin de semana construyendo junto a algunos de los mejores <strong>hackers jóvenes de España</strong> y con los <strong>emprendedores y las startups que están definiendo el ecosistema</strong>: 36 horas, cinco tracks y un gran premio.
               </p>
             </td>
           </tr>
