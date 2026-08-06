@@ -10,12 +10,13 @@ const MAX_FRAME_DELTA = 1 / 30;
 const FULL_TURN = 360;
 
 /**
- * Portrait keeps the horizon high so the plain is not swallowed by the control
- * panel; landscape drops it so the ground stays a base rather than half the
- * view. Everything standing on the plain shares the matching offset.
+ * The horizon sits low enough that the panel along the bottom stands on the
+ * plain rather than below it, and low enough on a wide window that the ground
+ * reads as a base instead of half the view. Everything standing on the plain
+ * shares the matching offset.
  */
-const HORIZON_TOP = "top-[62%] sm:top-[74%]";
-const ON_HORIZON = "bottom-[38%] sm:bottom-[26%]";
+const HORIZON_TOP = "top-[78%] sm:top-[88%]";
+const ON_HORIZON = "bottom-[22%] sm:bottom-[12%]";
 
 interface Props {
   /** 0 = still air, 1 = the badge is being thrown about. */

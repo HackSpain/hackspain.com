@@ -761,8 +761,16 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
   );
 }
 
-const BASE_CAMERA_DISTANCE = 13;
-const MAX_CAMERA_DISTANCE = 24;
+const BASE_CAMERA_DISTANCE = 11;
+const MAX_CAMERA_DISTANCE = 20;
+const CAMERA_FOV = 25;
+/**
+ * How far down the frame the badge hangs, as a share of the frame's height. The
+ * plain behind it is placed in screen percentages too, so matching the drop this
+ * way keeps the badge the same distance above the horizon on a phone held
+ * upright as on a wide window, where the camera stands much closer.
+ */
+const BADGE_DROP = 0.085;
 
 /**
  * Lighting only shapes the clip and the laminate highlights — the printed faces
@@ -782,7 +790,11 @@ function ResponsiveCamera() {
     camera.position.z = isPortrait
       ? Math.min(MAX_CAMERA_DISTANCE, BASE_CAMERA_DISTANCE / aspect)
       : BASE_CAMERA_DISTANCE;
-    camera.position.y = isPortrait ? 0.1 : 0.4;
+    // Raising the camera drops the badge down the frame without changing
+    // anything about how it hangs or swings.
+    const framedHeight =
+      2 * camera.position.z * Math.tan((CAMERA_FOV / 2) * DEGREES_TO_RADIANS);
+    camera.position.y = (isPortrait ? 0.1 : 0.4) + framedHeight * BADGE_DROP;
     camera.updateProjectionMatrix();
   }, [camera, size]);
 
@@ -797,7 +809,7 @@ export default function LanyardBadge({
 }: LanyardBadgeProps) {
   return (
     <Canvas
-      camera={{ fov: 25, position: [0, 0, BASE_CAMERA_DISTANCE] }}
+      camera={{ fov: CAMERA_FOV, position: [0, 0, BASE_CAMERA_DISTANCE] }}
       flat
       gl={{ alpha: true, antialias: true }}
     >

@@ -3,7 +3,7 @@ import { splitBadgeName } from "../../lib/badge-name";
 import { OG_BADGE_HEIGHT, OG_BADGE_WIDTH } from "../../lib/badge-share-params";
 import { copyToClipboard } from "../../lib/copy-to-clipboard";
 import { InlineSvg } from "../media/inline-svg";
-import { WHATSAPP_SVG } from "../theme/constants";
+import { LINKEDIN_SVG, WHATSAPP_SVG, X_SVG } from "../theme/constants";
 import { hsButtonClass } from "../ui/button-styles";
 import { badgePhotoDataUri } from "./badge-photo-file";
 import LanyardBadge from "./lanyard-badge";
@@ -161,14 +161,40 @@ export function ConfirmationPage({
         type="file"
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-6 sm:px-8 sm:pt-10">
-        <div className="pointer-events-auto mx-auto max-w-3xl select-none text-center">
-          <h1 className="inline-block border-[3px] border-hs-ink bg-hs-cream px-5 py-3 font-bungee text-[clamp(1.6rem,5.5vw,3rem)] text-hs-ink leading-none shadow-[6px_6px_0_0_var(--color-hs-ink)]">
-            Plaza confirmada
-          </h1>
-          <p className="mt-2 hidden font-bungee text-hs-brown text-xs uppercase tracking-wide [@media(pointer:coarse)]:block">
-            Inclina el móvil y se balancea sola
-          </p>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-3 sm:px-8 sm:pt-6">
+        <div className="pointer-events-auto mx-auto w-fit max-w-full select-none text-center">
+          {/* Joining the group is the one thing that has to happen here, so it
+              travels with the headline instead of queueing behind the sharing
+              below, where it was the fourth button of four. */}
+          <div className="border-[3px] border-hs-ink bg-hs-cream px-4 py-3 shadow-[6px_6px_0_0_var(--color-hs-ink)]">
+            <h1 className="font-bungee text-[clamp(1.35rem,4.6vw,2.4rem)] text-hs-ink leading-none">
+              Plaza confirmada
+            </h1>
+            {whatsappUrl && (
+              <>
+                <a
+                  className={hsButtonClass(
+                    "gold",
+                    "md",
+                    "mt-3 w-full gap-2 text-center"
+                  )}
+                  href={whatsappUrl}
+                  rel="noopener"
+                  target="_blank"
+                >
+                  <InlineSvg
+                    className="h-4 w-4"
+                    decorative
+                    svg={WHATSAPP_SVG}
+                  />
+                  Entrar al grupo de WhatsApp
+                </a>
+                <p className="mt-2 font-sans text-hs-brown text-xs">
+                  Todos los avisos se harán en el grupo.
+                </p>
+              </>
+            )}
+          </div>
           {needsPermission && (
             <button
               className={hsButtonClass("teal", "micro", "!py-2 mt-3")}
@@ -199,7 +225,7 @@ export function ConfirmationPage({
         <div className="pointer-events-none absolute inset-0 z-30 border-[6px] border-hs-ink border-dashed bg-hs-gold/10" />
       )}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-6 sm:pb-10">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-3 sm:pb-5">
         <div className="pointer-events-auto mx-auto flex max-w-2xl flex-col gap-3 border-[3px] border-hs-ink bg-hs-cream/95 p-4 shadow-[6px_6px_0_0_var(--color-hs-ink)]">
           {/* Opening LinkedIn takes over the panel: the other two ways out would
               only compete with the steps, so they wait behind the back button. */}
@@ -220,20 +246,28 @@ export function ConfirmationPage({
 
           {!linkedinOpen && (
             <div className="flex flex-col gap-2 sm:flex-row">
+              {/* Both marks inherit the button's ink, so they read as lettering
+                  rather than as the platforms' own badges. */}
               <button
                 aria-expanded={linkedinOpen}
-                className={hsButtonClass("gold", "md", "flex-1")}
+                className={hsButtonClass("gold", "md", "flex-1 gap-2")}
                 onClick={() => setLinkedinOpen(true)}
                 type="button"
               >
+                <InlineSvg className="h-4 w-4" decorative svg={LINKEDIN_SVG} />
                 LinkedIn
               </button>
               <a
-                className={hsButtonClass("gold", "md", "flex-1 text-center")}
+                className={hsButtonClass(
+                  "gold",
+                  "md",
+                  "flex-1 gap-2 text-center"
+                )}
                 href={xHref}
                 rel="noopener"
                 target="_blank"
               >
+                <InlineSvg className="h-4 w-4" decorative svg={X_SVG} />
                 Twitter
               </a>
               <button
@@ -298,26 +332,6 @@ export function ConfirmationPage({
                 </li>
               </ol>
             </div>
-          )}
-
-          {whatsappUrl && (
-            <a
-              className={hsButtonClass(
-                "gold",
-                "md",
-                "w-full gap-2 text-center"
-              )}
-              href={whatsappUrl}
-              rel="noopener"
-              target="_blank"
-            >
-              <InlineSvg
-                className="h-4 w-4 text-[#25D366]"
-                decorative
-                svg={WHATSAPP_SVG}
-              />
-              Entrar al grupo de WhatsApp
-            </a>
           )}
         </div>
       </div>
