@@ -1,4 +1,8 @@
 import { type CreateEmailOptions, Resend } from "resend";
+import {
+  acceptanceEmailHtml,
+  acceptanceEmailText,
+} from "./acceptance-email-template";
 import { envFromRuntime, siteOriginFromRuntime } from "./runtime-env";
 
 interface ResendConfig {
@@ -45,6 +49,8 @@ export type ConfirmationEmailResult =
 interface SendEmailInput {
   category: string;
   entityReference: string;
+  /** Optional; when present it is sent alongside `text` as a multipart body. */
+  html?: string;
   idempotencyKey: string;
   subject: string;
   text: string;
@@ -66,6 +72,7 @@ async function sendEmail(
     tags: [{ name: "category", value: input.category }],
     text: input.text,
     to: input.to,
+    ...(input.html ? { html: input.html } : {}),
   };
 
   try {
@@ -197,33 +204,36 @@ function signupAcceptanceUrl(managementToken: string): string {
 }
 
 /**
- * Sent when a place is granted. The link is the confirmation: opening it moves
- * the signup from accepted to confirmed and hands over the 3D badge.
+ * Absolute URL for the raster logo in `public/`. Email clients cannot resolve
+ * relative image paths, and a data: URI would be stripped by Gmail.
+ */
+function emailLogoUrl(): string {
+  return new URL("/hs-email-logo.png", siteOriginFromRuntime()).toString();
+}
+
+/**
+ * Sent when a place is granted. The confirm link is the confirmation: opening it
+ * moves the signup from accepted to confirmed. The cancel link points at the
+ * ordinary management page, so someone who cannot come can free the place
+ * without writing in.
  */
 export function sendSignupAcceptanceEmail(
   input: SignupAcceptanceEmailInput
 ): Promise<ConfirmationEmailResult> {
-  const firstName = firstNameFrom(input.fullName);
-  const acceptanceUrl = signupAcceptanceUrl(input.managementToken);
-  const text = `Hola ${firstName},
-
-Tienes plaza en HackSpain 2026.
-
-Confirma que vienes desde tu enlace personal — ahí te espera tu acreditación:
-${acceptanceUrl}
-
-18—20 de septiembre de 2026, UPM ETSIT, Madrid.
-
-Si al final no puedes venir, dínoslo cuanto antes para dar la plaza a otra persona.
-
-El equipo de HackSpain`;
+  const content = {
+    cancelUrl: signupManagementUrl(input.managementToken),
+    confirmUrl: signupAcceptanceUrl(input.managementToken),
+    firstName: firstNameFrom(input.fullName),
+    logoUrl: emailLogoUrl(),
+  };
 
   return sendEmail({
     category: "signup_acceptance",
     entityReference: `hackspain-signup-acceptance-${input.signupId}`,
+    html: acceptanceEmailHtml(content),
     idempotencyKey: `signup-acceptance/${input.signupId}`,
     subject: "Tienes plaza — HackSpain 2026",
-    text,
+    text: acceptanceEmailText(content),
     to: input.email,
   });
 }
