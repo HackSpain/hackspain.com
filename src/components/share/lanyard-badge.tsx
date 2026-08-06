@@ -137,11 +137,13 @@ const ROPE_SEGMENT_LENGTH = 1;
 const ANCHOR_HEIGHT = 4.95;
 const GRAVITY = 40;
 /**
- * The badge is a pendulum four units long, so a tilt of x degrees parks it at
- * 4·sin(x) sideways. A phone screen only shows about 2.4 units either side of
- * centre, so anything past ~28° swings it out of frame.
+ * The badge hangs from a pivot 4.3 units above its middle, so a tilt of x
+ * degrees parks it 4.3·sin(x) to the side. A phone now frames about 1.33 units
+ * either side of centre and the card fills 0.8 of that, so much past six degrees
+ * walks its edge out of the picture. It was 28° when a phone was framed from far
+ * enough back to show twice the width.
  */
-const MAX_TILT_DEGREES = 28;
+const MAX_TILT_DEGREES = 6;
 const TILT_SMOOTHING = 6;
 const DEGREES_TO_RADIANS = Math.PI / 180;
 /**
@@ -762,13 +764,22 @@ function Badge({ content, onPhotoClick, wind }: BadgeProps) {
 }
 
 const BASE_CAMERA_DISTANCE = 11;
-const MAX_CAMERA_DISTANCE = 20;
+/**
+ * Framing treats nothing as narrower than this, whatever the screen's real
+ * shape. The pull-back used to track the aspect ratio exactly, which holds the
+ * world's width steady across screens — but a phone is over twice as tall as it
+ * is wide, so it was framed from nearly double the distance and the card came
+ * out at a quarter of the frame's height against nearly half on a wide window.
+ * Framed at this shape instead, the card stays close to its desktop size, and
+ * the tilt below is cut to fit the narrower view that leaves.
+ */
+const NARROWEST_FRAMING_ASPECT = 0.85;
 const CAMERA_FOV = 25;
 /**
  * How far down the frame the badge hangs, as a share of the frame's height. The
- * plain behind it is placed in screen percentages too, so matching the drop this
- * way keeps the badge the same distance above the horizon on a phone held
- * upright as on a wide window, where the camera stands much closer.
+ * plain behind it is placed in screen percentages too, so measuring the drop
+ * this way keeps the badge the same distance above the horizon whichever way the
+ * screen is turned, even though the camera stands further off on a phone.
  */
 const BADGE_DROP = 0.085;
 
@@ -780,16 +791,18 @@ const BADGE_DROP = 0.085;
 const AMBIENT_INTENSITY = 0.9;
 const ENVIRONMENT_INTENSITY = 0.4;
 
-/** Pulls the camera back on portrait screens so the badge always fits. */
+/** Pulls the camera back on portrait screens, but only so far. */
 function ResponsiveCamera() {
   const { camera, size } = useThree();
 
   useEffect(() => {
     const aspect = size.width / size.height;
     const isPortrait = aspect < 1;
-    camera.position.z = isPortrait
-      ? Math.min(MAX_CAMERA_DISTANCE, BASE_CAMERA_DISTANCE / aspect)
-      : BASE_CAMERA_DISTANCE;
+    // Narrow screens are framed as though they were squarer than they are, and
+    // wide ones are left alone.
+    camera.position.z =
+      BASE_CAMERA_DISTANCE /
+      Math.min(1, Math.max(aspect, NARROWEST_FRAMING_ASPECT));
     // Raising the camera drops the badge down the frame without changing
     // anything about how it hangs or swings.
     const framedHeight =
