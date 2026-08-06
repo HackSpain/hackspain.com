@@ -151,7 +151,7 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
           </tr>
 
           <tr>
-            <td align="center" bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:26px;">
+            <td align="center" bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:26px 26px 38px;">
               ${button({ background: PALETTE.teal, border: PALETTE.ink, foreground: "#ffffff", href: content.confirmUrl, label: "Confirmar asistencia" })}
             </td>
           </tr>
