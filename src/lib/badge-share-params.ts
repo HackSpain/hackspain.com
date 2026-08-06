@@ -66,20 +66,31 @@ export function badgeSharePath(params: BadgeShareParams): string {
 }
 
 /**
+ * Bump this whenever the badge's drawing changes — a colour, a font, a layout.
+ *
+ * The image is cached for an hour in the browser and a week on the CDN, keyed
+ * only by URL. `version` covers a changed photo, but nothing covered a changed
+ * design: a redesign kept serving the old picture to every link already shared,
+ * and to the person who had just been looking at their own badge.
+ */
+export const BADGE_RENDER_VERSION = 2;
+
+/**
  * The social preview image for a given badge. Kept as a path so the layout can
  * resolve it against the canonical site origin, which is what crawlers need.
  *
- * The image is cached hard by URL, so a changed badge photo has to change the
- * URL too. `version` is ignored when drawing and exists only for that.
+ * The image is cached hard by URL, so anything that changes the picture has to
+ * change the URL too. Neither `r` nor `version` is read when drawing; both
+ * exist only to key the cache.
  */
 export function badgeOgImagePath(
   params: BadgeShareParams,
   version?: number | null
 ): string {
   const search = new URLSearchParams(badgeShareSearch(params));
+  search.set("r", String(BADGE_RENDER_VERSION));
   if (version) {
     search.set("v", String(version));
   }
-  const query = search.toString();
-  return query ? `/api/og/badge.png?${query}` : "/api/og/badge.png";
+  return `/api/og/badge.png?${search.toString()}`;
 }

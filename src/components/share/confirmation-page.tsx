@@ -13,8 +13,15 @@ import { useDeviceTilt } from "./use-device-tilt";
 import { useDroppedPhoto } from "./use-dropped-photo";
 import { useImageFromSrc } from "./use-image-from-src";
 
-const POST_TEXT =
-  "¡Voy a HackSpain 2026! Ya tengo mi acreditación: 48 horas construyendo en Madrid con 250 hackers más. Nos vemos allí.";
+const POST_TEXT_TAIL =
+  " Ya tengo mi acreditación: 48 horas construyendo en Madrid con 250 hackers más. Nos vemos allí.";
+/**
+ * X turns `@hackspain26` into a link to the account, so the post mentions it
+ * there. LinkedIn has no plain-text equivalent — a handle typed into the
+ * composer's prefilled text stays dead text — so it keeps the readable name.
+ */
+const X_POST_TEXT = `¡Voy a @hackspain26!${POST_TEXT_TAIL}`;
+const LINKEDIN_POST_TEXT = `¡Voy a HackSpain 2026!${POST_TEXT_TAIL}`;
 /** Keeps the link clear of the text so the post shows it as its own line. */
 const POST_LINK_SEPARATOR = "\n\n";
 const COPIED_RESET_MS = 2000;
@@ -117,20 +124,21 @@ export function ConfirmationPage({
     ? `${badgeImagePath}&v=${photoVersion}`
     : badgeImagePath;
 
-  /** The same post wherever it goes: their words, then their badge link. */
-  const postDraft = `${POST_TEXT}${POST_LINK_SEPARATOR}${shareUrl}`;
+  /** Their words, then their badge link — worded per platform, see above. */
+  const linkedinDraft = `${LINKEDIN_POST_TEXT}${POST_LINK_SEPARATOR}${shareUrl}`;
+  const xDraft = `${X_POST_TEXT}${POST_LINK_SEPARATOR}${shareUrl}`;
 
   /*
    * The composer writes the post itself, but it cannot attach an image from a
    * URL. So LinkedIn opens the steps below rather than a link, and this fires
    * once the image is saved and ready to upload.
    */
-  const linkedinHref = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(postDraft)}`;
+  const linkedinHref = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(linkedinDraft)}`;
   /*
    * The whole post goes in `text`, with no `url` alongside it: X appends that
    * parameter with a space of its own, which would undo the separation above.
    */
-  const xHref = `https://x.com/intent/tweet?text=${encodeURIComponent(postDraft)}`;
+  const xHref = `https://x.com/intent/tweet?text=${encodeURIComponent(xDraft)}`;
 
   const handleCopyLink = async () => {
     const succeeded = await copyToClipboard(shareUrl);
