@@ -204,6 +204,13 @@ export const POST: APIRoute = async ({ request }) => {
   let relatedPreSignupId: string | null = null;
   let relatedPreSignupReferralCode: string | null = null;
   const signupId = crypto.randomUUID();
+  /*
+   * On a resubmission the existing row is updated and keeps its original id, so
+   * everything downstream (the confirmation email's idempotency key and entity
+   * ref) has to use the id that came back — not the one generated here, which
+   * would point at a row that does not exist.
+   */
+  let savedSignupId: string = signupId;
 
   try {
     const db = getDb();
@@ -247,31 +254,73 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     try {
-      await db.insert(hackathonSignups).values({
-        id: signupId,
-        fullName,
-        email,
-        xUrl: emptyToNull(xUrl),
-        linkedinUrl: emptyToNull(linkedinUrl),
-        githubUrl: emptyToNull(githubUrl),
-        webUrl: emptyToNull(webUrl),
-        achievements: emptyToNull(achievements),
-        freeTime: emptyToNull(freeTime),
-        dietaryRestrictions,
-        dietaryDetails: emptyToNull(dietaryDetails),
-        dietaryConsentAt:
-          hasDietaryData && dietaryDataConsent ? new Date() : null,
-        occupationStatuses,
-        studyInstitution: emptyToNull(studyInstitution),
-        employer: emptyToNull(employer),
-        cameFromPreSignup: relatedPreSignupId !== null,
-        wantsAmbassador,
-        ambassadorMotivation: motivationDb,
-        heardFrom,
-        referralCode: emptyToNull(
-          referralCode || relatedPreSignupReferralCode || ""
-        ),
-      });
+      /*
+       * Applying again replaces the application. Email is the key, so this is
+       * how someone corrects a submission — there is no edit page, and the
+       * previous behaviour (409, record untouched) left people who had sent a
+       * blank or wrong form with no way to fix it.
+       *
+       * `set` deliberately lists only the answers. id, email, created_at,
+       * management_token, approval_status, cancelled_at, came_from_pre_signup
+       * and badge_photo are all left alone: a resubmission must not hand out a
+       * new confirmation link, undo an acceptance, or lose the badge photo.
+       */
+      const [saved] = await db
+        .insert(hackathonSignups)
+        .values({
+          id: signupId,
+          fullName,
+          email,
+          xUrl: emptyToNull(xUrl),
+          linkedinUrl: emptyToNull(linkedinUrl),
+          githubUrl: emptyToNull(githubUrl),
+          webUrl: emptyToNull(webUrl),
+          achievements: emptyToNull(achievements),
+          freeTime: emptyToNull(freeTime),
+          dietaryRestrictions,
+          dietaryDetails: emptyToNull(dietaryDetails),
+          dietaryConsentAt:
+            hasDietaryData && dietaryDataConsent ? new Date() : null,
+          occupationStatuses,
+          studyInstitution: emptyToNull(studyInstitution),
+          employer: emptyToNull(employer),
+          cameFromPreSignup: relatedPreSignupId !== null,
+          wantsAmbassador,
+          ambassadorMotivation: motivationDb,
+          heardFrom,
+          referralCode: emptyToNull(
+            referralCode || relatedPreSignupReferralCode || ""
+          ),
+        })
+        .onConflictDoUpdate({
+          target: hackathonSignups.email,
+          set: {
+            fullName,
+            xUrl: emptyToNull(xUrl),
+            linkedinUrl: emptyToNull(linkedinUrl),
+            githubUrl: emptyToNull(githubUrl),
+            webUrl: emptyToNull(webUrl),
+            achievements: emptyToNull(achievements),
+            freeTime: emptyToNull(freeTime),
+            dietaryRestrictions,
+            dietaryDetails: emptyToNull(dietaryDetails),
+            dietaryConsentAt:
+              hasDietaryData && dietaryDataConsent ? new Date() : null,
+            occupationStatuses,
+            studyInstitution: emptyToNull(studyInstitution),
+            employer: emptyToNull(employer),
+            wantsAmbassador,
+            ambassadorMotivation: motivationDb,
+            heardFrom,
+            referralCode: emptyToNull(
+              referralCode || relatedPreSignupReferralCode || ""
+            ),
+          },
+        })
+        .returning({ id: hackathonSignups.id });
+      if (saved) {
+        savedSignupId = saved.id;
+      }
     } catch (e: unknown) {
       if (isPostgresUniqueViolation(e)) {
         return Response.json({ error: "duplicate_email" }, { status: 409 });
@@ -353,7 +402,7 @@ export const POST: APIRoute = async ({ request }) => {
     const emailResult = await sendSignupConfirmationEmail({
       fullName,
       email,
-      signupId,
+      signupId: savedSignupId,
       wantsAmbassador,
     });
     if (!emailResult.ok && emailResult.reason === "send_failed") {

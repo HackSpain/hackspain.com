@@ -324,7 +324,7 @@ const t = {
   applicationReceived:
     "¡Gracias! Hemos recibido tu solicitud. Espera nuestra respuesta por correo; te escribiremos en cuanto podamos.",
   alreadyApplied:
-    "Ya tenemos una solicitud con este correo, así que no la hemos duplicado. Si quieres corregir o añadir algo, escríbenos a contact@hackspain.com y lo actualizamos nosotros. Te contactaremos por email cuando haya novedades.",
+    "Ya tenemos una solicitud con este correo. Si vuelves a enviarla, actualizamos la que ya teníamos, así que puedes corregir lo que necesites. Te contactaremos por email cuando haya novedades.",
   signupsClosedSubtitle:
     "El plazo para enviar solicitudes ha terminado. Síguenos en redes para no perderte lo que viene.",
   signupsClosed:
