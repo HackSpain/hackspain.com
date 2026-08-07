@@ -301,7 +301,7 @@ const t = {
   socialXPlaceholder: "usuario, @usuario o pega un enlace",
   socialLinkedinPlaceholder: "usuario, company/acme o pega un enlace",
   socialGithubPlaceholder: "usuario o usuario/repo — o pega un enlace",
-  achievements: "Logros y hitos",
+  achievements: "Logros e hitos",
   achievementsHint:
     "Lo que te enorgullece — hackathones, estudios, deporte, voluntariado, arte, trabajo… técnico o no.",
   freeTime: "Fuera del cole / curro",
