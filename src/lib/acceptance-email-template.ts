@@ -35,12 +35,58 @@ const SANS = "'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif";
 export const ACCEPTANCE_EMAIL_SUBJECT =
   "Estás dentro. Confirma tu plaza en HackSpain 2026";
 
+/**
+ * Reminders for people who were offered a place and never opened the link. The
+ * body is deliberately the same email — if they never read the first one, this
+ * is their first read of the details — so only the opening and the subject
+ * change. Numbered so each send gets its own Resend idempotency key.
+ */
+export const REMINDER_SUBJECTS = [
+  "¿Sigues dentro? Confirma tu plaza en HackSpain 2026",
+  "Tu plaza en HackSpain 2026 sigue sin confirmar",
+  "Última llamada para confirmar tu plaza en HackSpain 2026",
+] as const;
+
+/**
+ * The red panel, per reminder. The acceptance shouts TIENES PLAZA / ¡ENHORABUENA
+ * because it is news; a reminder is not, and congratulating someone for the
+ * third time about a place they have not taken reads as if nobody is watching.
+ */
+export const REMINDER_HEADLINES = [
+  "Tu plaza sigue reservada",
+  "Tu plaza sigue sin confirmar",
+  "Última llamada",
+] as const;
+
+export const REMINDER_KICKERS = [
+  "Falta que la confirmes",
+  "Cuéntanos si vienes",
+  "Necesitamos tu respuesta",
+] as const;
+
+/** Opening paragraph for each reminder. Falls back to the acceptance one. */
+export const REMINDER_INTROS = [
+  "Hace unos días te dijimos que tienes plaza en HackSpain 2026, pero todavía no la has confirmado. Las plazas se van llenando y hay gente esperando, así que si no nos dices nada podrías perderla.",
+  "Seguimos sin saber si vas a venir a HackSpain 2026. Tu plaza sigue reservada, pero se nos están llenando los sitios y no podemos guardarla indefinidamente.",
+  "Esta es la última vez que te escribimos por esto. Tu plaza en HackSpain 2026 sigue sin confirmar y hay gente en lista de espera para ocuparla.",
+] as const;
+
 export interface AcceptanceEmailContent {
   cancelUrl: string;
   confirmUrl: string;
   firstName: string;
+  /** Overrides the red panel. Both are set together or neither. */
+  headline?: string;
+  /** Overrides the opening paragraph — used by the reminders. */
+  intro?: string;
+  kicker?: string;
   logoUrl: string;
+  /** True when the send sets a Reply-To, so the footer can invite a reply. */
+  replyable?: boolean;
 }
+
+const DEFAULT_INTRO =
+  "Estás dentro. Se han apuntado más de 500 personas y tu solicitud nos ha convencido, así que nos hace mucha ilusión decirte que tienes plaza en HackSpain 2026.";
 
 interface ButtonOptions {
   background: string;
@@ -109,10 +155,10 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light only" />
-<title>${ACCEPTANCE_EMAIL_SUBJECT}</title>
+<title>${content.headline ? `${content.headline} — HackSpain 2026` : ACCEPTANCE_EMAIL_SUBJECT}</title>
 </head>
 <body style="margin:0;padding:0;background:${PALETTE.ink};">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Tienes plaza en HackSpain 2026. Confirma tu asistencia.</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${content.headline ? `${content.headline} en HackSpain 2026. Confirma tu asistencia.` : "Tienes plaza en HackSpain 2026. Confirma tu asistencia."}</div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PALETTE.ink}" style="background:${PALETTE.ink};">
     <tr>
@@ -133,15 +179,15 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
 
           <tr>
             <td align="center" bgcolor="${PALETTE.red}" style="background:${PALETTE.red};border:3px solid ${PALETTE.ink};border-top:0;padding:30px 24px;">
-              <div style="font-family:${SANS};font-size:30px;line-height:1.15;font-weight:800;letter-spacing:0.01em;text-transform:uppercase;color:${PALETTE.paper};">Tienes plaza</div>
-              <div style="font-family:${SANS};font-size:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${PALETTE.gold};padding-top:8px;">¡Enhorabuena, ${content.firstName}!</div>
+              <div style="font-family:${SANS};font-size:30px;line-height:1.15;font-weight:800;letter-spacing:0.01em;text-transform:uppercase;color:${PALETTE.paper};">${content.headline ?? "Tienes plaza"}</div>
+              <div style="font-family:${SANS};font-size:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${PALETTE.gold};padding-top:8px;">${content.kicker ? `${content.kicker}, ${content.firstName}` : `¡Enhorabuena, ${content.firstName}!`}</div>
             </td>
           </tr>
 
           <tr>
             <td bgcolor="${PALETTE.paper}" style="background:${PALETTE.paper};border:3px solid ${PALETTE.ink};border-top:0;border-bottom:0;padding:30px 26px 6px;">
               <p style="margin:0 0 16px;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
-                Estás dentro. Nos han llegado más de 500 solicitudes y la tuya nos ha convencido, así que nos hace mucha ilusión decirte que tienes plaza en HackSpain 2026.
+                ${content.intro ?? DEFAULT_INTRO}
               </p>
               <p style="margin:0;font-family:${SANS};font-size:16px;line-height:1.6;color:${PALETTE.ink};">
                 Vas a pasar un fin de semana construyendo junto a algunos de los mejores <strong>hackers jóvenes de España</strong> y con los <strong>emprendedores y las startups que están definiendo el ecosistema</strong>: 36 horas, cinco tracks y un gran premio.
@@ -166,7 +212,7 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
             <td bgcolor="${PALETTE.sand}" style="background:${PALETTE.sand};border:3px solid ${PALETTE.ink};border-top:0;padding:22px 26px;">
               <div style="font-family:${SANS};font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${PALETTE.red};padding-bottom:10px;">Antes de confirmar, lee esto</div>
               <p style="margin:0 0 12px;font-family:${SANS};font-size:14px;line-height:1.6;color:${PALETTE.brown};">
-                Al confirmar, contamos contigo. Con más de 500 solicitudes, tu plaza es una plaza que otra persona no va a tener. Además compramos comida y merch por adelantado para cada asistente confirmado.
+                Al confirmar, contamos contigo. Con más de 500 personas apuntadas, tu plaza es una plaza que otra persona no va a tener. Además compramos comida y merch por adelantado para cada asistente confirmado.
               </p>
               <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${PALETTE.brown};">
                 No aparecer, o cancelar sin avisar con <strong>al menos un mes de antelación</strong>, supone quedar <strong>excluido de futuros eventos de HackSpain y de Exponential</strong>. Si ves que no vas a poder venir, cancela cuanto antes — sin problema y sin rencor.
@@ -199,8 +245,7 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
               </p>
               <p style="margin:0;font-family:${SANS};font-size:11px;line-height:1.6;color:#8a7a6d;">
                 Recibes este correo porque solicitaste plaza en HackSpain 2026.<br />
-                Este buzón no admite respuestas; escríbenos a
-                <a href="mailto:contact@hackspain.com" style="color:${PALETTE.gold};text-decoration:underline;">contact@hackspain.com</a>.
+                ${content.replyable ? "Si tienes cualquier duda, responde a este correo y te contestamos." : `Este buzón no admite respuestas; escríbenos a <a href="mailto:contact@hackspain.com" style="color:${PALETTE.gold};text-decoration:underline;">contact@hackspain.com</a>.`}
               </p>
             </td>
           </tr>
@@ -217,9 +262,9 @@ export function acceptanceEmailHtml(content: AcceptanceEmailContent): string {
 export function acceptanceEmailText(content: AcceptanceEmailContent): string {
   return `Hola ${content.firstName},
 
-Tienes plaza en HackSpain 2026. ¡Enhorabuena!
+${content.headline ? `${content.headline.toUpperCase()} — HACKSPAIN 2026` : "Tienes plaza en HackSpain 2026. ¡Enhorabuena!"}
 
-Nos han llegado más de 500 solicitudes y la tuya nos ha convencido. Vas a pasar un fin de semana construyendo junto a algunos de los mejores hackers jóvenes de España y con los emprendedores y las startups que están definiendo el ecosistema: 36 horas, cinco tracks y un gran premio.
+${content.intro ?? "Se han apuntado más de 500 personas y tu solicitud nos ha convencido."} Vas a pasar un fin de semana construyendo junto a algunos de los mejores hackers jóvenes de España y con los emprendedores y las startups que están definiendo el ecosistema: 36 horas, cinco tracks y un gran premio.
 
 SIGUIENTES PASOS
 
@@ -231,7 +276,7 @@ CONFIRMA TU ASISTENCIA
 ${content.confirmUrl}
 
 ANTES DE CONFIRMAR, LEE ESTO
-Al confirmar, contamos contigo. Con más de 500 solicitudes, tu plaza es una plaza que otra persona no va a tener. Además compramos comida y merch por adelantado para cada asistente confirmado.
+Al confirmar, contamos contigo. Con más de 500 personas apuntadas, tu plaza es una plaza que otra persona no va a tener. Además compramos comida y merch por adelantado para cada asistente confirmado.
 
 No aparecer, o cancelar sin avisar con al menos un mes de antelación, supone quedar excluido de futuros eventos de HackSpain y de Exponential. Si ves que no vas a poder venir, cancela cuanto antes — sin problema y sin rencor.
 
@@ -246,5 +291,5 @@ UPM · ETSIT, Madrid
 Nos vemos en septiembre,
 El equipo de HackSpain
 
-Recibes este correo porque solicitaste plaza en HackSpain 2026. Este buzón no admite respuestas; escríbenos a contact@hackspain.com.`;
+Recibes este correo porque solicitaste plaza en HackSpain 2026. ${content.replyable ? "Si tienes cualquier duda, responde a este correo y te contestamos." : "Este buzón no admite respuestas; escríbenos a contact@hackspain.com."}`;
 }
