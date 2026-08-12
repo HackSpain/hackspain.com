@@ -52,13 +52,13 @@ export const TRACK_SPONSORS_DETAIL: TrackSponsor[] = [
     accentText: "text-hs-paper",
     careersUrl: "https://www.happyrobot.ai/careers",
     description:
-      "Agentes de IA de voz y chat que operan la cadena de suministro: cotizaciones, seguimiento de cargas y back-office para brokers de transporte. Fundada por españoles, pasó de la Serie A a una Serie B de 44M$ en diez meses.",
+      "Agentes de IA que ejecutan operaciones completas por voz, email, chat y sistemas empresariales. Con más de 150 grandes clientes y un crecimiento de 5× desde su Serie B, levantó una Serie C de 150M$ que la valora en 1.200M$.",
     id: "happyrobot",
     logoHeight: "h-[clamp(1.5rem,3.6vw,2.1rem)]",
     logoSrc: happyrobotLogo.src,
     name: "HappyRobot",
-    raised: "$60M",
-    tagline: "La fuerza de trabajo digital de la logística",
+    raised: "$200M+",
+    tagline: "El sistema operativo de IA de la economía real",
   },
   {
     accent: "bg-hs-red",
