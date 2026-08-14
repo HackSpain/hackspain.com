@@ -5,10 +5,6 @@ import { eq } from "drizzle-orm";
 import { areSignupsClosed } from "../../data/signup-deadline";
 import { getDb } from "../../db";
 import { hackathonPreSignups, hackathonSignups } from "../../db/schema";
-import {
-  notifyDiscordNewSignup,
-  notifyDiscordSignupApiIssue,
-} from "../../lib/discord-signup-webhook";
 import { sendSignupConfirmationEmail } from "../../lib/signup-confirmation-email";
 import { parseSignupBody } from "../../lib/signup-validation";
 
@@ -121,10 +117,6 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     body = await request.json();
   } catch {
-    await notifyDiscordSignupApiIssue({
-      status: 400,
-      error: "Invalid JSON",
-    });
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "signup");
@@ -136,10 +128,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   if (!body || typeof body !== "object") {
-    await notifyDiscordSignupApiIssue({
-      status: 400,
-      error: "invalid_body",
-    });
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "signup");
@@ -155,10 +143,6 @@ export const POST: APIRoute = async ({ request }) => {
 
   const parsed = parseSignupBody(body);
   if (!parsed.ok) {
-    await notifyDiscordSignupApiIssue({
-      status: 400,
-      error: parsed.error,
-    });
     safeSentry(() => {
       withScope((scope) => {
         scope.setTag("api", "signup");
@@ -287,10 +271,6 @@ export const POST: APIRoute = async ({ request }) => {
         captureMessage("POST /api/signup: persistence failed", "error");
       });
     });
-    await notifyDiscordSignupApiIssue({
-      status: 500,
-      error: "save_failed",
-    });
     return Response.json({ error: "save_failed" }, { status: 500 });
   }
 
@@ -314,39 +294,6 @@ export const POST: APIRoute = async ({ request }) => {
         });
       });
     }
-  }
-
-  // Row persisted — ancillary failures must not change the HTTP outcome.
-  try {
-    await notifyDiscordNewSignup({
-      fullName,
-      email,
-      xUrl,
-      linkedinUrl,
-      githubUrl,
-      webUrl,
-      achievements,
-      freeTime,
-      occupationStatuses,
-      studyInstitution,
-      employer,
-      cameFromPreSignup: relatedPreSignupId !== null,
-      wantsAmbassador,
-      ambassadorMotivation: wantsAmbassador ? ambassadorMotivation : "",
-      heardFrom,
-    });
-  } catch {
-    console.error("[signup] Discord notify failed after successful insert");
-    safeSentry(() => {
-      withScope((scope) => {
-        scope.setTag("api", "signup");
-        scope.setTag("outcome", "discord_notify_failed");
-        captureMessage(
-          "POST /api/signup: Discord notification failed",
-          "warning"
-        );
-      });
-    });
   }
 
   try {
