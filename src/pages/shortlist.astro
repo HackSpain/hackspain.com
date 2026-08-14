@@ -1,0 +1,43 @@
+---
+import "../styles/global.css";
+import "../styles/shortlist.css";
+import ShortlistPage from "../components/pages/shortlist-page";
+import { listPendingShortlistParticipants } from "../lib/shortlist-server";
+import type { ShortlistParticipant } from "../lib/shortlist-types";
+
+if (!import.meta.env.DEV) {
+  return Astro.redirect("/404", 302);
+}
+
+let initialLoadError: string | null = null;
+let initialParticipants: ShortlistParticipant[] = [];
+try {
+  initialParticipants = await listPendingShortlistParticipants();
+} catch (error: unknown) {
+  initialLoadError =
+    "The shortlist could not load. Check the local database connection and apply the latest migration.";
+  console.error(
+    "[shortlist] Failed to render pending applicants",
+    error instanceof Error ? error.message : "unknown error"
+  );
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#f4ecd8">
+    <link rel="icon" type="image/png" href="/hs-icon.png">
+    <title>Shortlist · HackSpain internal</title>
+  </head>
+  <body>
+    <ShortlistPage
+      client:load
+      initialLoadError={initialLoadError}
+      initialParticipants={initialParticipants}
+    />
+  </body>
+</html>

@@ -134,6 +134,27 @@
       "when": 1785957940287,
       "tag": "0018_add_badge_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786451792897,
+      "tag": "0019_clumsy_charles_xavier",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1786464332074,
+      "tag": "0020_grey_aqueduct",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786693611468,
+      "tag": "0021_add_signup_waitlist_status",
+      "breakpoints": true
     }
   ]
 }

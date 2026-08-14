@@ -2,18 +2,21 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  integer,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { ShortlistDecision } from "../lib/shortlist-types";
 
 type SignupApprovalStatus =
   | "accepted"
   | "cancelled"
   | "confirmed"
   | "pending"
-  | "rejected";
+  | "rejected"
+  | "waitlist";
 
 export const hackathonSignups = pgTable(
   "hackathon_signups",
@@ -76,7 +79,7 @@ export const hackathonSignups = pgTable(
   (table) => [
     check(
       "hackathon_signups_approval_status_check",
-      sql`${table.approvalStatus} IN ('pending', 'rejected', 'accepted', 'confirmed', 'cancelled')`
+      sql`${table.approvalStatus} IN ('pending', 'rejected', 'accepted', 'confirmed', 'cancelled', 'waitlist')`
     ),
   ]
 );
@@ -103,3 +106,50 @@ export const hackathonPreSignups = pgTable("hackathon_pre_signups", {
   }),
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
 });
+
+export const shortlistReviews = pgTable(
+  "shortlist_reviews",
+  {
+    signupId: uuid("signup_id")
+      .primaryKey()
+      .references(() => hackathonSignups.id, { onDelete: "cascade" }),
+    decision: text("decision").$type<ShortlistDecision>(),
+    score: integer("score"),
+    notes: text("notes"),
+    aiRecommendation: text("ai_recommendation").$type<ShortlistDecision>(),
+    aiScore: integer("ai_score"),
+    aiNote: text("ai_note"),
+    aiEvidenceSources: text("ai_evidence_sources")
+      .array()
+      .default(sql`ARRAY[]::text[]`)
+      .notNull(),
+    aiReviewedAt: timestamp("ai_reviewed_at", { withTimezone: true }),
+    aiRubricVersion: text("ai_rubric_version"),
+    sourceNotes: text("source_notes"),
+    sourceImportedAt: timestamp("source_imported_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "shortlist_reviews_decision_check",
+      sql`${table.decision} IS NULL OR ${table.decision} IN ('yes', 'maybe', 'no')`
+    ),
+    check(
+      "shortlist_reviews_score_check",
+      sql`${table.score} IS NULL OR ${table.score} BETWEEN 1 AND 5`
+    ),
+    check(
+      "shortlist_reviews_ai_recommendation_check",
+      sql`${table.aiRecommendation} IS NULL OR ${table.aiRecommendation} IN ('yes', 'maybe', 'no')`
+    ),
+    check(
+      "shortlist_reviews_ai_score_check",
+      sql`${table.aiScore} IS NULL OR ${table.aiScore} BETWEEN 1 AND 5`
+    ),
+  ]
+);

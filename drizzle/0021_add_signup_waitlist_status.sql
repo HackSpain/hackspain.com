@@ -1,0 +1,2 @@
+ALTER TABLE "hackathon_signups" DROP CONSTRAINT "hackathon_signups_approval_status_check";--> statement-breakpoint
+ALTER TABLE "hackathon_signups" ADD CONSTRAINT "hackathon_signups_approval_status_check" CHECK ("hackathon_signups"."approval_status" IN ('pending', 'rejected', 'accepted', 'confirmed', 'cancelled', 'waitlist'));

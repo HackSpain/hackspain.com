@@ -48,6 +48,7 @@ async function reserveSignupCancellationEmail(
           "accepted",
           "confirmed",
           "pending",
+          "waitlist",
         ]),
         isNull(hackathonSignups.cancelledAt),
         or(

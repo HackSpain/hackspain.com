@@ -1,11 +1,16 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { envFromRuntime } from "../lib/runtime-env";
-import { hackathonPreSignups, hackathonSignups } from "./schema";
+import {
+  hackathonPreSignups,
+  hackathonSignups,
+  shortlistReviews,
+} from "./schema";
 
 const schema = {
   hackathonPreSignups,
   hackathonSignups,
+  shortlistReviews,
 };
 
 function requireDatabaseUrl(): string {

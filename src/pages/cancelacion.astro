@@ -129,6 +129,7 @@ if (preSignupToken && UUID_PATTERN.test(preSignupToken)) {
             "accepted",
             "confirmed",
             "pending",
+            "waitlist",
           ]),
           isNull(hackathonSignups.cancelledAt)
         )
@@ -162,7 +163,8 @@ if (preSignupToken && UUID_PATTERN.test(preSignupToken)) {
       } else if (
         signup.approvalStatus === "accepted" ||
         signup.approvalStatus === "confirmed" ||
-        signup.approvalStatus === "pending"
+        signup.approvalStatus === "pending" ||
+        signup.approvalStatus === "waitlist"
       ) {
         state = "confirm";
       }
