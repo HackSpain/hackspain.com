@@ -13,7 +13,7 @@ updated_at: 2026-08-28
 
 ## Current outcome
 
-The sponsorship flow will not be activated for the 2026 edition because HackSpain already has principal sponsor commitments. The branch remains a complete, self-hostable product proposal for a future edition. The participant-directory UI is intentionally isolated in the first commit for immediate adoption without sponsorship, authentication or database changes.
+The sponsorship flow will not be activated for the 2026 edition because HackSpain already has principal sponsor commitments. The branch remains a complete, self-hostable product proposal for a future edition. The participant-directory UI has been split into a separate contribution and is outside this branch's scope.
 
 ## Why
 
@@ -60,14 +60,12 @@ Adapt the validated Player Market prototype to HackSpain's existing Astro and Re
 - Purpose-specific magic links exchange once for an HTTP-only session. Raw tokens are never stored.
 - Company access verifies work-email ownership. A purpose-specific invite can allow an address that does not pass the corporate-domain check.
 - The existing standalone site remains live and separate while this branch is reviewed.
-- The reusable participant-directory UI is isolated in the first commit so it can be cherry-picked without the sponsorship flow.
 
 ## AI Lifecycle
 
 
 ## Pilot Handoff
 
-- Directory-only adoption: cherry-pick the first commit and follow `docs/participant-directory-ui.md`.
 - Full concept: review the complete branch. It mounts at `/player-market` and `/player-market/manage` on HackSpain's own deployment.
-- The full concept requires migration `0022_shiny_eternity`; the directory-only commit requires no migration or environment variable.
+- The full concept requires migration `0022_shiny_eternity`.
 - No payment processing is included. Accepted offers record an agreement and update the live feed.

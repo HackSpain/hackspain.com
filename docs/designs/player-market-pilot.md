@@ -5,7 +5,7 @@
 > Branch: `txema/player-market-pilot`
 > Date: 2026-08-28
 
-> 2026 decision: retain the sponsorship flow as a future concept; ship the isolated participant-directory UI first because it does not conflict with principal sponsor commitments.
+> 2026 decision: retain the sponsorship flow as a future concept. The participant-directory UI is maintained as a separate contribution because it does not conflict with principal sponsor commitments.
 
 ## Problem (Why)
 
