@@ -1,0 +1,49 @@
+---
+export const prerender = false;
+
+import { PlayerMarketPage } from "../components/pages/player-market-page";
+import Layout from "../layouts/layout.astro";
+import { getPlayerMarketPrincipal } from "../lib/player-market-auth";
+import type { PlayerMarketCompanySummary } from "../lib/player-market-service";
+import {
+  getPlayerMarketCompany,
+  listPublicPlayerMarketProfiles,
+  listPublicPlayerMarketTransfers,
+} from "../lib/player-market-service";
+import type {
+  PublicPlayerMarketProfile,
+  PublicPlayerMarketTransfer,
+} from "../lib/player-market-types";
+import "../styles/player-market.css";
+
+let profiles: PublicPlayerMarketProfile[] = [];
+let transfers: PublicPlayerMarketTransfer[] = [];
+let company: PlayerMarketCompanySummary | null = null;
+
+try {
+  [profiles, transfers] = await Promise.all([
+    listPublicPlayerMarketProfiles(),
+    listPublicPlayerMarketTransfers(),
+  ]);
+  const principal = await getPlayerMarketPrincipal(Astro.cookies);
+  if (principal?.type === "company") {
+    company = await getPlayerMarketCompany(principal.companyId);
+  }
+} catch {
+  profiles = [];
+  transfers = [];
+}
+---
+
+<Layout
+  allowScroll
+  canonicalPathOverride="/player-market"
+  description="Player Market conecta builders verificados de HackSpain con marcas que quieren patrocinarlos durante el hackathon."
+  includeStructuredData={false}
+  keywordsOverride="HackSpain, builders, patrocinio, hackathon, startups, Player Market"
+  ogImage={{ path: "/api/og/player-market.png?v=1", width: 1200, height: 630 }}
+  ogImageAlt="Player Market de HackSpain: ficha a los builders del futuro"
+  title="Player Market — HackSpain 2026"
+>
+  <PlayerMarketPage client:load {company} {profiles} {transfers} />
+</Layout>

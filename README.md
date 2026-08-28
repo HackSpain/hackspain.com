@@ -58,6 +58,13 @@ Schema and client live in `src/db/`. Drizzle Kit is configured in `drizzle.confi
 | `pnpm db:migrate` | Run migrations |
 | `pnpm db:push` | Push schema (useful in development) |
 
+## Player Market
+
+This branch includes the self-hosted Player Market experience, private player
+management, company access, persistent offers, and the public transfer feed.
+See the [Player Market handoff](docs/player-market-handoff.md) for setup,
+architecture, privacy boundaries, and deployment requirements.
+
 ## Signup flow
 
 The public application form lives at `/signup`. New applications are stored as

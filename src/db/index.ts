@@ -4,12 +4,26 @@ import { envFromRuntime } from "../lib/runtime-env";
 import {
   hackathonPreSignups,
   hackathonSignups,
+  playerMarketCompanies,
+  playerMarketCompanyInvites,
+  playerMarketMagicLinks,
+  playerMarketOfferEvents,
+  playerMarketOffers,
+  playerMarketProfiles,
+  playerMarketSessions,
   shortlistReviews,
 } from "./schema";
 
 const schema = {
   hackathonPreSignups,
   hackathonSignups,
+  playerMarketCompanies,
+  playerMarketCompanyInvites,
+  playerMarketMagicLinks,
+  playerMarketOfferEvents,
+  playerMarketOffers,
+  playerMarketProfiles,
+  playerMarketSessions,
   shortlistReviews,
 };
 
