@@ -1,0 +1,44 @@
+---
+export const prerender = false;
+
+import { PlayerMarketManagePage } from "../../components/pages/player-market-manage-page";
+import Layout from "../../layouts/layout.astro";
+import { getPlayerMarketPrincipal } from "../../lib/player-market-auth";
+import type {
+  PlayerMarketPrivateOffer,
+  PlayerMarketPrivateProfile,
+} from "../../lib/player-market-service";
+import {
+  getPlayerMarketPrivateProfile,
+  listPlayerMarketOffersForPlayer,
+} from "../../lib/player-market-service";
+import "../../styles/player-market.css";
+
+let initialProfile: PlayerMarketPrivateProfile | null = null;
+let initialOffers: PlayerMarketPrivateOffer[] = [];
+
+try {
+  const principal = await getPlayerMarketPrincipal(Astro.cookies);
+  if (principal?.type === "player") {
+    [initialProfile, initialOffers] = await Promise.all([
+      getPlayerMarketPrivateProfile(principal.signupId),
+      listPlayerMarketOffersForPlayer(principal.signupId),
+    ]);
+  }
+} catch {
+  initialProfile = null;
+  initialOffers = [];
+}
+---
+
+<Layout
+  allowScroll
+  canonicalPathOverride="/player-market/manage"
+  description="Edita tu ficha y gestiona tus ofertas privadas de Player Market."
+  includeStructuredData={false}
+  keywordsOverride=""
+  robotsDirectives="noindex, nofollow, noarchive"
+  title="Tu ficha — Player Market"
+>
+  <PlayerMarketManagePage client:load {initialOffers} {initialProfile} />
+</Layout>
