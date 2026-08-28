@@ -57,9 +57,9 @@ The data source is intentionally the only integration point. Search, cards, feat
 
 ## Minimal adoption checklist
 
-1. Cherry-pick the first commit from the branch.
-2. Add the Astro page above at the route the team chooses, for example `/participantes`.
+1. Merge this PR, or cherry-pick commit `ae00df4`.
+2. Add an Astro page at the chosen route, for example `/participantes`.
 3. Map the existing public, consented participant data to `DirectoryParticipant[]`.
-4. Do not pass emails, application answers, internal scores or private database IDs.
+4. Never pass emails, application answers, internal scores, or private database IDs.
 
-No schema migration, environment variable, login flow or Player Market route is required.
+No schema migration, environment variable, authentication flow, or Player Market route is required.
