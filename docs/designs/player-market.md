@@ -1,15 +1,14 @@
-# Design: Player Market Pilot
+# Design: Player Market
 
-> Work item: `docs/develop/player-market-pilot.md`
+> Work item: `docs/develop/player-market.md`
 > Backend: local_markdown
-> Branch: `txema/player-market-pilot`
 > Date: 2026-08-28
 
 > 2026 decision: retain the sponsorship flow as a future concept. The participant-directory UI is maintained as a separate contribution because it does not conflict with principal sponsor commitments.
 
 ## Problem (Why)
 
-HackSpain sponsors currently support the event at event level. The pilot tests whether a sponsor will make a small, explicit offer to a specific builder or team while the builder retains control over their identity, public profile and commitments.
+HackSpain sponsors currently support the event at event level. Player Market tests whether a sponsor will make a small, explicit offer to a specific builder or team while the builder retains control over their identity, public profile and commitments.
 
 ## Scope (What)
 
@@ -102,11 +101,11 @@ The public profile can contain display name, role, city, bio, lore, skills, spon
 
 ### Option A: Third-party authentication provider
 
-Complete account management but introduces a new vendor, account model and visual login surface for a ten-player pilot.
+Complete account management but introduces a new vendor, account model and visual login surface for a ten-player experiment.
 
 ### Option B: Astro sessions plus purpose-specific email tokens
 
-Reuses Astro’s request/session model, existing Resend delivery and the repo’s management-token pattern. OWASP guidance supports random, securely stored, single-use expiring URL tokens. This is the selected approach because it fits the pilot and does not create passwords.
+Reuses Astro’s request/session model, existing Resend delivery and the repo’s management-token pattern. OWASP guidance supports random, securely stored, single-use expiring URL tokens. This is the selected approach because it fits a limited launch and does not create passwords.
 
 ### Option C: Reuse the existing long-lived management token directly
 
@@ -136,7 +135,7 @@ Smallest diff, but expands the blast radius of a token already used for confirma
 
 - Publishing directly from `hackathon_signups`.
 - Password-based accounts.
-- Social login for a short pilot.
+- Social login for a short experiment.
 - Calculating a player rating from application answers.
 - Treating local storage as the live source of truth.
 

@@ -42,7 +42,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test:player-market": "node --test tests/player-market-state.test.ts",
+    "test:player-market": "node --experimental-strip-types --test tests/player-market-state.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
