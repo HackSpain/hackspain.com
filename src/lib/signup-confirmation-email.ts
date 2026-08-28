@@ -47,7 +47,7 @@ export type ConfirmationEmailResult =
       detail?: string;
     };
 
-interface SendEmailInput {
+export interface SendEmailInput {
   category: string;
   entityReference: string;
   /** Optional; when present it is sent alongside `text` as a multipart body. */
@@ -58,7 +58,7 @@ interface SendEmailInput {
   to: string;
 }
 
-async function sendEmail(
+export async function sendEmail(
   input: SendEmailInput
 ): Promise<ConfirmationEmailResult> {
   const config = readResendConfig();
