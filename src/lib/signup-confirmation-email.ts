@@ -238,3 +238,41 @@ export function sendSignupAcceptanceEmail(
     to: input.email,
   });
 }
+
+export interface MentorSponsorConfirmationEmailInput {
+  attendanceLines: readonly string[];
+  email: string;
+  firstName: string;
+  signupId: string;
+}
+
+/** Sent to mentors and sponsors after they confirm their attendance slots. */
+export function sendMentorSponsorConfirmationEmail(
+  input: MentorSponsorConfirmationEmailInput
+): Promise<ConfirmationEmailResult> {
+  const firstName = firstNameFrom(input.firstName);
+  const slotList = input.attendanceLines.map((line) => `- ${line}`).join("\n");
+  const text = `Hola ${firstName},
+
+¡Gracias por confirmar tu asistencia a HackSpain 2026 (18–20 de septiembre, Madrid)!
+
+Hemos anotado estas franjas:
+
+${slotList}
+
+Con esto organizamos comidas y logística, así que si tus planes cambian, escríbenos a contact@hackspain.com y lo actualizamos.
+
+Nos vemos pronto,
+El equipo de HackSpain
+
+Has recibido este correo porque confirmaste tu asistencia desde ${siteOriginFromRuntime()}. Si no has sido tú, puedes ignorarlo.`;
+
+  return sendEmail({
+    category: "mentor_sponsor_confirmation",
+    entityReference: `hackspain-mentor-sponsor-${input.signupId}`,
+    idempotencyKey: `mentor-sponsor-confirmation/${input.signupId}`,
+    subject: "Asistencia confirmada — HackSpain 2026",
+    text,
+    to: input.email,
+  });
+}

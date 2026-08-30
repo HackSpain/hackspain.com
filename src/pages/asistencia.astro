@@ -1,0 +1,24 @@
+---
+export const prerender = true;
+
+import SignupNavbar from "../components/nav/signup-navbar.astro";
+import { MentorSponsorPage } from "../components/pages/mentor-sponsor-page";
+import Layout from "../layouts/layout.astro";
+---
+
+<Layout
+  sectionIndex={0}
+  allowScroll
+  title="Confirma tu asistencia — HackSpain 2026"
+  description="Formulario para mentores y sponsors de HackSpain 2026: dinos qué días y franjas estarás en el evento."
+  canonicalPathOverride="/asistencia"
+  robotsDirectives="noindex, nofollow"
+  includeStructuredData={false}
+>
+  <main id="main" class="relative min-h-dvh w-full overflow-hidden">
+    <div class="relative z-10 mx-auto max-w-4xl px-0 pt-0 sm:px-4 sm:pt-10">
+      <SignupNavbar />
+    </div>
+    <MentorSponsorPage client:load />
+  </main>
+</Layout>
