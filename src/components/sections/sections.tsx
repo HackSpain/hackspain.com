@@ -24,8 +24,10 @@ import {
 import { GITHUB_SVG, INSTAGRAM_SVG, X_SVG } from "../theme/constants";
 import { Button, ButtonLink } from "../ui/button";
 import { P } from "../ui/panel";
+import { MentorsOverlay } from "./mentors-overlay";
 import {
   GRAND_PRIZE_SPONSORS,
+  MENTOR_SPONSORS,
   PartnerLogoGrid,
   PartnerLogoReel,
   TRACK_SPONSORS,
@@ -257,6 +259,26 @@ function TracksInfoModal() {
   );
 }
 
+function MentorsInfoModal() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        aria-label="Ver los fundadores y mentores de HackSpain"
+        className="shrink-0"
+        onClick={() => setOpen(true)}
+        size="compact"
+        variant="gold"
+      >
+        Ver mentores
+      </Button>
+
+      {open && <MentorsOverlay onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 export function buildSections(
   signupHref = "/signup"
 ): Record<string, React.ReactNode>[] {
@@ -473,6 +495,33 @@ export function buildSections(
     },
     {
       hero: (
+        <P bg="bg-hs-orange">
+          <p className={`${LBL} text-hs-paper/70`}>HACKSPAIN 2026</p>
+          <h2 className={`text-center ${MOSAIC_HERO_LG} text-hs-paper`}>
+            COMIDA, BEBIDA
+            <br />
+            <span className="text-hs-gold">Y CHARLAS</span>
+          </h2>
+        </P>
+      ),
+      r3a: <P bg="bg-hs-paper" />,
+      r3b: <P bg="bg-hs-paper" />,
+      r4c: (
+        <P bg="bg-hs-paper" className="!justify-evenly !px-10 !py-8">
+          <p className={`${BD} text-center text-hs-ink`}>
+            Conecta con los mejores{" "}
+            <span className="text-hs-red">fundadores y mentores</span> del
+            ecosistema de España.
+          </p>
+          <MentorsInfoModal />
+        </P>
+      ),
+      r4b: <P bg="bg-hs-paper" />,
+      r1c: <P bg="bg-hs-paper" />,
+      ...bottomRow(4),
+    },
+    {
+      hero: (
         <P bg="bg-hs-navy">
           <p className={`${LBL} text-hs-gold`}>HACKSPAIN 2026</p>
           <h2 className={`text-center ${MOSAIC_HERO_LG} text-hs-paper`}>
@@ -496,7 +545,7 @@ export function buildSections(
           />
         </P>
       ),
-      ...bottomRow(4),
+      ...bottomRow(5),
     },
   ];
 }
@@ -888,6 +937,44 @@ export function buildSectionsCompact(
         false
       ),
       // flip1=true, flip5=false → orn1 br, orn5 br
+      foot,
+    },
+    {
+      hero: (
+        <P bg="bg-hs-orange" className={CARD}>
+          <p className={`${CLBL} text-hs-paper/70`}>HACKSPAIN 2026</p>
+          <h2
+            className={`text-center ${CH} text-[clamp(1.6rem,7.5vw,3rem)] text-hs-paper`}
+          >
+            COMIDA, BEBIDA <span className="text-hs-gold">Y CHARLAS</span>
+          </h2>
+        </P>
+      ),
+      b1: (
+        <P bg="bg-hs-paper" className={`${CARD} !justify-evenly`}>
+          <p className={`${CBD} text-center text-hs-ink`}>
+            Conecta con los mejores{" "}
+            <span className="text-hs-red">fundadores y mentores</span> del
+            ecosistema de España.
+          </p>
+          <MentorsInfoModal />
+        </P>
+      ),
+      b2: (
+        <P bg="bg-hs-paper" className={`${CARD} !justify-center`}>
+          <PartnerLogoGrid pinned={MENTOR_SPONSORS} />
+        </P>
+      ),
+      ...orn(
+        "bg-hs-gold",
+        "bg-hs-paper",
+        "bg-hs-teal",
+        "bg-hs-red",
+        "bg-hs-paper",
+        false,
+        true
+      ),
+      // flip1=false, flip5=true → orn1 tl, orn5 tl
       foot,
     },
     {

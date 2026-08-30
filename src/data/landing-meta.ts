@@ -47,6 +47,12 @@ const PAGES: PageSeo[] = [
     ogImageAlt: "HackSpain 2026 — 1 gran premio de 5.000 €",
   },
   {
+    title: "Comida, bebida y charlas | HackSpain 2026",
+    description:
+      "Conecta con los mejores fundadores y mentores del ecosistema de España. Con RevenueCat, Reveni, Karumi, Invopop y Causa Prima.",
+    ogImageAlt: "HackSpain 2026 — comida, bebida y charlas",
+  },
+  {
     title: "Inscripción abierta | HackSpain 2026",
     description: "Inscripción abierta para HackSpain 2026. Envía tu solicitud.",
     ogImageAlt: "HackSpain 2026 — inscripción abierta",
@@ -115,6 +121,7 @@ const KEYWORDS_BY_SECTION = [
   "España tiene talento, talento tech joven, 36 horas",
   "tracks originales, compute gratis, startups España",
   "gran premio, 5.000 euros, premio hackathon, fondos españoles, venture capital España",
+  "comida bebida charlas, fundadores España, mentores hackathon, networking startups",
   "inscripción abierta, apúntate HackSpain",
 ];
 

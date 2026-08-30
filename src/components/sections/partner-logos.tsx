@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { shuffled } from "../../lib/shuffle";
 import {
   acurioLogo,
+  causaPrimaLogo,
   cursorLogo,
   embatLogo,
   enzoLogo,
@@ -10,12 +11,16 @@ import {
   falLogo,
   googleLogo,
   happyrobotLogo,
+  invopopLogo,
   jmeLogo,
+  karumiLogo,
   kfundLogo,
   kiboLogo,
   maisaLogo,
   onecoworkLogo,
   prosperAiLogo,
+  reveniLogo,
+  revenuecatLogo,
   theckerLogo,
 } from "../theme/assets";
 import { P } from "../ui/panel";
@@ -209,6 +214,40 @@ export const GRAND_PRIZE_SPONSORS: Partner[] = [
     alt: "Acurio Ventures — patrocinador del gran premio de HackSpain",
     size: ACURIO_LOGO_SIZE,
     src: acurioLogo.src,
+  },
+];
+
+/**
+ * The five sponsors of comida, bebida y charlas, pinned the same way on the
+ * mentores section. Like the grand prize funds, they back that part of the
+ * event rather than the event itself, so they stay out of the general
+ * rotation.
+ */
+export const MENTOR_SPONSORS: Partner[] = [
+  {
+    alt: "RevenueCat — patrocinador de comida, bebida y charlas de HackSpain",
+    size: LOGO_SIZE,
+    src: revenuecatLogo.src,
+  },
+  {
+    alt: "Reveni — patrocinador de comida, bebida y charlas de HackSpain",
+    size: LOGO_SIZE,
+    src: reveniLogo.src,
+  },
+  {
+    alt: "Karumi — patrocinador de comida, bebida y charlas de HackSpain",
+    size: LOGO_SIZE,
+    src: karumiLogo.src,
+  },
+  {
+    alt: "Invopop — patrocinador de comida, bebida y charlas de HackSpain",
+    size: LOGO_SIZE,
+    src: invopopLogo.src,
+  },
+  {
+    alt: "Causa Prima — patrocinador de comida, bebida y charlas de HackSpain",
+    size: LOGO_SIZE,
+    src: causaPrimaLogo.src,
   },
 ];
 

@@ -1,7 +1,7 @@
 import { HS_PALETTE } from "./palette";
 
 export const INK = HS_PALETTE.ink;
-export const NUM_SECTIONS = 5;
+export const NUM_SECTIONS = 6;
 
 export const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
 

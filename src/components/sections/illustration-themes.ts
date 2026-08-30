@@ -47,6 +47,7 @@ const SCHEDULE: (IllArt | null)[][] = [
   ["sun", "quixote", "windmill", "compass", null, null], // Misión
   ["spark", "code", null, "compass", null, null], // Tracks
   ["medal", "trophy", null, "spark", null, null], // Gran premio
+  ["community", "sun", null, "quixote", null, null], // Comida, bebida y charlas
   ["trophy", "windmill", "horse", "quixote", null, null], // Apúntate
 ];
 
