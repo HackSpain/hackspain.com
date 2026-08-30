@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { MENTORS, type Mentor } from "../../data/mentors";
 import { useOverlayLock } from "../overlay/overlay-lock";
 
@@ -78,7 +79,10 @@ export function MentorsOverlay({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  // Portal to <body>: the mosaic cells animate with transforms, and a
+  // transformed ancestor turns position:fixed into "fixed to that ancestor",
+  // clipping the overlay to its cell (visible on mobile).
+  return createPortal(
     <div
       aria-labelledby={TITLE_ID}
       aria-modal="true"
@@ -124,6 +128,7 @@ export function MentorsOverlay({ onClose }: { onClose: () => void }) {
           Y más mentores muy pronto.
         </p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
