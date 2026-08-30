@@ -6,6 +6,7 @@ import {
 } from "../../data/landing-meta";
 import {
   GRAND_PRIZE_SECTION_INDEX,
+  MENTORS_SECTION_INDEX,
   parsePath,
   pathRootFromSectionIndex,
   TRACKS_SECTION_INDEX,
@@ -20,6 +21,7 @@ import { useReferralAwareHref } from "../referral/use-referral-href";
 import { illustrationsForSection } from "../sections/illustration-themes";
 import {
   GRAND_PRIZE_SPONSORS,
+  MENTOR_SPONSORS,
   PARTNER_CELL_COUNT,
   PartnerLogoCell,
   TRACK_SPONSORS,
@@ -34,6 +36,7 @@ const SECTION_NAV = [
   "Misión",
   "Tracks originales",
   "Gran premio",
+  "Comida, bebida y charlas",
   "Apúntate",
 ] as const;
 
@@ -104,15 +107,18 @@ export function LandingPage({ initialSection = 0 }: Props) {
     () => illustrationsForSection(section, profile),
     [section, profile]
   );
-  // The tracks and gran premio sections each hand the open row over to their
-  // own five sponsors and hold it there; everywhere else it rotates through all
-  // partners.
+  // The tracks, gran premio, and mentores sections each hand the open row over
+  // to their own five sponsors and hold it there; everywhere else it rotates
+  // through all partners.
   const pinnedSponsors = useMemo(() => {
     if (section === TRACKS_SECTION_INDEX) {
       return TRACK_SPONSORS;
     }
     if (section === GRAND_PRIZE_SECTION_INDEX) {
       return GRAND_PRIZE_SPONSORS;
+    }
+    if (section === MENTORS_SECTION_INDEX) {
+      return MENTOR_SPONSORS;
     }
     return;
   }, [section]);
