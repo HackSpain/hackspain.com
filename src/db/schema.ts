@@ -107,6 +107,50 @@ export const hackathonPreSignups = pgTable("hackathon_pre_signups", {
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
 });
 
+type MentorSponsorRole = "mentor" | "sponsor";
+
+export const mentorSponsorSignups = pgTable(
+  "mentor_sponsor_signups",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    email: text("email").notNull().unique(),
+    company: text("company").notNull(),
+    /** Set by hand in the DB, never by the form. */
+    role: text("role").$type<MentorSponsorRole>(),
+    /** `<day>_<slot>` keys, e.g. `fri_lunch`; drives food headcounts. */
+    attendanceSlots: text("attendance_slots")
+      .array()
+      .default(sql`ARRAY[]::text[]`)
+      .notNull(),
+    dietaryRestrictions: text("dietary_restrictions")
+      .array()
+      .default(sql`ARRAY[]::text[]`)
+      .notNull(),
+    dietaryDetails: text("dietary_details"),
+    dietaryConsentAt: timestamp("dietary_consent_at", { withTimezone: true }),
+    notes: text("notes"),
+    managementToken: uuid("management_token")
+      .defaultRandom()
+      .notNull()
+      .unique(),
+  },
+  (table) => [
+    check(
+      "mentor_sponsor_signups_role_check",
+      sql`${table.role} IS NULL OR ${table.role} IN ('mentor', 'sponsor')`
+    ),
+    check(
+      "mentor_sponsor_signups_attendance_slots_check",
+      sql`${table.attendanceSlots} <@ ARRAY['fri_morning', 'fri_lunch', 'fri_afternoon', 'fri_dinner', 'sat_morning', 'sat_lunch', 'sat_afternoon', 'sat_dinner', 'sun_morning', 'sun_lunch', 'sun_afternoon', 'sun_dinner']::text[]`
+    ),
+  ]
+);
+
 export const shortlistReviews = pgTable(
   "shortlist_reviews",
   {

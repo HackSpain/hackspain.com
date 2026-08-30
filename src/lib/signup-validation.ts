@@ -37,7 +37,7 @@ export const HEARD_FROM_OPTIONS: readonly {
   { id: "other", label: "Otro" },
 ] as const;
 
-const DIETARY_RESTRICTION_IDS = [
+export const DIETARY_RESTRICTION_IDS = [
   "vegetarian",
   "vegan",
   "gluten_free",
