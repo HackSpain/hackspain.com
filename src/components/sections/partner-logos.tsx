@@ -9,7 +9,6 @@ import {
   enzoLogo,
   exaLogo,
   falLogo,
-  googleLogo,
   happyrobotLogo,
   invopopLogo,
   jmeLogo,
@@ -138,11 +137,6 @@ const MAISA: Partner = {
 
 /** The list order doubles as the rotation order. */
 const PARTNERS: Partner[] = [
-  {
-    alt: "Google — partner de HackSpain",
-    size: LOGO_SIZE,
-    src: googleLogo.src,
-  },
   {
     alt: "Cursor — partner de HackSpain",
     size: CURSOR_LOGO_SIZE,

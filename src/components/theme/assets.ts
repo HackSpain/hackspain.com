@@ -17,7 +17,6 @@ import enzoSvg from "../../assets/sponsors/enzo.svg";
 import exaPng from "../../assets/sponsors/exa.png";
 import exponentialPng from "../../assets/sponsors/exponential.png";
 import falPng from "../../assets/sponsors/fal.png";
-import googlePng from "../../assets/sponsors/google.png";
 import happyrobotPng from "../../assets/sponsors/happyrobot.png";
 import invopopSvg from "../../assets/sponsors/invopop.svg";
 import jmeSvg from "../../assets/sponsors/jme.svg";
@@ -45,7 +44,6 @@ export const trophySvg = prepareIllustrationSvg(trophyRaw);
 export const compassSvg = prepareIllustrationSvg(compassRaw);
 export const medalSvg = prepareIllustrationSvg(medalRaw);
 export const logoSvg = prepareLogoSvg(logoRaw);
-export const googleLogo = googlePng;
 export const happyrobotLogo = happyrobotPng;
 export const maisaLogo = maisaPng;
 
