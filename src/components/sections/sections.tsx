@@ -24,6 +24,7 @@ import {
 import { GITHUB_SVG, INSTAGRAM_SVG, X_SVG } from "../theme/constants";
 import { Button, ButtonLink } from "../ui/button";
 import { P } from "../ui/panel";
+import { JudgesOverlay } from "./judges-overlay";
 import { MentorsOverlay } from "./mentors-overlay";
 import {
   GRAND_PRIZE_SPONSORS,
@@ -259,6 +260,26 @@ function TracksInfoModal() {
   );
 }
 
+function JudgesInfoModal() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        aria-label="Ver el jurado de HackSpain"
+        className="shrink-0"
+        onClick={() => setOpen(true)}
+        size="compact"
+        variant="gold"
+      >
+        Ver jurado
+      </Button>
+
+      {open && <JudgesOverlay onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 function MentorsInfoModal() {
   const [open, setOpen] = useState(false);
 
@@ -487,6 +508,7 @@ export function buildSections(
             Juzgado por los <span className="text-hs-red">mejores VCs</span> del
             panorama español.
           </p>
+          <JudgesInfoModal />
         </P>
       ),
       r4b: <P bg="bg-hs-paper" />,
@@ -920,6 +942,7 @@ export function buildSectionsCompact(
             Juzgado por los <span className="text-hs-red">mejores VCs</span> del
             panorama español.
           </p>
+          <JudgesInfoModal />
         </P>
       ),
       b2: (
