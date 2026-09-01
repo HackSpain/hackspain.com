@@ -4,6 +4,7 @@ import { shuffled } from "../../lib/shuffle";
 import {
   acurioLogo,
   causaPrimaLogo,
+  cognitionLogo,
   cursorLogo,
   embatLogo,
   enzoLogo,
@@ -146,6 +147,11 @@ const PARTNERS: Partner[] = [
     alt: "fal.ai — partner de HackSpain",
     size: LOGO_SIZE,
     src: falLogo.src,
+  },
+  {
+    alt: "Cognition — partner de HackSpain",
+    size: LOGO_SIZE,
+    src: cognitionLogo.src,
   },
   HAPPYROBOT,
   // {
