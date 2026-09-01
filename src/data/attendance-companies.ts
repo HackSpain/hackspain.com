@@ -8,6 +8,7 @@
 export const ATTENDANCE_COMPANIES: readonly string[] = [
   "Acurio Ventures",
   "Causa Prima",
+  "Cognition",
   "Cursor",
   "Embat",
   "Enzo Ventures",

@@ -11,6 +11,7 @@ import windmillRaw from "../../assets/illustration-windmill.svg?raw";
 import logoRaw from "../../assets/logo.svg?raw";
 import acurioSvg from "../../assets/sponsors/acurio.svg";
 import causaPrimaSvg from "../../assets/sponsors/causa_prima.svg";
+import cognitionSvg from "../../assets/sponsors/cognition.svg";
 import cursorPng from "../../assets/sponsors/cursor.png";
 import embatPng from "../../assets/sponsors/embat.png";
 import enzoSvg from "../../assets/sponsors/enzo.svg";
@@ -49,6 +50,7 @@ export const maisaLogo = maisaPng;
 
 export const exaLogo = exaPng;
 export const falLogo = falPng;
+export const cognitionLogo = cognitionSvg;
 export const cursorLogo = cursorPng;
 
 /** Grand prize backers — see data/grand-prize-sponsors.ts. */

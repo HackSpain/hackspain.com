@@ -273,7 +273,7 @@ export function jsonLdFaq() {
         name: "¿Cuáles son los patrocinadores de HackSpain / Hack Spain?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los patrocinadores actuales son Google, K Fund, fal.ai, Exa, UPM, OneCoWork, Cursor, Exponential, HappyRobot, Embat, Prosper AI, Maisa y THEKER Robotics. Se esperan muchos más; la lista completa y actualizada siempre estará en hackspain.com/sponsors.",
+          text: "Los patrocinadores actuales son Google, K Fund, fal.ai, Cognition, Exa, UPM, OneCoWork, Cursor, Exponential, HappyRobot, Embat, Prosper AI, Maisa y THEKER Robotics. Se esperan muchos más; la lista completa y actualizada siempre estará en hackspain.com/sponsors.",
         },
       },
       {
