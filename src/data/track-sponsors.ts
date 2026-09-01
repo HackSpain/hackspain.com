@@ -91,12 +91,12 @@ export const TRACK_SPONSORS_DETAIL: TrackSponsor[] = [
     accentText: "text-hs-paper",
     careersUrl: "https://www.theker.ai/careers",
     description:
-      "Robots industriales reconfigurables, entrenados con IA para no especializarse en una sola tarea. Desde Barcelona, con la mayor Serie A de robótica de Europa: +100M$ liderados por CRV, con Samsung, LVMH e Inditex dentro.",
+      "Robots industriales reconfigurables, entrenados con IA para no especializarse en una sola tarea. Desde Barcelona, con la mayor Serie A de robótica de Europa: más de 100M$ liderados por CRV, con Samsung, LVMH e Inditex dentro.",
     id: "theker",
     logoHeight: "h-[clamp(1.5rem,3.6vw,2.1rem)]",
     logoSrc: theckerLogo.src,
     name: "THEKER Robotics",
-    raised: "+$100M",
+    raised: "$100M+",
     tagline: "Robótica de propósito general made in Spain",
   },
 ];
