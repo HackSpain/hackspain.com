@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SIGNUP_DEADLINE_MS } from "../../data/signup-deadline";
+import { EVENT_START_MS } from "../../data/event-start";
 
 const SECOND_MS = 1000;
 const MINUTE_MS = 60 * SECOND_MS;
@@ -15,7 +15,7 @@ interface Remaining {
 }
 
 function remainingAt(now: number): Remaining {
-  const delta = SIGNUP_DEADLINE_MS - now;
+  const delta = EVENT_START_MS - now;
   if (delta <= 0) {
     return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
   }
@@ -42,7 +42,7 @@ function ariaLabelFor(r: Remaining) {
     plural(r.hours, "hora", "horas"),
     plural(r.minutes, "minuto", "minutos"),
   ];
-  return `Quedan ${parts.join(", ")} para que cierre la inscripción`;
+  return `Quedan ${parts.join(", ")} para que empiece HackSpain`;
 }
 
 /**
@@ -51,32 +51,32 @@ function ariaLabelFor(r: Remaining) {
  */
 const SIZES = {
   mosaic: {
-    digit: "text-[clamp(0.9rem,min(9cqw,15cqh),2.1rem)]",
-    unit: "text-[clamp(0.45rem,2.6cqw,0.7rem)]",
-    gap: "gap-x-2 gap-y-1",
-  },
-  /** Mosaic cells that already hold a headline and a CTA — the home hero card. */
-  mosaicSm: {
-    digit: "text-[clamp(0.7rem,min(5cqw,7cqh),1.2rem)]",
-    unit: "text-[clamp(0.4rem,2cqw,0.6rem)]",
-    gap: "gap-x-1.5 gap-y-0.5",
-  },
-  compact: {
-    digit: "text-[clamp(1.3rem,6.5vw,2.6rem)]",
-    unit: "text-[clamp(0.55rem,2.4vw,0.8rem)]",
+    digit: "text-[clamp(1.2rem,min(12cqw,20cqh),3rem)]",
+    unit: "text-[clamp(0.5rem,2.8cqw,0.8rem)]",
     gap: "gap-x-3 gap-y-1",
   },
-  /** Compact cards that already hold a headline and a CTA — the home hero card. */
+  /** Mosaic cells that already hold a headline — the home hero card. */
+  mosaicSm: {
+    digit: "text-[clamp(0.9rem,min(7cqw,11cqh),1.7rem)]",
+    unit: "text-[clamp(0.42rem,2.2cqw,0.65rem)]",
+    gap: "gap-x-2 gap-y-0.5",
+  },
+  compact: {
+    digit: "text-[clamp(1.6rem,8vw,3.2rem)]",
+    unit: "text-[clamp(0.58rem,2.5vw,0.9rem)]",
+    gap: "gap-x-4 gap-y-1",
+  },
+  /** Compact cards that already hold a headline — the home hero card. */
   compactSm: {
-    digit: "text-[clamp(0.85rem,4.2vw,1.5rem)]",
-    unit: "text-[clamp(0.5rem,2vw,0.7rem)]",
+    digit: "text-[clamp(1rem,5vw,1.8rem)]",
+    unit: "text-[clamp(0.5rem,2.1vw,0.75rem)]",
     gap: "gap-x-2 gap-y-0.5",
   },
 } as const;
 
 interface Props {
   className?: string;
-  /** Heading beside/above the digits — hidden with them once the deadline passes. */
+  /** Heading beside/above the digits — hidden with them once the event starts. */
   label?: string;
   labelClassName?: string;
   /**
@@ -90,8 +90,7 @@ interface Props {
 }
 
 /**
- * Time left until the signup deadline, re-evaluated every second. Shared by the
- * countdown and by the signup CTAs, which close once `expired` flips.
+ * Time left until the event starts, re-evaluated every second.
  */
 export function useSignupCountdown(): Remaining {
   const [remaining, setRemaining] = useState(() => remainingAt(Date.now()));
@@ -107,8 +106,8 @@ export function useSignupCountdown(): Remaining {
 }
 
 /**
- * Ticking countdown to the signup deadline. Renders nothing once the deadline
- * has passed, so a stale page never shows a row of zeros.
+ * Ticking countdown to the event start. Renders nothing once it has begun, so a
+ * stale page never shows a row of zeros.
  *
  * Colours are inherited: digits use the parent's text colour, unit labels a
  * dimmed version of it.
@@ -164,7 +163,7 @@ export function SignupCountdown({
 
   return (
     <div
-      className={["flex flex-col items-center gap-1", className]
+      className={["flex flex-col items-center gap-1.5", className]
         .filter(Boolean)
         .join(" ")}
     >

@@ -6,6 +6,7 @@ import { areSignupsClosed } from "../../data/signup-deadline";
 import { getDb } from "../../db";
 import { hackathonPreSignups, hackathonSignups } from "../../db/schema";
 import { sendSignupConfirmationEmail } from "../../lib/signup-confirmation-email";
+import { hasValidSignupAccessKey } from "../../lib/signup-late-access";
 import { parseSignupBody } from "../../lib/signup-validation";
 
 export const prerender = false;
@@ -58,19 +59,6 @@ function isPostgresUniqueViolation(e: unknown): boolean {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  // The client hides the form after the deadline, but its clock is not the
-  // authority: nothing is accepted past the deadline, whatever the caller says.
-  if (areSignupsClosed()) {
-    safeSentry(() => {
-      withScope((scope) => {
-        scope.setTag("api", "signup");
-        scope.setTag("outcome", "signups_closed");
-        captureMessage("POST /api/signup after the deadline", "info");
-      });
-    });
-    return Response.json({ error: "signups_closed" }, { status: 410 });
-  }
-
   // `vercel.json` Bot Protection rewrites only run on Vercel / `vercel dev`, not `astro dev`.
   // Without them, client scripts 404 and BotID checks misbehave; skip locally.
   if (!import.meta.env.DEV) {
@@ -139,6 +127,24 @@ export const POST: APIRoute = async ({ request }) => {
       });
     });
     return Response.json({ error: "invalid_body" }, { status: 400 });
+  }
+
+  // Public signups are closed. A known query key can still submit; those
+  // applications are reviewed by hand the same as everyone else.
+  if (
+    areSignupsClosed() &&
+    !hasValidSignupAccessKey(
+      "signupAccessKey" in body ? body.signupAccessKey : ""
+    )
+  ) {
+    safeSentry(() => {
+      withScope((scope) => {
+        scope.setTag("api", "signup");
+        scope.setTag("outcome", "signups_closed");
+        captureMessage("POST /api/signup after the deadline", "info");
+      });
+    });
+    return Response.json({ error: "signups_closed" }, { status: 410 });
   }
 
   const parsed = parseSignupBody(body);

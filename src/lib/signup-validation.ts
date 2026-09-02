@@ -458,6 +458,10 @@ const signupBodySchema = z
         .transform((s) => s.trim())
     ),
     referralCode: referralCodeField,
+    signupAccessKey: z.preprocess(
+      (value) => (typeof value === "string" ? value.trim() : ""),
+      z.string().max(256)
+    ),
     invitationToken: z.preprocess(
       (value) => (typeof value === "string" ? value.trim() : ""),
       z

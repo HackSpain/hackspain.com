@@ -63,10 +63,10 @@ const PAGES: PageSeo[] = [
 const SIGNUP_SECTION_INDEX = PAGES.length - 1;
 
 const SIGNUP_CLOSED_SEO: PageSeo = {
-  title: "Inscripción cerrada | HackSpain 2026",
+  title: "Empieza el 18 de septiembre | HackSpain 2026",
   description:
-    "La inscripción para HackSpain 2026 está cerrada. Síguenos en redes para enterarte de la próxima edición.",
-  ogImageAlt: "HackSpain 2026 — inscripción cerrada",
+    "HackSpain 2026 empieza el 18 de septiembre a las 17:00 en UPM - ETSIT, Madrid. Las plazas están cubiertas.",
+  ogImageAlt: "HackSpain 2026 — empieza el 18 de septiembre",
 };
 
 export function seoForSectionIndex(i: number): PageSeo {
@@ -215,7 +215,7 @@ export function jsonLdEvent() {
       "hackathon Madrid, hackathon España, HackSpain, builders jóvenes, tracks originales, compute gratis",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: "https://schema.org/EventScheduled",
-    startDate: "2026-09-18",
+    startDate: "2026-09-18T17:00:00+02:00",
     endDate: "2026-09-20",
     organizer: { "@id": `${SITE}/#organization` },
     location: {

@@ -28,6 +28,10 @@ import {
 } from "../../data/signup-deadline";
 import { getStoredReferralCode } from "../../lib/referral-code";
 import {
+  hasValidSignupAccessKey,
+  signupLateAccessKeyFromSearch,
+} from "../../lib/signup-late-access";
+import {
   cleanProfilePasteText,
   DIETARY_RESTRICTION_OPTIONS,
   type DietaryRestrictionId,
@@ -268,6 +272,13 @@ function invitationTokenFromLocation(): string {
   return hashParams.get("token")?.trim() ?? "";
 }
 
+function signupLateAccessKeyFromLocation(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  return signupLateAccessKeyFromSearch(window.location.search);
+}
+
 interface SignupPrefillFields {
   email: string;
   fullName: string;
@@ -412,6 +423,11 @@ export function SignupPage() {
   const [deadlinePassed, setDeadlinePassed] = useState(() =>
     areSignupsClosed()
   );
+  const [lateAccessKey, setLateAccessKey] = useState("");
+
+  useLayoutEffect(() => {
+    setLateAccessKey(signupLateAccessKeyFromLocation());
+  }, []);
 
   // No polling: arm a single timer for the deadline so a page left open across
   // it closes itself instead of letting someone finish a doomed form.
@@ -654,6 +670,9 @@ export function SignupPage() {
     if (invitationToken) {
       Object.assign(payload, { invitationToken });
     }
+    if (hasValidSignupAccessKey(lateAccessKey)) {
+      Object.assign(payload, { signupAccessKey: lateAccessKey });
+    }
     const parsed = parseSignupBodyClient(payload);
     if (!parsed.ok) {
       addBreadcrumb({
@@ -848,7 +867,10 @@ export function SignupPage() {
   // An application already sent still wins over the closed notice — whoever got
   // in before the deadline should see their confirmation, not "estamos cerrados".
   const alreadyDone = status === "success" || status === "alreadyApplied";
-  const showClosed = !alreadyDone && (deadlinePassed || status === "closed");
+  const lateAccessAllowed = hasValidSignupAccessKey(lateAccessKey);
+  const showClosed =
+    !alreadyDone &&
+    ((deadlinePassed && !lateAccessAllowed) || status === "closed");
   const showFinalPanel = alreadyDone || showClosed;
   let finalPanelMessage = t.applicationReceived;
   if (status === "alreadyApplied") {

@@ -1,8 +1,9 @@
 import { Fragment, useState } from "react";
 import { HACKSPAIN_SOCIAL_URLS } from "../../data/landing-meta";
+import { areSignupsClosed } from "../../data/signup-deadline";
 import { InlineSvg } from "../media/inline-svg";
 import { ParticipantsCountUp } from "../media/participants-count-up";
-import { SignupCountdown, useSignupCountdown } from "../media/signup-countdown";
+import { SignupCountdown } from "../media/signup-countdown";
 import {
   MOSAIC_BD,
   MOSAIC_DISPLAY,
@@ -41,6 +42,40 @@ const LBL = `${MOSAIC_LBL} mb-1`;
 const BD = MOSAIC_BD;
 
 const BOTTOM_CELLS = ["r5a", "r5b", "r5c", "r5d"] as const;
+
+function MadeByCredit({
+  className,
+  copyright = false,
+}: {
+  className?: string;
+  copyright?: boolean;
+}) {
+  return (
+    <p className={className}>
+      Hecho con ♥ por{" "}
+      <a
+        className="underline underline-offset-2"
+        href="https://x.com/disamdev"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Samu
+      </a>
+      {" y "}
+      <a
+        className="underline underline-offset-2"
+        href="https://x.com/mrloldev"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Leo
+      </a>
+      {copyright ? (
+        <span className="text-hs-ink/40"> · © 2026 HackSpain</span>
+      ) : null}
+    </p>
+  );
+}
 
 function bottomRow(sectionIdx: number): Record<string, React.ReactNode> {
   const copyEl = (
@@ -94,32 +129,6 @@ function bottomRow(sectionIdx: number): Record<string, React.ReactNode> {
         </div>
       </P>
     </Fragment>,
-    <Fragment key="footer-credits">
-      <P bg="bg-hs-paper">
-        <p
-          className={`${D} ${MOSAIC_FOOTER} text-center font-bold text-hs-ink`}
-        >
-          Hecho con ♥ por{" "}
-          <a
-            className="underline underline-offset-2"
-            href="https://x.com/mrloldev"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Leo
-          </a>
-          {" y "}
-          <a
-            className="underline underline-offset-2"
-            href="https://disam.dev"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Samu
-          </a>
-        </p>
-      </P>
-    </Fragment>,
     <Fragment key="footer-github">
       <P bg="bg-hs-paper">
         <div className="flex flex-col items-center gap-1 text-center text-hs-ink">
@@ -159,9 +168,9 @@ function bottomRow(sectionIdx: number): Record<string, React.ReactNode> {
     </Fragment>,
   ];
 
-  const i = sectionIdx % 4;
+  const i = sectionIdx % actions.length;
   const actionCell = BOTTOM_CELLS[i];
-  const copyCell = BOTTOM_CELLS[(i + 2) % 4];
+  const copyCell = BOTTOM_CELLS[(i + 2) % BOTTOM_CELLS.length];
 
   return { [actionCell]: actions[i], [copyCell]: copyEl };
 }
@@ -187,24 +196,41 @@ function cardArt(svg: string, corner: "tl" | "br") {
   );
 }
 
-/** Copy shown on the signup CTAs once the deadline has passed. */
-const SIGNUP_CLOSED_LABEL = "Inscripciones cerradas";
-
 /**
- * Second word of the "INSCRIPCIÓN ABIERTA" hero — flips to "CERRADA" with the
- * countdown, so the hero never contradicts a closed CTA.
+ * Last-section hero: "INSCRIPCIÓN ABIERTA" while applications are open,
+ * "EMPIEZA EN" once they close so the cell frames the event countdown.
  */
-function SignupStatusWord() {
-  const { expired } = useSignupCountdown();
+function SignupHeroTitle({ compact = false }: { compact?: boolean }) {
+  if (areSignupsClosed()) {
+    return compact ? (
+      <>
+        EMPIEZA <span className="text-hs-gold">EN</span>
+      </>
+    ) : (
+      <>
+        EMPIEZA
+        <br />
+        <span className="text-hs-gold">EN</span>
+      </>
+    );
+  }
 
-  return (
-    <span className="text-hs-gold">{expired ? "CERRADA" : "ABIERTA"}</span>
+  return compact ? (
+    <>
+      INSCRIPCIÓN <span className="text-hs-gold">ABIERTA</span>
+    </>
+  ) : (
+    <>
+      INSCRIPCIÓN
+      <br />
+      <span className="text-hs-gold">ABIERTA</span>
+    </>
   );
 }
 
 /**
- * Signup CTA that closes itself: a link while the countdown is running, a
- * disabled button once the deadline has passed.
+ * Signup CTA while applications are open. Once they close, renders nothing —
+ * the event countdown takes its place instead of a disabled "closed" button.
  */
 function SignupCta({
   ariaLabel,
@@ -217,14 +243,8 @@ function SignupCta({
   href: string;
   label: string;
 }) {
-  const { expired } = useSignupCountdown();
-
-  if (expired) {
-    return (
-      <Button className={className} disabled size="compact" variant="gold">
-        {SIGNUP_CLOSED_LABEL}
-      </Button>
-    );
+  if (areSignupsClosed()) {
+    return null;
   }
 
   return (
@@ -380,13 +400,20 @@ export function buildSections(
           />
           <SignupCountdown
             className="shrink-0 text-hs-ink"
-            label="La inscripción cierra en"
-            labelClassName={`${D} ${MOSAIC_FOOTER_SM} font-black text-hs-ink/50 uppercase tracking-widest`}
+            label="El evento empieza en"
+            labelClassName={`${D} ${MOSAIC_FOOTER} font-black text-hs-ink/50 uppercase tracking-widest`}
             variant="mosaicSm"
           />
         </P>
       ),
       ...bottomRow(0),
+      r5b: (
+        <P bg="bg-hs-paper">
+          <MadeByCredit
+            className={`${D} ${MOSAIC_FOOTER} text-center font-bold text-hs-ink`}
+          />
+        </P>
+      ),
       r5d: (
         <P bg="bg-hs-paper">
           <div className="flex items-center justify-center gap-3 text-hs-ink/45">
@@ -547,9 +574,7 @@ export function buildSections(
         <P bg="bg-hs-navy">
           <p className={`${LBL} text-hs-gold`}>HACKSPAIN 2026</p>
           <h2 className={`text-center ${MOSAIC_HERO_LG} text-hs-paper`}>
-            INSCRIPCIÓN
-            <br />
-            <SignupStatusWord />
+            <SignupHeroTitle />
           </h2>
         </P>
       ),
@@ -557,7 +582,7 @@ export function buildSections(
         <P bg="bg-hs-paper" className="!justify-evenly !px-10 !py-6">
           <SignupCountdown
             className="text-hs-ink"
-            label="La inscripción cierra en"
+            label="El evento empieza en"
             labelClassName={`${LBL} text-center text-hs-ink/50`}
           />
           <SignupCta
@@ -615,27 +640,10 @@ function compactFooter(centered = false): React.ReactNode {
           @hackspain26
         </a>
       </div>
-      <p className={`${D} text-center font-bold text-hs-ink text-sm`}>
-        Hecho con ♥ por{" "}
-        <a
-          className="underline underline-offset-2"
-          href="https://x.com/mrloldev"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Leo
-        </a>
-        {" y "}
-        <a
-          className="underline underline-offset-2"
-          href="https://disam.dev"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Samu
-        </a>
-        <span className="text-hs-ink/40"> · © 2026 HackSpain</span>
-      </p>
+      <MadeByCredit
+        className={`${D} text-center font-bold text-hs-ink text-sm`}
+        copyright
+      />
     </P>
   );
 }
@@ -752,6 +760,9 @@ export function buildSectionsCompact(
               </svg>
               UPM - ETSIT
             </a>
+            <MadeByCredit
+              className={`${D} text-center font-bold text-[clamp(0.7rem,2.8vw,0.9rem)] text-hs-ink`}
+            />
           </div>
         </P>
       ),
@@ -792,7 +803,7 @@ export function buildSectionsCompact(
           />
           <SignupCountdown
             className="shrink-0 text-hs-ink"
-            label="Cierra en"
+            label="Empieza en"
             labelClassName={`${D} font-black text-[clamp(0.6rem,2.6vw,0.85rem)] text-hs-ink/50 uppercase tracking-widest`}
             layout="inline"
             variant="compactSm"
@@ -1007,7 +1018,7 @@ export function buildSectionsCompact(
           <h2
             className={`text-center ${CH} text-[clamp(2rem,9vw,3.4rem)] text-hs-paper`}
           >
-            INSCRIPCIÓN <SignupStatusWord />
+            <SignupHeroTitle compact />
           </h2>
         </P>
       ),
@@ -1015,7 +1026,7 @@ export function buildSectionsCompact(
         <P bg="bg-hs-paper" className={`${CARD} !justify-evenly`}>
           <SignupCountdown
             className="text-hs-ink"
-            label="La inscripción cierra en"
+            label="El evento empieza en"
             labelClassName={`${CLBL} text-center text-hs-ink/50`}
             variant="compact"
           />
