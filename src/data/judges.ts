@@ -6,6 +6,7 @@ import ivanFernandezPhoto from "../assets/judges/ivan-fernandez.jpg";
 import ivanLandabasoPhoto from "../assets/judges/ivan-landabaso.jpg";
 import jaimeNovoaPhoto from "../assets/judges/jaime-novoa.jpg";
 import juanVecinoPhoto from "../assets/judges/juan-vecino.jpg";
+import mariaMunozPhoto from "../assets/judges/maria-munoz.jpg";
 import miguelGonzalezPhoto from "../assets/judges/miguel-gonzalez.jpg";
 import nicolasDeOryPhoto from "../assets/judges/nicolas-de-ory.jpg";
 import pabloMenendezPhoto from "../assets/judges/pablo-menendez.jpg";
@@ -101,5 +102,11 @@ export const GENERAL_JUDGES: Judge[] = [
     id: "pablo-menendez",
     name: "Pablo Menéndez",
     photoSrc: pabloMenendezPhoto.src,
+  },
+  {
+    company: "Invoke.bio",
+    id: "maria-munoz",
+    name: "María Muñoz",
+    photoSrc: mariaMunozPhoto.src,
   },
 ];
