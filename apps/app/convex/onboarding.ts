@@ -1,0 +1,228 @@
+import { v } from "convex/values";
+import { internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { acceptedMutation, acceptedQuery } from "./lib/customFunctions";
+import { attendanceValidator } from "./lib/validators";
+import { parseEventDetails } from "./lib/eventDetails";
+import {
+  generateNumericCode,
+  normalizePhone,
+  sha256Hex,
+} from "./lib/normalize";
+
+const PHONE_CODE_TTL_MS = 10 * 60 * 1000;
+const PHONE_MAX_ATTEMPTS = 5;
+
+type TwilioConfig = { sid: string; token: string; from: string };
+
+function twilioEnv(): { config: TwilioConfig | null; partial: boolean } {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (sid && token && from) {
+    return { config: { sid, token, from }, partial: false };
+  }
+  return { config: null, partial: Boolean(sid || token || from) };
+}
+
+function requireTwilio(): TwilioConfig {
+  const { config, partial } = twilioEnv();
+  if (!config) {
+    throw new Error(
+      partial
+        ? "Twilio is partially configured: set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER together"
+        : "Twilio is not configured",
+    );
+  }
+  return config;
+}
+
+export const status = acceptedQuery({
+  args: {},
+  returns: v.object({
+    phone: v.optional(v.string()),
+    phoneConfirmed: v.boolean(),
+    notificationConsent: v.boolean(),
+    attendanceStatus: attendanceValidator,
+    dietaryRestrictions: v.optional(v.string()),
+    dietaryDetails: v.optional(v.string()),
+    travelOrigin: v.optional(v.string()),
+    onboardingComplete: v.boolean(),
+    smsConfigured: v.boolean(),
+  }),
+  handler: async (ctx) => {
+    return {
+      phone: ctx.user.phone,
+      phoneConfirmed: ctx.user.phoneConfirmed,
+      notificationConsent: ctx.user.notificationConsent,
+      attendanceStatus: ctx.user.attendanceStatus,
+      dietaryRestrictions: ctx.user.dietaryRestrictions,
+      dietaryDetails: ctx.user.dietaryDetails,
+      travelOrigin: ctx.user.travelOrigin,
+      onboardingComplete: ctx.user.onboardingComplete,
+      smsConfigured: twilioEnv().config !== null,
+    };
+  },
+});
+
+export const requestPhoneCode = acceptedMutation({
+  args: { phone: v.string() },
+  returns: v.object({
+    delivery: v.union(v.literal("sms"), v.literal("stub")),
+    debugCode: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const phone = normalizePhone(args.phone);
+    if (!phone) {
+      throw new Error("Enter a valid phone number in E.164 format, like +34600111222");
+    }
+
+    const twilio = twilioEnv();
+    if (twilio.partial) {
+      throw new Error(
+        "Twilio is partially configured: set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER together",
+      );
+    }
+    const stubAllowed = process.env.ALLOW_PHONE_STUB === "true";
+    if (!twilio.config && !stubAllowed) {
+      throw new Error("SMS is not configured");
+    }
+
+    const existing = await ctx.db
+      .query("phoneChallenges")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .unique();
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    const code = generateNumericCode(6);
+    const codeHash = await sha256Hex(`${ctx.user._id}:${phone}:${code}`);
+    await ctx.db.insert("phoneChallenges", {
+      userId: ctx.user._id,
+      phone,
+      codeHash,
+      expiresAt: Date.now() + PHONE_CODE_TTL_MS,
+      attempts: 0,
+    });
+
+    if (twilio.config) {
+      await ctx.scheduler.runAfter(0, internal.onboarding.sendPhoneCode, {
+        to: phone,
+        code,
+      });
+      return { delivery: "sms" as const };
+    }
+
+    console.log(`[phone] Stub OTP for ${phone}: ${code}`);
+    return { delivery: "stub" as const, debugCode: code };
+  },
+});
+
+export const sendPhoneCode = internalAction({
+  args: { to: v.string(), code: v.string() },
+  returns: v.null(),
+  handler: async (_ctx, args) => {
+    const twilio = requireTwilio();
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${twilio.sid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${btoa(`${twilio.sid}:${twilio.token}`)}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          To: args.to,
+          From: twilio.from,
+          Body: `Your HackSpain confirmation code is ${args.code}. It expires in 10 minutes.`,
+        }).toString(),
+      },
+    );
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Twilio send failed (${response.status}): ${detail}`);
+    }
+    return null;
+  },
+});
+
+export const verifyFailureValidator = v.union(
+  v.literal("no_challenge"),
+  v.literal("expired"),
+  v.literal("too_many_attempts"),
+  v.literal("incorrect"),
+);
+
+// Failures are returned (not thrown) so the attempt counter and challenge
+// deletes commit — Convex rolls back all writes when a mutation throws.
+export const verifyPhoneCode = acceptedMutation({
+  args: { code: v.string() },
+  returns: v.union(
+    v.object({ ok: v.literal(true) }),
+    v.object({ ok: v.literal(false), reason: verifyFailureValidator }),
+  ),
+  handler: async (ctx, args) => {
+    const challenge = await ctx.db
+      .query("phoneChallenges")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .unique();
+    if (!challenge) {
+      return { ok: false as const, reason: "no_challenge" as const };
+    }
+    if (challenge.expiresAt < Date.now()) {
+      await ctx.db.delete(challenge._id);
+      return { ok: false as const, reason: "expired" as const };
+    }
+    if (challenge.attempts >= PHONE_MAX_ATTEMPTS) {
+      await ctx.db.delete(challenge._id);
+      return { ok: false as const, reason: "too_many_attempts" as const };
+    }
+
+    const expected = await sha256Hex(
+      `${ctx.user._id}:${challenge.phone}:${args.code.trim()}`,
+    );
+    if (expected !== challenge.codeHash) {
+      const attempts = challenge.attempts + 1;
+      if (attempts >= PHONE_MAX_ATTEMPTS) {
+        await ctx.db.delete(challenge._id);
+        return { ok: false as const, reason: "too_many_attempts" as const };
+      }
+      await ctx.db.patch(challenge._id, { attempts });
+      return { ok: false as const, reason: "incorrect" as const };
+    }
+
+    await ctx.db.patch(ctx.user._id, {
+      phone: challenge.phone,
+      phoneConfirmed: true,
+      phoneVerificationTime: Date.now(),
+    });
+    await ctx.db.delete(challenge._id);
+    return { ok: true as const };
+  },
+});
+
+export const confirmDetails = acceptedMutation({
+  args: {
+    dietaryRestrictions: v.string(),
+    dietaryDetails: v.optional(v.string()),
+    travelOrigin: v.string(),
+    consent: v.boolean(),
+    attendanceStatus: v.union(v.literal("attending"), v.literal("cancelled")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!ctx.user.phoneConfirmed) {
+      throw new Error("Confirm your phone number first");
+    }
+    const details = parseEventDetails(args);
+    await ctx.db.patch(ctx.user._id, {
+      ...details,
+      notificationConsent: args.consent,
+      notificationConsentAt: Date.now(),
+      attendanceStatus: args.attendanceStatus,
+      onboardingComplete: true,
+    });
+    return null;
+  },
+});

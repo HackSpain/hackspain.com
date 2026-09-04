@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "animate": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "124b6a70df6586772835204cc9bba5dfd1263902b0f6f22db66d66706312853e"
+    },
+    "framer-motion-animator": {
+      "source": "patricio0312rev/skills",
+      "sourceType": "github",
+      "computedHash": "22a8401fab0cdf32d5c153b98aba5e95435a479810896879535dc7ac3710efbe"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
+    },
+    "gsap-plugins": {
+      "source": "greensock/gsap-skills",
+      "sourceType": "github",
+      "computedHash": "617b55bf453607f04901221a529e88d26e33365aea7df5857b48d1d77d5db2b1"
+    },
+    "quiver": {
+      "source": "mrloldev/quiver-ai",
+      "sourceType": "github",
+      "computedHash": "6cc3ffae0a66c2f3165c3d4bae6784ebe44e8f6ac661d3f4e40ae56d9af35cb8"
+    },
+    "seo-aeo-best-practices": {
+      "source": "sanity-io/agent-toolkit",
+      "sourceType": "github",
+      "computedHash": "72c2a194b5cbf1185244be75cbb11de620db77b8d0ce62d6b96bea299571c407"
+    },
+    "svg-animation-engineer": {
+      "source": "liuyunlong2021-wq/svg-skills",
+      "sourceType": "github",
+      "computedHash": "b330a8efa01a6d947385e4049693918917aaeb6390097bac4571c3ed03932daf"
+    },
+    "svg-art": {
+      "source": "kv0906/cc-skills",
+      "sourceType": "github",
+      "computedHash": "f31936cd57d302f4ce2f9bffada3707d232d0445ec0234d08df822065f361f26"
+    },
+    "svg-illustration": {
+      "source": "narumiruna/agent-skills",
+      "sourceType": "github",
+      "computedHash": "3b5809d4abf32d7f9648bf3048a10b82bb941b45ab0bc53572fdf77a65b9b1fe"
+    },
+    "svg-precision": {
+      "source": "dkyazzentwatwa/chatgpt-skills",
+      "sourceType": "github",
+      "computedHash": "278780f4a2360c77887d99f05a15b91030a34fa52b37e7d5e56a5d85851f4901"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "e218e50fe7057a4db91390e579c7db5aafac2394c31a3d8e5fa9444c8fa00726"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d8e7d3afe37dcc8a97b99ffb5afdb4d0919ae0092ea8b68f44eb201f035e33ac"
+    }
+  }
+}

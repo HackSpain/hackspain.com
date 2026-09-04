@@ -1,66 +1,28 @@
 {
-  "dependencies": {
-    "@astrojs/react": "^5.0.1",
-    "@astrojs/vercel": "^10.0.2",
-    "@neondatabase/serverless": "^1.0.2",
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.7.0",
-    "@react-three/rapier": "^2.2.0",
-    "@sentry/astro": "^10.51.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.185.3",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/og": "^0.11.1",
-    "@vercel/speed-insights": "^2.0.0",
-    "astro": "^6.0.8",
-    "botid": "^1.5.11",
-    "drizzle-orm": "^0.45.2",
-    "meshline": "^3.3.1",
-    "motion": "^12.38.0",
-    "phosphor-astro": "^2.1.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-hook-form": "^7.74.0",
-    "resend": "^6.18.1",
-    "tailwindcss": "^4.2.2",
-    "three": "^0.185.1",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.4.12",
-    "@tailwindcss/postcss": "^4.2.2",
-    "@types/node": "^25.9.1",
-    "drizzle-kit": "^0.31.10",
-    "knip": "^6.14.2",
-    "postcss": "^8.5.8",
-    "typescript": "^6.0.3",
-    "ultracite": "7.6.2"
-  },
-  "name": "",
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "astro": "astro",
-    "check": "ultracite check",
-    "fix": "ultracite fix",
-    "knip": "DATABASE_URL=postgresql://localhost/knip knip"
-  },
-  "type": "module",
-  "version": "0.0.1",
+  "name": "hackspain",
+  "private": true,
+  "workspaces": ["apps/*"],
   "engines": {
     "node": ">=22.12.0"
   },
-  "packageManager": "pnpm@10.30.2",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@sentry/cli",
-      "esbuild",
-      "sharp"
-    ]
+  "scripts": {
+    "dev": "bun run --filter web dev",
+    "dev:web": "bun run --filter web dev",
+    "dev:app": "bun run --filter app dev",
+    "dev:convex": "bun run --filter app convex:dev",
+    "build": "bun run --filter web build",
+    "build:web": "bun run --filter web build",
+    "build:app": "bun run --filter app build",
+    "preview": "bun run --filter web preview",
+    "check": "bun run --filter web check",
+    "og:generate": "bun run --filter web og:generate",
+    "assets:quiver": "bun run --filter web assets:quiver",
+    "assets:quiver:tiles": "bun run --filter web assets:quiver:tiles",
+    "assets:quiver:tiles+heroes": "bun run --filter web assets:quiver:tiles+heroes",
+    "db:generate": "bun run --filter web db:generate",
+    "db:migrate": "bun run --filter web db:migrate",
+    "db:push": "bun run --filter web db:push",
+    "astro": "bun run --filter web astro",
+    "migrate:convex": "bun run --filter app migrate"
   }
 }

@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "command": "bun run --filter web dev",
+      "name": "Landing (Astro)",
+      "request": "launch",
+      "type": "node-terminal"
+    },
+    {
+      "command": "bun run --filter app dev",
+      "name": "Dashboard (Next.js)",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
+}

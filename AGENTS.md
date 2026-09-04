@@ -1,133 +1,129 @@
-# Ultracite Code Standards
+# HackSpain monorepo
 
-This project uses **Ultracite**, a zero-config preset that enforces strict code quality standards through automated formatting and linting.
+Marketing site for HackSpain 2026 (Madrid) at https://hackspain.com, plus the participant/admin dashboard.
 
-## Quick Reference
+Setup, env vars, and Convex login live in the [README](README.md). Bun workspaces. Node ≥ 22.12.
 
-- **Format code**: `pnpm fix`
-- **Check for issues**: `pnpm check`
-- **Diagnose setup**: `pnpm exec ultracite doctor`
+```text
+apps/web    # Astro 6 landing (Vercel, React islands, Tailwind v4, Neon/Drizzle)
+apps/app    # Next.js dashboard + Convex (auth, CRM, teams, perks)
+```
 
-Biome (the underlying engine) provides robust linting and formatting. Most issues are automatically fixable.
+```sh
+bun install
+bun dev                 # landing — localhost:4321
+bun dev:app             # dashboard — localhost:3000
+bun dev:convex          # Convex dev (not production deploy)
+bun migrate:convex      # Neon → Convex. Idempotent on email. Do not run unless importing.
+```
 
----
+Do not run `npx convex deploy` unless you are shipping Convex to production.
 
-## Open source repository
+Copy `apps/web/.env.example` → `apps/web/.env` for signup APIs. Copy `apps/app/.env.example` → `apps/app/.env.local` for the dashboard. Static landing pages run without a database.
 
-This project is **open source**. Treat the default branch and public history as visible to everyone.
+## Landing (`apps/web`)
 
-- **Secrets and environment variables**: Do not commit real API keys, tokens, passwords, private URLs, or `.env` contents. Never embed secrets in source, comments, tests, docs, examples, or shell snippets. Use placeholders and document required variables in `.env.example` (or equivalent) without real values.
-- **What belongs only on disk**: If something must not be public (local credentials, internal hostnames, personal paths, one-off scripts with secrets), keep it **out of tracked files** and list those paths in `.gitignore` (or local excludes). Do not rely on “we’ll remove it before push.”
-- **Comments and scratch code**: Avoid comments or temporary code that expose confidential infrastructure, individuals, or non-public product details. If it is not fit for a public repo, do not add it to version control.
+Astro 6 with server output on Vercel, React islands, Tailwind CSS v4, Motion. Synced from the marketing repo at `origin/master` (`49337e0`). Trailing slashes are off (`trailingSlash: "never"`). Public copy is Spanish-first; there is no `/en` / `/es` locale prefix.
 
----
+### Layout
 
-## Core Principles
+```text
+apps/web/src/
+├── components/          # mosaic, pages, sections, share badge, forms
+├── data/                # SEO, section routes, llms.txt, mentors/judges
+├── db/                  # Drizzle client + schema (Neon)
+├── layouts/layout.astro # SEO + JSON-LD
+├── lib/                 # Zod validation, email, badge, shortlist
+├── middleware.ts        # AEO: Accept text/markdown on landing URLs → llms.txt
+└── pages/               # routes + /api/*
+```
 
-Write code that is **accessible, performant, type-safe, and maintainable**. Focus on clarity and explicit intent over brevity.
+Interactive pages are Astro shells that mount one React island with `client:load`.
 
-### Type Safety & Explicitness
+### Routes
 
-- Use explicit types for function parameters and return values when they enhance clarity
-- Prefer `unknown` over `any` when the type is genuinely unknown
-- Use const assertions (`as const`) for immutable values and literal types
-- Leverage TypeScript's type narrowing instead of type assertions
-- Use meaningful variable names instead of magic numbers - extract constants with descriptive names
+| Path | Role | Prerender |
+| --- | --- | --- |
+| `/`, `/mission`, `/tracks`, `/gran-premio`, `/mentores`, `/apuntate` | Landing mosaic sections | no |
+| `/signup` | Hackathon signup | yes |
+| `/ambassador` | Ambassador application | yes |
+| `/privacy` | Privacy | yes |
+| `/asistencia` | Mentor/sponsor attendance | no |
+| `/confirmacion`, `/comparte`, `/cancelacion` | Place confirmation, badge share, cancellation | no |
+| `/shortlist` | Internal applicant review. Password-gated (`SHORTLIST_PASSWORD`). | no |
+| `/api/signup`, `/api/signup-prefill`, `/api/mentor-sponsor-signup` | JSON POST | no |
+| `/llms.txt` | Machine-readable site summary | yes |
 
-### Modern JavaScript/TypeScript
+Landing section slugs live in `src/data/section-routes.ts`. Adding a section means updating that list, mosaic cells, `landing-meta.ts` SEO arrays, and a root alias page.
 
-- Use arrow functions for callbacks and short functions
-- Prefer `for...of` loops over `.forEach()` and indexed `for` loops
-- Use optional chaining (`?.`) and nullish coalescing (`??`) for safer property access
-- Prefer template literals over string concatenation
-- Use destructuring for object and array assignments
-- Use `const` by default, `let` only when reassignment is needed, never `var`
+`/shortlist` is internal to the landing app. It is server-rendered (`prerender = false`) and gated by the `SHORTLIST_PASSWORD` server env via an httpOnly cookie. Applicants load from Neon on the server (`shortlist-server.ts`) and are passed as props — never import applicant JSON in the client. `/api/shortlist` uses the same cookie. Keep `noindex, nofollow`, `Disallow: /shortlist` in `apps/web/public/robots.txt`, and do not add it to the sitemap, public nav, or the dashboard. Do not log or dump applicant PII.
 
-### Async & Promises
+### SEO
 
-- Always `await` promises in async functions - don't forget to use the return value
-- Use `async/await` syntax instead of promise chains for better readability
-- Handle errors appropriately in async code with try-catch blocks
-- Don't use async functions as Promise executors
+- Page titles, descriptions, keywords, JSON-LD: `src/data/landing-meta.ts` and `src/layouts/layout.astro`.
+- `src/data/llms.txt` is the AEO source. Middleware serves it when `Accept` includes `text/markdown`. Keep it in sync with visible copy.
 
-### React & JSX
+### Design
 
-- Use function components over class components
-- Call hooks at the top level only, never conditionally
-- Specify all dependencies in hook dependency arrays correctly
-- Use the `key` prop for elements in iterables (prefer unique IDs over array indices)
-- Nest children between opening and closing tags instead of passing as props
-- Don't define components inside other components
-- Use semantic HTML and ARIA attributes for accessibility:
-  - Provide meaningful alt text for images
-  - Use proper heading hierarchy
-  - Add labels for form inputs
-  - Include keyboard event handlers alongside mouse events
-  - Use semantic elements (`<button>`, `<nav>`, etc.) instead of divs with roles
+Brand tokens are defined twice on the landing and must stay in sync:
 
-### Error Handling & Debugging
+- CSS / Tailwind: `src/styles/global.css` `@theme` (`--color-hs-*`, `--font-bungee`)
+- TS: `src/components/theme/palette.ts`
 
-- Remove `console.log`, `debugger`, and `alert` statements from production code
-- Throw `Error` objects with descriptive messages, not strings or other values
-- Use `try-catch` blocks meaningfully - don't catch errors just to rethrow them
-- Prefer early returns over nested conditionals for error cases
+The dashboard remaps the same hex values onto shadcn tokens in `apps/app/src/app/globals.css`.
 
-### Code Organization
+Fonts: DM Sans (body), Bungee (display / buttons). Landing buttons use `src/components/ui/button-styles.ts`. Forms use `src/components/form/*`.
 
-- Keep functions focused and under reasonable cognitive complexity limits
-- Extract complex conditions into well-named boolean variables
-- Use early returns to reduce nesting
-- Prefer simple conditionals over nested ternary operators
-- Group related code together and separate concerns
+Landing motion is a full-viewport mosaic (`landing-page`, `cells.ts` / `cells-compact.ts`). Do not turn it into a normal scrolling page. Respect `prefers-reduced-motion`.
 
-### Security
+### Forms and APIs
 
-- Add `rel="noopener"` when using `target="_blank"` on links
-- Avoid `dangerouslySetInnerHTML` unless absolutely necessary
-- Don't use `eval()` or assign directly to `document.cookie`
-- Validate and sanitize user input
+Validation is Zod in `src/lib/signup-validation.ts` and `src/lib/mentor-sponsor-validation.ts`. The API parses the body with those helpers. Do not invent a second schema in the React form.
 
-### Performance
+`POST` handlers (`prerender = false`) check BotID, require `application/json`, reject duplicate emails (409), write through `getDb()`, and send transactional mail through Resend when configured.
 
-- Avoid spread syntax in accumulators within loops
-- Use top-level regex literals instead of creating them in loops
-- Prefer specific imports over namespace imports
-- Avoid barrel files (index files that re-export everything)
-- Use proper image components (e.g., Next.js `<Image>`) over `<img>` tags
+Tables in `src/db/schema.ts` include `hackathon_signups`, `hackathon_pre_signups`, `mentor_sponsor_signups`, `shortlist_reviews`. Change schema with Drizzle (`bun db:generate` then migrate). Do not hand-edit applied SQL as the source of truth.
 
-### Framework-Specific Guidance
+New dashboard data lives in Convex, not Neon. Keep using Neon for the public signup API until that is migrated separately.
 
-**Next.js:**
-- Use Next.js `<Image>` component for images
-- Use `next/head` or App Router metadata API for head elements
-- Use Server Components for async data fetching instead of async Client Components
+## Dashboard (`apps/app`)
 
-**React 19+:**
-- Use ref as a prop instead of `React.forwardRef`
+Next.js App Router + Convex + Convex Auth (email OTP) + shadcn.
 
-**Solid/Svelte/Vue/Qwik:**
-- Use `class` and `for` attributes (not `className` or `htmlFor`)
+Wrappers: `authedQuery` / `authedMutation` / `accepted*` / `onboarded*` / `adminQuery` / `adminMutation`.
 
----
+Sign in with the `/signup` email. No signup row means `/unregistered`. Accepted hackers confirm details on `/onboarding`. Everyone else with a signup sees `/pending`. Admins mark accepted in CRM and bypass participant gates. Admin role: `ADMIN_EMAILS` Convex env, or CRM “Make admin”.
 
-## Testing
+Phone OTP without Twilio requires Convex env `ALLOW_PHONE_STUB=true` (dev only); otherwise `requestPhoneCode` throws "SMS is not configured". Users still must enter the code.
 
-- Write assertions inside `it()` or `test()` blocks
-- Avoid done callbacks in async tests - use async/await instead
-- Don't use `.only` or `.skip` in committed code
-- Keep test suites reasonably flat - avoid excessive `describe` nesting
+Email OTP: Convex env `ALLOW_EMAIL_OTP_STUB=true` (dev only) lets `00000000` stand in for the real code. Real codes stay random (Convex Auth looks codes up by hash with `.unique()`, so a fixed code would collide across accounts); `ResendOTP` records the real code in `devOtpCodes` and the `auth:signIn` wrapper swaps `00000000` for it. Ignored whenever `AUTH_RESEND_KEY` is set.
 
-## When Biome Can't Help
+Profiles store social links as `urls: { kind, url }[]`. `githubUsername` / `twitterHandle` stay denormalized for team lookup. One submission can enter multiple challenges via `challengeIds` and records partner perks in `perkIds`. Submit stays closed until an admin opens the window. Drafts can be saved before that.
 
-Biome's linter will catch most issues automatically. Focus your attention on:
+`bun migrate:convex` is idempotent on email. It uses `apps/web/.env` for Neon. `approval_status = confirmed` and shortlist `finalSelected` emails are marked accepted. Re-runs do not un-accept someone an admin already marked. Waitlist / pending / rejected stay unaccepted. The rest of the shortlist JSON is not imported.
 
-1. **Business logic correctness** - Biome can't validate your algorithms
-2. **Meaningful naming** - Use descriptive names for functions, variables, and types
-3. **Architecture decisions** - Component structure, data flow, and API design
-4. **Edge cases** - Handle boundary conditions and error states
-5. **User experience** - Accessibility, performance, and usability considerations
-6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
+### Dashboard routes
 
----
+| Path | Role |
+| --- | --- |
+| `/login` | Email OTP |
+| `/unregistered` | Signed in, email not in `signups` |
+| `/pending` | Signup exists, not accepted |
+| `/onboarding` | Accepted hacker confirms phone, diet, travel, attend/cancel |
+| `/` | Home |
+| `/profile` | Edit phone, diet, travel, consent, attendance |
+| `/teams` | Create team, add by GitHub / X / email |
+| `/perks` | Catalog + claim |
+| `/tracks` | Challenges from Convex; one project form, multi-challenge; draft save; submit gated until open |
+| `/admin` | CRM |
+| `/admin/perks` | Perk CRUD + code pools |
+| `/admin/applications` | Email perk applications queue |
+| `/admin/tracks` | Track copy, submission window, projects per challenge |
 
-Most formatting and common issues are automatically fixed by Biome. Run `pnpm fix` before committing to ensure compliance.
+## Conventions
+
+- Match existing files. Prefer editing the island and its Astro page over new frameworks or extra CSS files.
+- No `any`. Strict TypeScript.
+- Server secrets stay in `import.meta.env` (landing) or Convex/Next server env. Never prefix Discord or the database URL with `PUBLIC_`.
+- Illustrations are SVGs under `apps/web/src/assets/`. Quiver scripts regenerate them.
+- Verify UI in the browser. Landing and dashboard do not share a layout.
