@@ -335,7 +335,7 @@ const t = {
   applicationReceived:
     "¡Gracias! Hemos recibido tu solicitud. Espera nuestra respuesta por correo; te escribiremos en cuanto podamos.",
   alreadyApplied:
-    "Ya tenemos una solicitud con este correo. No necesitas volver a enviarla; te contactaremos por email cuando haya novedades.",
+    "Ya tenemos una solicitud con este correo. Si vuelves a enviarla, actualizamos la que ya teníamos, así que puedes corregir lo que necesites. Te contactaremos por email cuando haya novedades.",
   signupsClosedSubtitle:
     "El plazo para enviar solicitudes ha terminado. Síguenos en redes para no perderte lo que viene.",
   signupsClosed:
@@ -771,7 +771,10 @@ export function SignupPage() {
           level: "info",
           message: "signup duplicate email (expected)",
         });
-        clearStoredFields();
+        // Their draft is deliberately kept. A duplicate often means someone is
+        // trying to correct an earlier submission — the API cannot update it
+        // (see below), so they need the text they just wrote in order to send
+        // it to us, or to retry with the address they actually applied under.
         setAppliedFlag();
         setStatus("alreadyApplied");
         return;
