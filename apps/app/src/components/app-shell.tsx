@@ -78,6 +78,17 @@ function AccountMenu({
             Perfil
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link
+            href="/insights"
+            className={cn(
+              "font-bungee uppercase",
+              pathname === "/insights" && "bg-hs-gold text-hs-ink",
+            )}
+          >
+            Live insights
+          </Link>
+        </DropdownMenuItem>
         {isAdmin ? (
           <DropdownMenuItem asChild>
             <Link
