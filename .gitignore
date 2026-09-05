@@ -1,6 +1,9 @@
 # build output
 dist/
-.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/make-interfaces-feel-better/
 .next/
 out/
 

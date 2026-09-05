@@ -21,6 +21,12 @@
       "sourceType": "github",
       "computedHash": "617b55bf453607f04901221a529e88d26e33365aea7df5857b48d1d77d5db2b1"
     },
+    "make-interfaces-feel-better": {
+      "source": "jakubkrehel/make-interfaces-feel-better",
+      "sourceType": "github",
+      "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
+      "computedHash": "c8b15b529e088a318b2d3c17f0a97e15a7b1ce9ddab8bbdf9209e6ab7315cbde"
+    },
     "quiver": {
       "source": "mrloldev/quiver-ai",
       "sourceType": "github",
