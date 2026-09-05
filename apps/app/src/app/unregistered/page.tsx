@@ -14,16 +14,16 @@ export default function UnregisteredPage() {
       <Card className="hs-enter w-full max-w-lg">
         <CardHeader>
           <p className="font-bungee text-xs text-hs-brown">HackSpain 2026</p>
-          <CardTitle className="text-2xl sm:text-3xl">No signup found</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl">No hay solicitud</CardTitle>
           <CardDescription>
-            We do not have a HackSpain application for {me?.email ?? "this email"}.
+            No tenemos una inscripción de HackSpain para {me?.email ?? "este email"}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-hs-brown">
           <p>
-            Log in with the same email you used on hackspain.com/signup. This
-            dashboard is only for people who already applied. If your application
-            is missing, ask an organizer to import it.
+            Entra con el mismo email que usaste en hackspain.com/signup. Este
+            panel es solo para quien ya se ha apuntado. Si falta tu solicitud,
+            pide a la organización que la importe.
           </p>
           <SignOutButton className="w-full sm:w-auto" />
         </CardContent>

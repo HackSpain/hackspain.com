@@ -9,11 +9,11 @@ export function parseEventDetails(args: {
 } {
   const dietaryRestrictions = args.dietaryRestrictions.trim();
   if (!dietaryRestrictions) {
-    throw new Error("Add dietary restrictions, or write None");
+    throw new Error("Añade restricciones alimentarias, o escribe Ninguna");
   }
   const travelOrigin = args.travelOrigin.trim();
   if (!travelOrigin) {
-    throw new Error("Tell us where you travel from");
+    throw new Error("Dinos desde dónde viajas");
   }
   const dietaryDetails = args.dietaryDetails?.trim();
   return {

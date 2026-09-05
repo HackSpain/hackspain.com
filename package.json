@@ -10,6 +10,7 @@
     "dev:web": "bun run --filter web dev",
     "dev:app": "bun run --filter app dev",
     "dev:convex": "bun run --filter app convex:dev",
+    "dev:all": "concurrently -k -n web,app,convex -c yellow,cyan,magenta \"bun run --filter web dev\" \"bun run --filter app dev\" \"bun run --filter app convex:dev\"",
     "build": "bun run --filter web build",
     "build:web": "bun run --filter web build",
     "build:app": "bun run --filter app build",
@@ -24,5 +25,8 @@
     "db:push": "bun run --filter web db:push",
     "astro": "bun run --filter web astro",
     "migrate:convex": "bun run --filter app migrate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

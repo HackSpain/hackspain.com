@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { attendanceLabel, displayedAttendance } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -43,12 +44,12 @@ export default function AdminCrmPage() {
   });
 
   return (
-    <Page title="Participants">
+    <Page title="Participantes">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search name, email, team"
+          placeholder="Buscar nombre, email, equipo"
           className="sm:col-span-2 lg:col-span-1"
         />
         <Select
@@ -59,9 +60,9 @@ export default function AdminCrmPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All acceptance</SelectItem>
-            <SelectItem value="yes">Accepted</SelectItem>
-            <SelectItem value="no">Not accepted</SelectItem>
+            <SelectItem value="all">Toda la aceptación</SelectItem>
+            <SelectItem value="yes">Aceptados</SelectItem>
+            <SelectItem value="no">No aceptados</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -74,18 +75,18 @@ export default function AdminCrmPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All attendance</SelectItem>
-            <SelectItem value="attending">Attending</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="undecided">Undecided</SelectItem>
+            <SelectItem value="all">Toda la asistencia</SelectItem>
+            <SelectItem value="attending">Asistiré</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
+            <SelectItem value="undecided">Sin decidir</SelectItem>
           </SelectContent>
         </Select>
       </div>
       {!rows ? (
         <LoadingText />
       ) : rows.length === 0 ? (
-        <EmptyState title="No matching participants">
-          Try a different search or clear the filters.
+        <EmptyState title="Ningún participante coincide">
+          Prueba otra búsqueda o quita los filtros.
         </EmptyState>
       ) : (
         <RecordList
@@ -93,14 +94,14 @@ export default function AdminCrmPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Nombre</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Accepted</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Diet</TableHead>
-                  <TableHead>From</TableHead>
-                  <TableHead>Attendance</TableHead>
-                  <TableHead>Team</TableHead>
+                  <TableHead>Aceptado</TableHead>
+                  <TableHead>Teléfono</TableHead>
+                  <TableHead>Dieta</TableHead>
+                  <TableHead>Origen</TableHead>
+                  <TableHead>Asistencia</TableHead>
+                  <TableHead>Equipo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -108,6 +109,10 @@ export default function AdminCrmPage() {
                   const href = row.signupId
                     ? `/admin/users/${row.signupId}?kind=signup`
                     : `/admin/users/${row.userId}?kind=user`;
+                  const attendance = displayedAttendance(
+                    row.attendanceStatus,
+                    row.onboardingComplete === true,
+                  );
                   return (
                     <TableRow key={`${row.signupId ?? ""}-${row.userId ?? ""}`}>
                       <TableCell>
@@ -118,14 +123,16 @@ export default function AdminCrmPage() {
                       <TableCell>{row.email}</TableCell>
                       <TableCell>
                         <Badge variant={row.accepted ? "gold" : "default"}>
-                          {row.accepted ? "accepted" : "not accepted"}
+                          {row.accepted ? "aceptado" : "no aceptado"}
                         </Badge>
                       </TableCell>
                       <TableCell>{row.phone ?? "—"}</TableCell>
                       <TableCell>{row.dietaryRestrictions ?? "—"}</TableCell>
                       <TableCell>{row.travelOrigin ?? "—"}</TableCell>
                       <TableCell>
-                        <Badge>{row.attendanceStatus ?? "—"}</Badge>
+                        <Badge>
+                          {attendance ? attendanceLabel(attendance) : "—"}
+                        </Badge>
                       </TableCell>
                       <TableCell>{row.teamName ?? "—"}</TableCell>
                     </TableRow>
@@ -139,6 +146,10 @@ export default function AdminCrmPage() {
             const href = row.signupId
               ? `/admin/users/${row.signupId}?kind=signup`
               : `/admin/users/${row.userId}?kind=user`;
+            const attendance = displayedAttendance(
+              row.attendanceStatus,
+              row.onboardingComplete === true,
+            );
             return (
               <Link
                 key={`${row.signupId ?? ""}-${row.userId ?? ""}`}
@@ -151,12 +162,14 @@ export default function AdminCrmPage() {
                 >
                   <div className="flex flex-wrap gap-2">
                     <Badge variant={row.accepted ? "gold" : "default"}>
-                      {row.accepted ? "accepted" : "not accepted"}
+                      {row.accepted ? "aceptado" : "no aceptado"}
                     </Badge>
-                    <Badge>{row.attendanceStatus ?? "—"}</Badge>
+                    <Badge>
+                      {attendance ? attendanceLabel(attendance) : "—"}
+                    </Badge>
                   </div>
                   <p className="text-sm text-hs-brown">
-                    {row.teamName ?? "No team"}
+                    {row.teamName ?? "Sin equipo"}
                     {row.travelOrigin ? ` · ${row.travelOrigin}` : ""}
                   </p>
                 </RecordCard>

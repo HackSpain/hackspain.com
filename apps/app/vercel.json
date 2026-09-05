@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && bun install",
+  "buildCommand": "bun run vercel-build",
+  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh . ../../package.json ../../bun.lock"
+}

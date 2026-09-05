@@ -19,8 +19,8 @@ const bungee = Bungee({
 });
 
 export const metadata: Metadata = {
-  title: "HackSpain dashboard",
-  description: "Participant and admin dashboard for HackSpain 2026.",
+  title: "HackSpain",
+  description: "Panel de participantes y organización de HackSpain 2026.",
   robots: { index: false, follow: false },
   icons: {
     icon: [{ url: "/icon.png", type: "image/png" }],
@@ -36,7 +36,7 @@ export default async function RootLayout({
   return (
     <ConvexAuthNextjsServerProvider>
       <html
-        lang="en"
+        lang="es"
         className={`${dmSans.variable} ${bungee.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col bg-hs-paper text-hs-ink">

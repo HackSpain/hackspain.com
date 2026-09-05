@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, Frame } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { urlLabel } from "@/lib/urls";
+import { perkName, submissionStatusLabel } from "@/lib/utils";
 
 export default function AdminTracksPage() {
   const tracks = useQuery(api.tracks.adminList);
@@ -24,7 +25,14 @@ export default function AdminTracksPage() {
   >({});
 
   useEffect(() => {
-    if (tracks !== undefined && tracks.length === 0) {
+    if (tracks === undefined) return;
+    const stale =
+      tracks.length === 0 ||
+      tracks.some(
+        (track) =>
+          track.active && (track.slug === "ml" || track.slug === "non-tech"),
+      );
+    if (stale) {
       void ensureDefaults({});
     }
   }, [tracks, ensureDefaults]);
@@ -33,16 +41,16 @@ export default function AdminTracksPage() {
 
   return (
     <Page
-      title="Tracks & submissions"
-      description="Challenges live in Convex. One project can appear under every selected challenge."
+      title="Retos y proyectos"
+      description="Los retos viven en Convex. Un proyecto puede entrar en todos los retos que elijas."
     >
       <Card>
         <CardHeader>
-          <CardTitle>Submission window</CardTitle>
+          <CardTitle>Ventana de envío</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Badge variant={settings.submissionsOpen ? "gold" : "default"}>
-            {settings.submissionsOpen ? "Open" : "Closed"}
+            {settings.submissionsOpen ? "Abierta" : "Cerrada"}
           </Badge>
           <Button
             variant="outline"
@@ -51,7 +59,7 @@ export default function AdminTracksPage() {
               void setOpen({ submissionsOpen: !settings.submissionsOpen })
             }
           >
-            {settings.submissionsOpen ? "Close submissions" : "Open submissions"}
+            {settings.submissionsOpen ? "Cerrar envíos" : "Abrir envíos"}
           </Button>
         </CardContent>
       </Card>
@@ -70,13 +78,15 @@ export default function AdminTracksPage() {
             <CardHeader>
               <CardTitle className="flex flex-wrap items-center gap-2">
                 {track.label}
-                <Badge>{track.active ? "Active" : "Hidden"}</Badge>
-                <Badge variant="gold">{under.length} projects</Badge>
+                <Badge>{track.active ? "Activo" : "Oculto"}</Badge>
+                <Badge variant="gold">
+                  {under.length} {under.length === 1 ? "proyecto" : "proyectos"}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-2">
-                <Field label="Label">
+                <Field label="Nombre">
                   <Input
                     value={draft.label}
                     onChange={(event) =>
@@ -87,7 +97,7 @@ export default function AdminTracksPage() {
                     }
                   />
                 </Field>
-                <Field label="Note">
+                <Field label="Nota">
                   <Input
                     value={draft.note}
                     onChange={(event) =>
@@ -99,7 +109,7 @@ export default function AdminTracksPage() {
                   />
                 </Field>
               </div>
-              <Field label="Body">
+              <Field label="Texto">
                 <Textarea
                   value={draft.body}
                   onChange={(event) =>
@@ -123,7 +133,7 @@ export default function AdminTracksPage() {
                     })
                   }
                 >
-                  Save copy
+                  Guardar texto
                 </Button>
                 <Button
                   variant="outline"
@@ -135,28 +145,28 @@ export default function AdminTracksPage() {
                     })
                   }
                 >
-                  {track.active ? "Hide" : "Show"}
+                  {track.active ? "Ocultar" : "Mostrar"}
                 </Button>
               </div>
               {under.length === 0 ? (
-                <p className="text-sm text-hs-brown">No projects in this challenge yet.</p>
+                <p className="text-sm text-hs-brown">Aún no hay proyectos en este reto.</p>
               ) : (
                 <div className="space-y-3">
                   {under.map((row) => (
                     <Frame key={row._id} tone="navy">
                       <p className="font-bungee text-sm">
-                        {row.name || "Untitled"}{" "}
-                        <Badge>{row.status}</Badge>
+                        {row.name || "Sin título"}{" "}
+                        <Badge>{submissionStatusLabel(row.status)}</Badge>
                       </p>
                       <p className="text-hs-brown">
-                        {row.teamName ?? "Solo"} ·{" "}
+                        {row.teamName ?? "Individual"} ·{" "}
                         {row.challenges.map((c) => c.label).join(", ")}
                       </p>
                       {row.perks.length > 0 ? (
                         <p>
-                          Used:{" "}
+                          Usado:{" "}
                           {row.perks
-                            .map((perk) => `${perk.company} · ${perk.title}`)
+                            .map((perk) => perkName(perk.company, perk.title))
                             .join(", ")}
                         </p>
                       ) : null}

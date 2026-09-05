@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import type { UrlEntry } from "@/lib/urls";
+import { urlDisplay, urlLabel, urlOf } from "@/lib/urls";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
@@ -53,7 +55,7 @@ export function AuthScreen({ children }: { children: ReactNode }) {
 export function LoadingText() {
   return (
     <p className="font-bungee text-hs-brown" role="status">
-      Loading…
+      Cargando…
     </p>
   );
 }
@@ -179,6 +181,59 @@ export function MetaRow({
   );
 }
 
+export function MetaLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-hs-navy underline decoration-hs-navy/40 underline-offset-[3px]"
+    >
+      {children}
+    </a>
+  );
+}
+
+export function SocialMeta({
+  email,
+  urls,
+}: {
+  email?: string | null;
+  urls?: UrlEntry[];
+}) {
+  return (
+    <>
+      <MetaRow label="Email">
+        {email ? <MetaLink href={`mailto:${email}`}>{email}</MetaLink> : "—"}
+      </MetaRow>
+      {(["github", "x", "linkedin"] as const).map((kind) => {
+        const href = urlOf(urls, kind);
+        return (
+          <MetaRow key={kind} label={urlLabel(kind)}>
+            {href ? (
+              <MetaLink href={href}>{urlDisplay(kind, href)}</MetaLink>
+            ) : (
+              "—"
+            )}
+          </MetaRow>
+        );
+      })}
+    </>
+  );
+}
+
 export function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof Error ? err.message : fallback;
+  if (!(err instanceof Error)) return fallback;
+  const thrown = /Uncaught (?:Convex)?Error: (.*?)(?:\s+at handler\b|\n|$)/.exec(
+    err.message,
+  )?.[1];
+  const message = (thrown ?? err.message).split("\n")[0]?.trim();
+  if (!message || message.startsWith("[CONVEX")) return fallback;
+  return message;
 }

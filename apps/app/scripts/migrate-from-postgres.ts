@@ -23,6 +23,8 @@ type SignupRow = {
   // schema is the other way around.
   approval_status?: string | null;
   ambassador_study_where?: string | null;
+  dietary_restrictions?: string[] | null;
+  dietary_details?: string | null;
 };
 
 type AmbassadorRow = {
@@ -171,9 +173,12 @@ async function main(): Promise<void> {
       `hackathon_signups is missing expected columns: ${missingRequired.join(", ")}`,
     );
   }
-  const optionalColumns = ["approval_status", "ambassador_study_where"].filter(
-    (column) => availableColumns.has(column),
-  );
+  const optionalColumns = [
+    "approval_status",
+    "ambassador_study_where",
+    "dietary_restrictions",
+    "dietary_details",
+  ].filter((column) => availableColumns.has(column));
   const hasApprovalStatus = availableColumns.has("approval_status");
 
   const signups = (await sql.query(
@@ -214,6 +219,8 @@ async function main(): Promise<void> {
         wantsAmbassador: Boolean(row.wants_ambassador),
         ambassadorMotivation: optional(row.ambassador_motivation),
         ambassadorStudyWhere: optional(row.ambassador_study_where),
+        dietaryRestrictionIds: row.dietary_restrictions ?? undefined,
+        dietaryDetails: optional(row.dietary_details),
         createdAt: toMillis(row.created_at),
         neonId: row.id,
         accepted: rowAccepted(row),

@@ -111,7 +111,7 @@ export function SignOutButton({ className }: { className?: string }) {
       className={className}
       onClick={() => void signOut()}
     >
-      Sign out
+      Salir
     </Button>
   );
 }

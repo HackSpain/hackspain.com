@@ -14,6 +14,7 @@ bun install
 bun dev                 # landing — localhost:4321
 bun dev:app             # dashboard — localhost:3000
 bun dev:convex          # Convex dev (not production deploy)
+bun dev:all             # landing + dashboard + Convex
 bun migrate:convex      # Neon → Convex. Idempotent on email. Do not run unless importing.
 ```
 
@@ -97,6 +98,8 @@ Sign in with the `/signup` email. No signup row means `/unregistered`. Accepted 
 Phone OTP without Twilio requires Convex env `ALLOW_PHONE_STUB=true` (dev only); otherwise `requestPhoneCode` throws "SMS is not configured". Users still must enter the code.
 
 Email OTP: Convex env `ALLOW_EMAIL_OTP_STUB=true` (dev only) lets `00000000` stand in for the real code. Real codes stay random (Convex Auth looks codes up by hash with `.unique()`, so a fixed code would collide across accounts); `ResendOTP` records the real code in `devOtpCodes` and the `auth:signIn` wrapper swaps `00000000` for it. Ignored whenever `AUTH_RESEND_KEY` is set.
+
+GitHub linking is a custom OAuth flow, not a Convex Auth provider (Convex Auth only links OAuth to the signed-in user by verified email). `github.startLink` stores a one-time state and returns the GitHub authorize URL; the HTTP route `/github/callback` (`convex/http.ts`) exchanges the code, then `internal.github.linkAccount` writes `githubId` / `githubUsername` / `githubLinkedAt` on `users`, copies the handle onto the signup, and resolves pending team invites. Needs Convex env `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SITE_URL`. The dashboard shows a "vincula tu GitHub" banner until `githubLinkedAt` is set; the callback redirects to `SITE_URL/?github=linked|cancelled|expired|taken|error`.
 
 Profiles store social links as `urls: { kind, url }[]`. `githubUsername` / `twitterHandle` stay denormalized for team lookup. One submission can enter multiple challenges via `challengeIds` and records partner perks in `perkIds`. Submit stays closed until an admin opens the window. Drafts can be saved before that.
 

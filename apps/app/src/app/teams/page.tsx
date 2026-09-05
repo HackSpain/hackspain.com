@@ -1,12 +1,21 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
 import { api } from "@convex/_generated/api";
 import { Field, FormError, LoadingText, Page, errorMessage } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Frame } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,53 +25,250 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Id } from "@convex/_generated/dataModel";
+import {
+  identifierPlaceholder,
+  identifierTypeLabel,
+  teamMemberStatusLabel,
+  type IdentifierType,
+} from "@/lib/utils";
 
-export default function TeamsPage() {
-  const team = useQuery(api.teams.mine);
+const IDENTIFIER_OPTIONS = [
+  { value: "github", label: "GitHub" },
+  { value: "twitter", label: "X / Twitter" },
+  { value: "email", label: "Email" },
+] as const;
+
+type MemberDraft = {
+  key: string;
+  identifierType: IdentifierType;
+  identifier: string;
+};
+
+let memberDraftKey = 0;
+
+function newMemberDraft(): MemberDraft {
+  memberDraftKey += 1;
+  return { key: String(memberDraftKey), identifierType: "github", identifier: "" };
+}
+
+function MemberIdentifierInputs({
+  identifierType,
+  identifier,
+  onTypeChange,
+  onIdentifierChange,
+  inputId,
+}: {
+  identifierType: IdentifierType;
+  identifier: string;
+  onTypeChange: (type: IdentifierType) => void;
+  onIdentifierChange: (value: string) => void;
+  inputId?: string;
+}) {
+  return (
+    <>
+      <Select
+        value={identifierType}
+        onValueChange={(value) => onTypeChange(value as IdentifierType)}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {IDENTIFIER_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        id={inputId}
+        value={identifier}
+        type={identifierType === "email" ? "email" : "text"}
+        autoComplete="off"
+        spellCheck={false}
+        onChange={(event) => onIdentifierChange(event.target.value)}
+        placeholder={identifierPlaceholder(identifierType)}
+      />
+    </>
+  );
+}
+
+function CreateTeamForm({ onCreated }: { onCreated: () => void }) {
   const create = useMutation(api.teams.create);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState("");
+  const [memberRows, setMemberRows] = useState<MemberDraft[]>(() => [
+    newMemberDraft(),
+  ]);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  function updateMemberRow(key: string, patch: Partial<MemberDraft>) {
+    setMemberRows((rows) =>
+      rows.map((row) => (row.key === key ? { ...row, ...patch } : row)),
+    );
+  }
+
+  async function submitCreate() {
+    setError(null);
+    const members = memberRows
+      .map((row) => ({
+        identifierType: row.identifierType,
+        identifier: row.identifier.trim(),
+      }))
+      .filter((row) => row.identifier.length > 0);
+    setPending(true);
+    try {
+      await create({ name, members });
+      onCreated();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "No se ha podido crear"));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <DialogContent
+      onOpenAutoFocus={(event) => {
+        event.preventDefault();
+        nameRef.current?.focus();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Crear equipo</DialogTitle>
+        <DialogDescription>
+          Añade gente por usuario de GitHub, handle de X o email.
+        </DialogDescription>
+      </DialogHeader>
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submitCreate();
+        }}
+      >
+        <FormError message={error} />
+        <Field label="Nombre del equipo" htmlFor="team-name">
+          <Input
+            ref={nameRef}
+            id="team-name"
+            value={name}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </Field>
+        <Field
+          label="Miembros"
+          htmlFor={memberRows[0] ? `member-${memberRows[0].key}` : undefined}
+          hint="Opcional. Deja la fila vacía si aún no quieres añadir a nadie."
+        >
+          <div className="space-y-3">
+            {memberRows.map((row, index) => (
+              <div
+                key={row.key}
+                className={
+                  memberRows.length > 1
+                    ? "grid gap-3 sm:grid-cols-[150px_1fr_auto]"
+                    : "grid gap-3 sm:grid-cols-[150px_1fr]"
+                }
+              >
+                <MemberIdentifierInputs
+                  identifierType={row.identifierType}
+                  identifier={row.identifier}
+                  inputId={`member-${row.key}`}
+                  onTypeChange={(type) =>
+                    updateMemberRow(row.key, { identifierType: type })
+                  }
+                  onIdentifierChange={(value) =>
+                    updateMemberRow(row.key, { identifier: value })
+                  }
+                />
+                {memberRows.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    aria-label={`Quitar miembro ${index + 1}`}
+                    onClick={() =>
+                      setMemberRows((rows) =>
+                        rows.filter((item) => item.key !== row.key),
+                      )
+                    }
+                  >
+                    Quitar
+                  </Button>
+                ) : null}
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() =>
+                setMemberRows((rows) => [...rows, newMemberDraft()])
+              }
+            >
+              Añadir miembro
+            </Button>
+          </div>
+        </Field>
+        <DialogFooter>
+          <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+            {pending ? "Creando…" : "Crear equipo"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  );
+}
+
+function TeamsPageContent() {
+  const team = useQuery(api.teams.mine);
   const rename = useMutation(api.teams.rename);
   const addMember = useMutation(api.teams.addMember);
   const removeMember = useMutation(api.teams.removeMember);
   const leave = useMutation(api.teams.leave);
+  const router = useRouter();
+  const search = useSearchParams();
+  const [createOpen, setCreateOpen] = useState(() => search.get("new") === "1");
   const [name, setName] = useState("");
   const [identifier, setIdentifier] = useState("");
-  const [identifierType, setIdentifierType] = useState<"email" | "github" | "twitter">(
-    "github",
-  );
+  const [identifierType, setIdentifierType] = useState<IdentifierType>("github");
   const [error, setError] = useState<string | null>(null);
 
   if (team === undefined) return <LoadingText />;
 
+  function setCreateDialog(open: boolean) {
+    setCreateOpen(open);
+    if (!open && search.has("new")) router.replace("/teams", { scroll: false });
+  }
+
   return (
-    <Page title="Team">
+    <Page title="Equipo">
       <FormError message={error} />
 
       {!team ? (
         <Card>
           <CardHeader>
-            <CardTitle>Create a team</CardTitle>
+            <CardTitle>Todavía no tienes equipo</CardTitle>
             <CardDescription>
-              Add people by GitHub username, X handle, or email.
+              Crea uno y añade a tu gente por GitHub, X o email. También puedes
+              participar en solitario.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Field label="Team name" htmlFor="team-name">
-              <Input
-                id="team-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </Field>
-            <Button
-              onClick={() => {
-                setError(null);
-                void create({ name }).catch((err: unknown) =>
-                  setError(errorMessage(err, "Could not create")),
-                );
-              }}
-            >
-              Create team
-            </Button>
+          <CardContent>
+            <Dialog open={createOpen} onOpenChange={setCreateDialog}>
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => setCreateDialog(true)}
+              >
+                Crear equipo
+              </Button>
+              <CreateTeamForm onCreated={() => setCreateDialog(false)} />
+            </Dialog>
           </CardContent>
         </Card>
       ) : (
@@ -70,7 +276,7 @@ export default function TeamsPage() {
           <CardHeader>
             <CardTitle>{team.name}</CardTitle>
             <CardDescription>
-              {team.isOwner ? "You own this team." : "You are a member."}
+              {team.isOwner ? "Eres el dueño de este equipo." : "Eres miembro."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -87,7 +293,7 @@ export default function TeamsPage() {
                     void rename({ teamId: team._id, name: name || team.name })
                   }
                 >
-                  Rename
+                  Renombrar
                 </Button>
               </div>
             ) : null}
@@ -103,11 +309,11 @@ export default function TeamsPage() {
                       {member.name ?? member.identifier}
                     </p>
                     <p className="text-xs break-all text-hs-brown">
-                      {member.identifierType}: {member.identifier}
+                      {identifierTypeLabel(member.identifierType)}: {member.identifier}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge>{member.status}</Badge>
+                    <Badge>{teamMemberStatusLabel(member.status)}</Badge>
                     {team.isOwner && member.userId !== team.ownerId ? (
                       <Button
                         variant="outline"
@@ -118,7 +324,7 @@ export default function TeamsPage() {
                           })
                         }
                       >
-                        Remove
+                        Quitar
                       </Button>
                     ) : null}
                   </div>
@@ -128,31 +334,11 @@ export default function TeamsPage() {
 
             {team.isOwner ? (
               <div className="grid gap-3 sm:grid-cols-[160px_1fr] lg:grid-cols-[160px_1fr_auto]">
-                <Select
-                  value={identifierType}
-                  onValueChange={(value) =>
-                    setIdentifierType(value as "email" | "github" | "twitter")
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="github">GitHub</SelectItem>
-                    <SelectItem value="twitter">X / Twitter</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={identifier}
-                  onChange={(event) => setIdentifier(event.target.value)}
-                  placeholder={
-                    identifierType === "email"
-                      ? "name@email.com"
-                      : identifierType === "github"
-                        ? "username"
-                        : "@handle"
-                  }
+                <MemberIdentifierInputs
+                  identifierType={identifierType}
+                  identifier={identifier}
+                  onTypeChange={setIdentifierType}
+                  onIdentifierChange={setIdentifier}
                 />
                 <Button
                   className="w-full lg:w-auto"
@@ -165,11 +351,11 @@ export default function TeamsPage() {
                     })
                       .then(() => setIdentifier(""))
                       .catch((err: unknown) =>
-                        setError(errorMessage(err, "Could not add")),
+                        setError(errorMessage(err, "No se ha podido añadir")),
                       );
                   }}
                 >
-                  Add
+                  Añadir
                 </Button>
               </div>
             ) : null}
@@ -181,16 +367,24 @@ export default function TeamsPage() {
                 onClick={() => {
                   setError(null);
                   void leave({}).catch((err: unknown) =>
-                    setError(errorMessage(err, "Could not leave the team")),
+                    setError(errorMessage(err, "No has podido salir del equipo")),
                   );
                 }}
               >
-                Leave team
+                Salir del equipo
               </Button>
             ) : null}
           </CardContent>
         </Card>
       )}
     </Page>
+  );
+}
+
+export default function TeamsPage() {
+  return (
+    <Suspense fallback={<LoadingText />}>
+      <TeamsPageContent />
+    </Suspense>
   );
 }

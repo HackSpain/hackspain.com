@@ -2,29 +2,57 @@ import { v } from "convex/values";
 import {
   adminMutation,
   adminQuery,
+  onboardedMutation,
   onboardedQuery,
 } from "./lib/customFunctions";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import {
+  internalMutation,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 
 const HACKATHON_SETTINGS_KEY = "hackathon";
 
 const DEFAULT_TRACKS = [
   {
-    slug: "ml",
-    label: "ML TRACK",
-    body: "ML challenges using free computing resources.",
-    note: "FREE COMPUTE",
+    slug: "maisa",
+    label: "Maisa",
+    note: "Agentes de IA con trazabilidad para la empresa",
+    body: "Construye «Digital Workers»: agentes de IA auditables que automatizan procesos completos en banca, seguros e industria. Cerró 25M$ liderados por Creandum y Forgepoint para atacar el 95% de proyectos de IA empresarial que fracasan.",
     sortOrder: 0,
   },
   {
-    slug: "non-tech",
-    label: "NON-TECH TRACK",
-    body: "We'll teach non-technical people how to code high-quality software.",
-    note: "FOR EVERYONE",
+    slug: "happyrobot",
+    label: "HappyRobot",
+    note: "El sistema operativo de IA de la economía real",
+    body: "Agentes de IA que ejecutan operaciones completas por voz, email, chat y sistemas empresariales. Con más de 150 grandes clientes y un crecimiento de 5× desde su Serie B, levantó una Serie C de 150M$ que la valora en 1.200M$.",
     sortOrder: 1,
   },
+  {
+    slug: "prosper-ai",
+    label: "Prosper AI",
+    note: "IA para las operaciones sanitarias",
+    body: "Automatiza de punta a punta el recorrido del paciente en clínicas de EE. UU.: citas, verificación de seguros y facturación. Gestiona flujos de más de 150.000 médicos y levantó 30M$ liderados por a16z.",
+    sortOrder: 2,
+  },
+  {
+    slug: "embat",
+    label: "Embat",
+    note: "El sistema operativo de la tesorería europea",
+    body: "Tesorería en tiempo real con IA para equipos financieros de medianas y grandes empresas. Automatiza hasta el 80% del trabajo manual, con 400 clientes en Europa y una Serie B de 30M€ liderada por Cathay Innovation.",
+    sortOrder: 3,
+  },
+  {
+    slug: "theker",
+    label: "THEKER Robotics",
+    note: "Robótica de propósito general made in Spain",
+    body: "Robots industriales reconfigurables, entrenados con IA para no especializarse en una sola tarea. Desde Barcelona, con la mayor Serie A de robótica de Europa: más de 100M$ liderados por CRV, con Samsung, LVMH e Inditex dentro.",
+    sortOrder: 4,
+  },
 ] as const;
+
+const RETIRED_SLUGS = ["ml", "non-tech"] as const;
 
 const trackReturn = v.object({
   _id: v.id("tracks"),
@@ -70,9 +98,11 @@ export async function seedDefaults(ctx: MutationCtx): Promise<void> {
       .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
-        label: existing.label || track.label,
-        body: existing.body || track.body,
-        note: existing.note || track.note,
+        label: track.label,
+        body: track.body,
+        note: track.note,
+        sortOrder: track.sortOrder,
+        active: true,
       });
       continue;
     }
@@ -84,6 +114,16 @@ export async function seedDefaults(ctx: MutationCtx): Promise<void> {
       sortOrder: track.sortOrder,
       active: true,
     });
+  }
+
+  for (const slug of RETIRED_SLUGS) {
+    const leftover = await ctx.db
+      .query("tracks")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .unique();
+    if (leftover?.active) {
+      await ctx.db.patch(leftover._id, { active: false });
+    }
   }
 
   const settings = await settingsDoc(ctx);
@@ -143,6 +183,24 @@ export const adminEnsureDefaults = adminMutation({
   },
 });
 
+export const ensureCatalog = onboardedMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await seedDefaults(ctx);
+    return null;
+  },
+});
+
+export const syncOfficialTracks = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await seedDefaults(ctx);
+    return null;
+  },
+});
+
 export const adminSetSubmissionsOpen = adminMutation({
   args: { submissionsOpen: v.boolean() },
   returns: v.null(),
@@ -172,7 +230,7 @@ export const adminUpdate = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const track = await ctx.db.get(args.trackId);
-    if (!track) throw new Error("Track not found");
+    if (!track) throw new Error("Reto no encontrado");
     const patch: {
       label?: string;
       body?: string;
@@ -182,7 +240,7 @@ export const adminUpdate = adminMutation({
     } = {};
     if (args.label !== undefined) {
       const label = args.label.trim();
-      if (!label) throw new Error("Label is required");
+      if (!label) throw new Error("El nombre es obligatorio");
       patch.label = label;
     }
     if (args.body !== undefined) patch.body = args.body.trim();

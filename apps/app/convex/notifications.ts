@@ -4,6 +4,7 @@ import { internalAction, internalMutation } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { adminMutation, adminQuery } from "./lib/customFunctions";
+import { countsAsAttending } from "./lib/attendance";
 import { getSignupForUser, signupIsAccepted } from "./lib/auth";
 import type { Doc, Id } from "./_generated/dataModel";
 
@@ -41,7 +42,7 @@ async function resolveRecipients(
 ): Promise<Array<{ userId: Id<"users">; email: string }>> {
   if (audience === "user") {
     if (!recipientUserId) {
-      throw new Error("Pick a user for a single-user notification");
+      throw new Error("Elige un usuario para un aviso individual");
     }
     const user = await ctx.db.get(recipientUserId);
     if (!user) return [];
@@ -52,7 +53,7 @@ async function resolveRecipients(
   const users = await ctx.db.query("users").collect();
   const recipients: Array<{ userId: Id<"users">; email: string }> = [];
   for (const user of users) {
-    if (audience === "attending" && user.attendanceStatus !== "attending") {
+    if (audience === "attending" && !countsAsAttending(user.attendanceStatus)) {
       continue;
     }
     if (audience === "accepted") {
@@ -71,14 +72,14 @@ async function userIdForEmail(
 ): Promise<Id<"users">> {
   const normalized = email.trim().toLowerCase();
   if (!normalized) {
-    throw new Error("Enter the user's email");
+    throw new Error("Introduce el email del usuario");
   }
   const user = await ctx.db
     .query("users")
     .withIndex("email", (q) => q.eq("email", normalized))
     .unique();
   if (!user) {
-    throw new Error("No dashboard user with that email");
+    throw new Error("No hay usuario del panel con ese email");
   }
   return user._id;
 }
@@ -165,8 +166,8 @@ export const send = adminMutation({
   handler: async (ctx, args) => {
     const subject = args.subject.trim();
     const body = args.body.trim();
-    if (!subject) throw new Error("Subject is required");
-    if (!body) throw new Error("Body is required");
+    if (!subject) throw new Error("El asunto es obligatorio");
+    if (!body) throw new Error("El mensaje es obligatorio");
 
     const recipientUserId =
       args.audience === "user"
@@ -180,7 +181,7 @@ export const send = adminMutation({
     );
     if (recipients.length === 0) {
       throw new Error(
-        "No recipients: nobody in that audience has consented to notifications",
+        "Nadie en esa audiencia ha dado consentimiento para avisos",
       );
     }
 

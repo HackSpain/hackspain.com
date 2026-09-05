@@ -14,6 +14,7 @@
     "dev:convex": "convex dev",
     "convex:dev": "convex dev",
     "convex:codegen": "convex codegen",
+    "vercel-build": "convex deploy --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL --cmd 'bun run build'",
     "migrate": "bun scripts/migrate-from-postgres.ts"
   },
   "dependencies": {

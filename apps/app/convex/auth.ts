@@ -29,12 +29,15 @@ export const {
       if (args.existingUserId) {
         const existing = await ctx.db.get(args.existingUserId);
         if (!existing) {
-          throw new Error("User not found");
+          throw new Error("Usuario no encontrado");
         }
         await ctx.db.patch(args.existingUserId, {
           email: email ?? existing.email,
           name: existing.name ?? signup?.fullName,
           signupId: existing.signupId ?? signup?._id,
+          dietaryRestrictions:
+            existing.dietaryRestrictions ?? signup?.dietaryRestrictions,
+          dietaryDetails: existing.dietaryDetails ?? signup?.dietaryDetails,
           role: existing.role === "admin" ? "admin" : role,
           emailVerificationTime:
             args.profile.emailVerified || args.type === "email"
@@ -50,6 +53,9 @@ export const {
           await ctx.db.patch(byEmail._id, {
             name: byEmail.name ?? signup?.fullName,
             signupId: byEmail.signupId ?? signup?._id,
+            dietaryRestrictions:
+              byEmail.dietaryRestrictions ?? signup?.dietaryRestrictions,
+            dietaryDetails: byEmail.dietaryDetails ?? signup?.dietaryDetails,
             role: byEmail.role === "admin" ? "admin" : role,
             emailVerificationTime: Date.now(),
           });
@@ -62,9 +68,11 @@ export const {
         name: signup?.fullName,
         role,
         signupId: signup?._id,
+        dietaryRestrictions: signup?.dietaryRestrictions,
+        dietaryDetails: signup?.dietaryDetails,
         phoneConfirmed: false,
         notificationConsent: false,
-        attendanceStatus: "undecided",
+        attendanceStatus: "attending",
         onboardingComplete: false,
         emailVerificationTime: Date.now(),
       });

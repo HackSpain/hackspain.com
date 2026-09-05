@@ -50,6 +50,8 @@ export const signupFieldsValidator = v.object({
   createdAt: v.number(),
   neonId: v.optional(v.string()),
   accepted: v.optional(v.boolean()),
+  dietaryRestrictionIds: v.optional(v.array(v.string())),
+  dietaryDetails: v.optional(v.string()),
 });
 
 export const ambassadorFieldsValidator = v.object({
@@ -81,4 +83,6 @@ export const meValidator = v.object({
   isRegistered: v.boolean(),
   accepted: v.boolean(),
   signupId: v.optional(v.id("signups")),
+  githubUsername: v.optional(v.string()),
+  githubLinked: v.boolean(),
 });

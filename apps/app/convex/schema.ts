@@ -22,6 +22,7 @@ export default defineSchema({
     phoneConfirmed: v.boolean(),
     notificationConsent: v.boolean(),
     notificationConsentAt: v.optional(v.number()),
+    termsAcceptedAt: v.optional(v.number()),
     attendanceStatus: v.union(
       v.literal("attending"),
       v.literal("cancelled"),
@@ -32,12 +33,25 @@ export default defineSchema({
     travelOrigin: v.optional(v.string()),
     onboardingComplete: v.boolean(),
     adminNotes: v.optional(v.string()),
+    githubId: v.optional(v.string()),
+    githubUsername: v.optional(v.string()),
+    githubLinkedAt: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
     .index("by_signup", ["signupId"])
     .index("by_role", ["role"])
-    .index("by_attendance", ["attendanceStatus"]),
+    .index("by_attendance", ["attendanceStatus"])
+    .index("by_github_id", ["githubId"])
+    .index("by_github", ["githubUsername"]),
+
+  githubLinkStates: defineTable({
+    userId: v.id("users"),
+    state: v.string(),
+    expiresAt: v.number(),
+  })
+    .index("by_state", ["state"])
+    .index("by_user", ["userId"]),
 
   signups: defineTable({
     email: v.string(),
@@ -51,6 +65,8 @@ export default defineSchema({
     ambassadorMotivation: v.optional(v.string()),
     ambassadorStudyWhere: v.optional(v.string()),
     accepted: v.optional(v.boolean()),
+    dietaryRestrictions: v.optional(v.string()),
+    dietaryDetails: v.optional(v.string()),
     createdAt: v.number(),
     neonId: v.optional(v.string()),
   })

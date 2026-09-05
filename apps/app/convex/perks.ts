@@ -128,14 +128,14 @@ export const claim = onboardedMutation({
   returns: v.id("perkClaims"),
   handler: async (ctx, args) => {
     const perk = await ctx.db.get(args.perkId);
-    if (!perk || !perk.active) throw new Error("Perk not found");
+    if (!perk || !perk.active) throw new Error("Perk no encontrado");
     const existing = await ctx.db
       .query("perkClaims")
       .withIndex("by_perk_and_user", (q) =>
         q.eq("perkId", perk._id).eq("userId", ctx.user._id),
       )
       .unique();
-    if (existing) throw new Error("You already claimed this perk");
+    if (existing) throw new Error("Ya has reclamado este perk");
 
     const now = Date.now();
     if (perk.type === "code") {
@@ -145,7 +145,7 @@ export const claim = onboardedMutation({
           q.eq("perkId", perk._id).eq("available", true),
         )
         .first();
-      if (!unused) throw new Error("No codes left for this perk");
+      if (!unused) throw new Error("No quedan códigos para este perk");
       await ctx.db.patch(unused._id, {
         available: false,
         assignedTo: ctx.user._id,
@@ -223,10 +223,15 @@ export const adminCreate = adminMutation({
   },
   returns: v.id("perks"),
   handler: async (ctx, args) => {
+    const company = args.company.trim();
+    const title = args.title.trim();
+    if (!company || !title) {
+      throw new Error("La empresa y el título son obligatorios");
+    }
     const now = Date.now();
     const perkId = await ctx.db.insert("perks", {
-      company: args.company.trim(),
-      title: args.title.trim(),
+      company,
+      title,
       value: args.value.trim(),
       description: args.description.trim(),
       type: args.type,
@@ -266,7 +271,7 @@ export const adminUpdate = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const perk = await ctx.db.get(args.perkId);
-    if (!perk) throw new Error("Perk not found");
+    if (!perk) throw new Error("Perk no encontrado");
     const patch: {
       company?: string;
       title?: string;
@@ -275,8 +280,16 @@ export const adminUpdate = adminMutation({
       active?: boolean;
       updatedAt: number;
     } = { updatedAt: Date.now() };
-    if (args.company !== undefined) patch.company = args.company.trim();
-    if (args.title !== undefined) patch.title = args.title.trim();
+    if (args.company !== undefined) {
+      const company = args.company.trim();
+      if (!company) throw new Error("La empresa no puede estar vacía");
+      patch.company = company;
+    }
+    if (args.title !== undefined) {
+      const title = args.title.trim();
+      if (!title) throw new Error("El título no puede estar vacío");
+      patch.title = title;
+    }
     if (args.value !== undefined) patch.value = args.value.trim();
     if (args.description !== undefined) patch.description = args.description.trim();
     if (args.active !== undefined) patch.active = args.active;
@@ -357,9 +370,9 @@ export const adminSetApplicationStatus = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const claim = await ctx.db.get(args.claimId);
-    if (!claim) throw new Error("Application not found");
+    if (!claim) throw new Error("Solicitud no encontrada");
     if (claim.type !== "email") {
-      throw new Error("Only email perk applications can be reviewed here");
+      throw new Error("Aquí solo se revisan solicitudes de perks por email");
     }
     await ctx.db.patch(claim._id, {
       status: args.status,

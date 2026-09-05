@@ -6,12 +6,13 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { EmptyState, LoadingText, MetaRow, Page } from "@/components/page";
+import { EmptyState, LoadingText, MetaLink, MetaRow, Page, SocialMeta } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, Frame } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { urlLabel, urlOf } from "@/lib/urls";
+import { attendanceLabel, claimStatusLabel, displayedAttendance, perkName, submissionStatusLabel } from "@/lib/utils";
+import { urlDisplay, urlLabel } from "@/lib/urls";
 
 export default function AdminParticipantPage() {
   const params = useParams<{ id: string }>();
@@ -30,11 +31,11 @@ export default function AdminParticipantPage() {
   if (detail === undefined) return <LoadingText />;
   if (detail === null) {
     return (
-      <Page title="Participant">
-        <EmptyState title="Participant not found">
-          This signup or user is missing.{" "}
+      <Page title="Participante">
+        <EmptyState title="Participante no encontrado">
+          Falta esta solicitud o este usuario.{" "}
           <Link href="/admin" className="underline underline-offset-2">
-            Back to CRM
+            Volver al CRM
           </Link>
         </EmptyState>
       </Page>
@@ -42,6 +43,10 @@ export default function AdminParticipantPage() {
   }
 
   const noteValue = notes ?? detail.user?.adminNotes ?? "";
+  const attendance = displayedAttendance(
+    detail.user?.attendanceStatus,
+    detail.user?.onboardingComplete === true,
+  );
 
   return (
     <Page
@@ -51,10 +56,10 @@ export default function AdminParticipantPage() {
             href="/admin"
             className="inline-flex min-h-11 items-center font-bungee text-xs uppercase text-hs-navy motion-safe:transition-transform motion-safe:duration-[var(--duration-press)] motion-safe:ease-[var(--ease-out)] motion-safe:active:scale-[0.97]"
           >
-            Back to CRM
+            Volver al CRM
           </Link>
           <h1 className="font-bungee text-2xl leading-tight break-words sm:text-3xl">
-            {detail.user?.name ?? detail.signup?.fullName ?? "Participant"}
+            {detail.user?.name ?? detail.signup?.fullName ?? "Participante"}
           </h1>
         </div>
       }
@@ -62,35 +67,35 @@ export default function AdminParticipantPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
+            <CardTitle>Perfil</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <MetaRow label="Email">{detail.signup?.email ?? detail.user?.email}</MetaRow>
-            <MetaRow label="GitHub">{urlOf(detail.signup?.urls, "github") ?? "—"}</MetaRow>
-            <MetaRow label="X">{urlOf(detail.signup?.urls, "x") ?? "—"}</MetaRow>
-            <MetaRow label="LinkedIn">{urlOf(detail.signup?.urls, "linkedin") ?? "—"}</MetaRow>
+            <SocialMeta
+              email={detail.signup?.email ?? detail.user?.email}
+              urls={detail.signup?.urls}
+            />
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={detail.signup?.accepted ? "gold" : "default"}>
-                {detail.signup?.accepted ? "accepted" : "not accepted"}
+                {detail.signup?.accepted ? "aceptado" : "no aceptado"}
               </Badge>
-              {detail.user?.attendanceStatus ? (
-                <Badge>{detail.user.attendanceStatus}</Badge>
+              {attendance ? (
+                <Badge>{attendanceLabel(attendance)}</Badge>
               ) : null}
             </div>
-            <MetaRow label="Phone">{detail.user?.phone ?? "—"}</MetaRow>
-            <MetaRow label="Diet">{detail.user?.dietaryRestrictions ?? "—"}</MetaRow>
+            <MetaRow label="Teléfono">{detail.user?.phone ?? "—"}</MetaRow>
+            <MetaRow label="Dieta">{detail.user?.dietaryRestrictions ?? "—"}</MetaRow>
             {detail.user?.dietaryDetails ? (
-              <MetaRow label="Dietary details">{detail.user.dietaryDetails}</MetaRow>
+              <MetaRow label="Detalles de dieta">{detail.user.dietaryDetails}</MetaRow>
             ) : null}
-            <MetaRow label="Travels from">{detail.user?.travelOrigin ?? "—"}</MetaRow>
+            <MetaRow label="Viaja desde">{detail.user?.travelOrigin ?? "—"}</MetaRow>
             {detail.signup?.achievements ? (
-              <MetaRow label="Achievements">{detail.signup.achievements}</MetaRow>
+              <MetaRow label="Logros">{detail.signup.achievements}</MetaRow>
             ) : null}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Admin actions</CardTitle>
+            <CardTitle>Acciones de admin</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {detail.signup ? (
@@ -101,7 +106,7 @@ export default function AdminParticipantPage() {
                     void setAccepted({ signupId: detail.signup!._id, accepted: true })
                   }
                 >
-                  Mark accepted
+                  Marcar aceptado
                 </Button>
                 <Button
                   variant="outline"
@@ -110,11 +115,11 @@ export default function AdminParticipantPage() {
                     void setAccepted({ signupId: detail.signup!._id, accepted: false })
                   }
                 >
-                  Mark not accepted
+                  Marcar no aceptado
                 </Button>
               </div>
             ) : (
-              <p className="text-sm text-hs-brown">No signup on file, so acceptance cannot be set.</p>
+              <p className="text-sm text-hs-brown">No hay solicitud, no se puede cambiar la aceptación.</p>
             )}
             {detail.user ? (
               <>
@@ -124,14 +129,14 @@ export default function AdminParticipantPage() {
                     className="w-full sm:w-auto"
                     onClick={() => void setRole({ userId: detail.user!._id, role: "admin" })}
                   >
-                    Make admin
+                    Hacer admin
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full sm:w-auto"
                     onClick={() => void setRole({ userId: detail.user!._id, role: "user" })}
                   >
-                    Make user
+                    Quitar admin
                   </Button>
                   <Button
                     className="w-full sm:w-auto"
@@ -142,7 +147,7 @@ export default function AdminParticipantPage() {
                       })
                     }
                   >
-                    Mark attending
+                    Marcar asistiré
                   </Button>
                   <Button
                     variant="teal"
@@ -154,7 +159,7 @@ export default function AdminParticipantPage() {
                       })
                     }
                   >
-                    Mark cancelled
+                    Marcar cancelado
                   </Button>
                 </div>
                 <Textarea
@@ -168,30 +173,30 @@ export default function AdminParticipantPage() {
                     void setNotes({ userId: detail.user!._id, notes: noteValue })
                   }
                 >
-                  Save notes
+                  Guardar notas
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-hs-brown">This person has not logged in yet.</p>
+              <p className="text-sm text-hs-brown">Esta persona aún no ha entrado.</p>
             )}
           </CardContent>
         </Card>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Team & perks</CardTitle>
+          <CardTitle>Equipo y perks</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <p>Team: {detail.team?.name ?? "—"}</p>
+          <p>Equipo: {detail.team?.name ?? "—"}</p>
           {detail.claims.length === 0 ? (
-            <p>No perk claims.</p>
+            <p>Sin perks reclamados.</p>
           ) : (
             detail.claims.map((claim) => (
               <Frame key={claim._id} className="flex flex-wrap items-center gap-2">
                 <span>
-                  {claim.company} · {claim.title}
+                  {perkName(claim.company, claim.title)}
                 </span>
-                <Badge>{claim.status}</Badge>
+                <Badge>{claimStatusLabel(claim.status)}</Badge>
                 {claim.code ? <code className="break-all">{claim.code}</code> : null}
               </Frame>
             ))
@@ -201,27 +206,28 @@ export default function AdminParticipantPage() {
       {detail.submission ? (
         <Card>
           <CardHeader>
-            <CardTitle>Project</CardTitle>
+            <CardTitle>Proyecto</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p className="font-bungee text-base">{detail.submission.name || "Untitled"}</p>
-            <Badge>{detail.submission.status}</Badge>
+            <p className="font-bungee text-base">{detail.submission.name || "Sin título"}</p>
+            <Badge>{submissionStatusLabel(detail.submission.status)}</Badge>
             {detail.submission.description ? <p>{detail.submission.description}</p> : null}
             <p>
-              Challenges:{" "}
+              Retos:{" "}
               {detail.submission.challengeLabels.length > 0
                 ? detail.submission.challengeLabels.join(", ")
                 : "—"}
             </p>
             <p>
-              Partner tools:{" "}
+              Partners:{" "}
               {detail.submission.perkLabels.length > 0
                 ? detail.submission.perkLabels.join(", ")
                 : "—"}
             </p>
             {detail.submission.urls.map((entry) => (
               <p key={entry.kind}>
-                {urlLabel(entry.kind)}: {entry.url}
+                {urlLabel(entry.kind)}:{" "}
+                <MetaLink href={entry.url}>{urlDisplay(entry.kind, entry.url)}</MetaLink>
               </p>
             ))}
           </CardContent>

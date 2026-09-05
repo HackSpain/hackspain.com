@@ -7,6 +7,7 @@ import {
   signupPublicValidator,
   submissionStatusValidator,
 } from "./lib/validators";
+import { countsAsAttending } from "./lib/attendance";
 import { urlsFromRecord, urlsValidator } from "./lib/urls";
 import { findOwnedSubmission, membershipForUser } from "./lib/team";
 import type { Id } from "./_generated/dataModel";
@@ -118,7 +119,14 @@ export const listParticipants = adminQuery({
     const needle = args.search?.trim().toLowerCase() ?? "";
     return rows
       .filter((row) => {
-        if (args.attendance && row.attendanceStatus !== args.attendance) {
+        if (args.attendance === "attending") {
+          if (
+            row.attendanceStatus == null ||
+            !countsAsAttending(row.attendanceStatus)
+          ) {
+            return false;
+          }
+        } else if (args.attendance && row.attendanceStatus !== args.attendance) {
           return false;
         }
         if (args.accepted !== undefined && row.accepted !== args.accepted) {
@@ -282,7 +290,13 @@ export const getParticipant = adminQuery({
         const perkLabels = [];
         for (const perkId of owned.perkIds) {
           const perk = await ctx.db.get(perkId);
-          if (perk) perkLabels.push(`${perk.company} · ${perk.title}`);
+          if (perk) {
+            const label = [perk.company, perk.title]
+              .map((part) => part.trim())
+              .filter((part) => part.length > 0)
+              .join(" · ");
+            perkLabels.push(label || "Perk sin nombre");
+          }
         }
         submission = {
           _id: owned._id,
@@ -349,10 +363,10 @@ export const setRole = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     if (args.userId === ctx.user._id && args.role !== "admin") {
-      throw new Error("You cannot remove your own admin role");
+      throw new Error("No puedes quitarte el rol de admin a ti mismo");
     }
     const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error("Usuario no encontrado");
     await ctx.db.patch(user._id, { role: args.role });
     return null;
   },
@@ -363,7 +377,7 @@ export const setAccepted = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const signup = await ctx.db.get(args.signupId);
-    if (!signup) throw new Error("Signup not found");
+    if (!signup) throw new Error("Solicitud no encontrada");
     await ctx.db.patch(signup._id, { accepted: args.accepted });
     return null;
   },
@@ -374,7 +388,7 @@ export const setAttendance = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error("Usuario no encontrado");
     await ctx.db.patch(user._id, { attendanceStatus: args.attendanceStatus });
     return null;
   },
@@ -385,7 +399,7 @@ export const setNotes = adminMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error("Usuario no encontrado");
     await ctx.db.patch(user._id, { adminNotes: args.notes.trim() });
     return null;
   },

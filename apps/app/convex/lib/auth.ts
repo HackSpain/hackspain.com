@@ -7,11 +7,11 @@ type Ctx = QueryCtx | MutationCtx;
 export async function getCurrentUser(ctx: Ctx): Promise<Doc<"users">> {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
-    throw new Error("Not authenticated");
+    throw new Error("No has iniciado sesión");
   }
   const user = await ctx.db.get(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("Usuario no encontrado");
   }
   return user;
 }
@@ -19,7 +19,7 @@ export async function getCurrentUser(ctx: Ctx): Promise<Doc<"users">> {
 export async function requireAdmin(ctx: Ctx): Promise<Doc<"users">> {
   const user = await getCurrentUser(ctx);
   if (user.role !== "admin") {
-    throw new Error("Admin access required");
+    throw new Error("Se necesita acceso de admin");
   }
   return user;
 }
@@ -33,10 +33,10 @@ export async function requireAccepted(ctx: Ctx): Promise<Doc<"users">> {
   if (user.role === "admin") return user;
   const signup = await getSignupForUser(ctx, user);
   if (!signup) {
-    throw new Error("No hackathon signup found for this email");
+    throw new Error("No hay inscripción a la hackathon con este email");
   }
   if (!signupIsAccepted(signup)) {
-    throw new Error("You have not been accepted yet");
+    throw new Error("Aún no te han aceptado");
   }
   return user;
 }
@@ -46,13 +46,13 @@ export async function requireOnboarded(ctx: Ctx): Promise<Doc<"users">> {
   if (user.role === "admin") return user;
   const signup = await getSignupForUser(ctx, user);
   if (!signup) {
-    throw new Error("No hackathon signup found for this email");
+    throw new Error("No hay inscripción a la hackathon con este email");
   }
   if (!signupIsAccepted(signup)) {
-    throw new Error("You have not been accepted yet");
+    throw new Error("Aún no te han aceptado");
   }
   if (!user.onboardingComplete) {
-    throw new Error("Confirm your details first");
+    throw new Error("Confirma tus datos primero");
   }
   return user;
 }

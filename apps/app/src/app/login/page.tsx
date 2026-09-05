@@ -92,7 +92,7 @@ export default function LoginPage() {
       await signIn("resend-otp", { email: normalizedEmail });
       return true;
     } catch {
-      setError("Could not send the code. Try again.");
+      setError("No hemos podido enviar el código. Inténtalo otra vez.");
       return false;
     } finally {
       setPending(false);
@@ -106,7 +106,7 @@ export default function LoginPage() {
 
   async function resendCode() {
     setCode("");
-    if (await requestCode()) setNotice("New code sent.");
+    if (await requestCode()) setNotice("Código nuevo enviado.");
   }
 
   async function verifyCode(value: string) {
@@ -117,7 +117,7 @@ export default function LoginPage() {
     try {
       await signIn("resend-otp", { email: normalizedEmail, code: value });
     } catch {
-      setError("That code did not work.");
+      setError("Ese código no es válido.");
       setCode("");
     } finally {
       setPending(false);
@@ -133,7 +133,7 @@ export default function LoginPage() {
       <Card className="hs-enter w-full max-w-md overflow-hidden">
         <CardHeader>
           <p className="font-bungee text-xs text-hs-brown">HackSpain 2026</p>
-          <CardTitle className="text-2xl sm:text-3xl">Sign in</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl">Entrar</CardTitle>
         </CardHeader>
         <motion.div
           animate={bodyHeight === null ? undefined : { height: bodyHeight }}
@@ -155,16 +155,16 @@ export default function LoginPage() {
                 <CardContent className="space-y-4">
                   {step === "email" ? (
                     <p className="text-sm text-hs-brown">
-                      Use the email you applied with. We will send you a code.
+                      Usa el email con el que te apuntaste. Te enviamos un código.
                     </p>
                   ) : (
                     <div className="space-y-1 text-sm text-hs-brown">
                       <p>
-                        Code sent to <span className="break-all text-hs-ink">{normalizedEmail}</span>.
+                        Código enviado a <span className="break-all text-hs-ink">{normalizedEmail}</span>.
                       </p>
                       <p className="flex gap-4">
-                        <TextLink onClick={() => goTo("email")}>Change email</TextLink>
-                        <TextLink onClick={() => void resendCode()}>Resend code</TextLink>
+                        <TextLink onClick={() => goTo("email")}>Cambiar email</TextLink>
+                        <TextLink onClick={() => void resendCode()}>Reenviar</TextLink>
                       </p>
                     </div>
                   )}
@@ -184,7 +184,7 @@ export default function LoginPage() {
                         />
                       </Field>
                       <Button type="submit" className="w-full" disabled={pending}>
-                        {pending ? "Sending…" : "Email me a code"}
+                        {pending ? "Enviando…" : "Enviarme un código"}
                       </Button>
                     </form>
                   ) : (
@@ -195,7 +195,7 @@ export default function LoginPage() {
                       }}
                       className="space-y-4"
                     >
-                      <Field label="Code" htmlFor="code">
+                      <Field label="Código" htmlFor="code">
                         <InputOTP
                           id="code"
                           maxLength={CODE_LENGTH}
@@ -231,7 +231,7 @@ export default function LoginPage() {
                         className="w-full"
                         disabled={pending || code.length !== CODE_LENGTH}
                       >
-                        {pending ? "Checking…" : "Sign in"}
+                        {pending ? "Comprobando…" : "Entrar"}
                       </Button>
                     </form>
                   )}

@@ -2,8 +2,9 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { acceptedMutation, acceptedQuery } from "./lib/customFunctions";
+import { defaultedAttendance } from "./lib/attendance";
+import { getSignupForUser } from "./lib/auth";
 import { attendanceValidator } from "./lib/validators";
-import { parseEventDetails } from "./lib/eventDetails";
 import {
   generateNumericCode,
   normalizePhone,
@@ -51,13 +52,18 @@ export const status = acceptedQuery({
     smsConfigured: v.boolean(),
   }),
   handler: async (ctx) => {
+    const signup = await getSignupForUser(ctx, ctx.user);
     return {
       phone: ctx.user.phone,
       phoneConfirmed: ctx.user.phoneConfirmed,
       notificationConsent: ctx.user.notificationConsent,
-      attendanceStatus: ctx.user.attendanceStatus,
-      dietaryRestrictions: ctx.user.dietaryRestrictions,
-      dietaryDetails: ctx.user.dietaryDetails,
+      attendanceStatus: defaultedAttendance(
+        ctx.user.attendanceStatus,
+        ctx.user.onboardingComplete || ctx.user.role === "admin",
+      ),
+      dietaryRestrictions:
+        ctx.user.dietaryRestrictions ?? signup?.dietaryRestrictions,
+      dietaryDetails: ctx.user.dietaryDetails ?? signup?.dietaryDetails,
       travelOrigin: ctx.user.travelOrigin,
       onboardingComplete: ctx.user.onboardingComplete,
       smsConfigured: twilioEnv().config !== null,
@@ -74,7 +80,7 @@ export const requestPhoneCode = acceptedMutation({
   handler: async (ctx, args) => {
     const phone = normalizePhone(args.phone);
     if (!phone) {
-      throw new Error("Enter a valid phone number in E.164 format, like +34600111222");
+      throw new Error("Introduce un teléfono válido en formato E.164, como +34600111222");
     }
 
     const twilio = twilioEnv();
@@ -85,7 +91,7 @@ export const requestPhoneCode = acceptedMutation({
     }
     const stubAllowed = process.env.ALLOW_PHONE_STUB === "true";
     if (!twilio.config && !stubAllowed) {
-      throw new Error("SMS is not configured");
+      throw new Error("El SMS no está configurado");
     }
 
     const existing = await ctx.db
@@ -204,23 +210,39 @@ export const verifyPhoneCode = acceptedMutation({
 
 export const confirmDetails = acceptedMutation({
   args: {
-    dietaryRestrictions: v.string(),
-    dietaryDetails: v.optional(v.string()),
     travelOrigin: v.string(),
+    termsAccepted: v.boolean(),
     consent: v.boolean(),
-    attendanceStatus: v.union(v.literal("attending"), v.literal("cancelled")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     if (!ctx.user.phoneConfirmed) {
-      throw new Error("Confirm your phone number first");
+      throw new Error("Confirma el teléfono primero");
     }
-    const details = parseEventDetails(args);
+    if (!args.termsAccepted) {
+      throw new Error("Acepta los términos para continuar");
+    }
+    const travelOrigin = args.travelOrigin.trim();
+    if (!travelOrigin) {
+      throw new Error("Dinos desde dónde viajas");
+    }
+    const signup = await getSignupForUser(ctx, ctx.user);
+    const dietaryRestrictions =
+      ctx.user.dietaryRestrictions?.trim() ||
+      signup?.dietaryRestrictions?.trim() ||
+      "Ninguna";
+    const dietaryDetails =
+      ctx.user.dietaryDetails?.trim() ||
+      signup?.dietaryDetails?.trim() ||
+      undefined;
     await ctx.db.patch(ctx.user._id, {
-      ...details,
+      dietaryRestrictions,
+      dietaryDetails,
+      travelOrigin,
       notificationConsent: args.consent,
       notificationConsentAt: Date.now(),
-      attendanceStatus: args.attendanceStatus,
+      termsAcceptedAt: Date.now(),
+      attendanceStatus: "attending",
       onboardingComplete: true,
     });
     return null;

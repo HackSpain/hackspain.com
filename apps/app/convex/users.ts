@@ -6,11 +6,8 @@ import {
   authedQuery,
   onboardedMutation,
 } from "./lib/customFunctions";
-import {
-  meValidator,
-  attendanceValidator,
-  signupPublicValidator,
-} from "./lib/validators";
+import { meValidator, signupPublicValidator } from "./lib/validators";
+import { defaultedAttendance } from "./lib/attendance";
 import { getSignupForUser, signupIsAccepted } from "./lib/auth";
 import { parseEventDetails } from "./lib/eventDetails";
 import { normalizeGithub, normalizeTwitter } from "./lib/normalize";
@@ -19,7 +16,7 @@ import { membershipForUser } from "./lib/team";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 
-async function resolvePendingInvites(
+export async function resolvePendingInvites(
   ctx: MutationCtx,
   userId: Id<"users">,
   email: string | undefined,
@@ -93,7 +90,10 @@ export const me = query({
       phoneConfirmed: user.phoneConfirmed,
       notificationConsent: user.notificationConsent,
       notificationConsentAt: user.notificationConsentAt,
-      attendanceStatus: user.attendanceStatus,
+      attendanceStatus: defaultedAttendance(
+        user.attendanceStatus,
+        user.onboardingComplete || user.role === "admin",
+      ),
       dietaryRestrictions: user.dietaryRestrictions,
       dietaryDetails: user.dietaryDetails,
       travelOrigin: user.travelOrigin,
@@ -101,6 +101,8 @@ export const me = query({
       isRegistered: signup !== null,
       accepted: signupIsAccepted(signup),
       signupId: user.signupId ?? signup?._id,
+      githubUsername: user.githubUsername ?? signup?.githubUsername,
+      githubLinked: user.githubLinkedAt !== undefined,
     };
   },
 });
@@ -127,11 +129,24 @@ export const attachAfterLogin = authedMutation({
   returns: v.null(),
   handler: async (ctx) => {
     const signup = await getSignupForUser(ctx, ctx.user);
+    const patch: {
+      signupId?: Id<"signups">;
+      name?: string;
+      attendanceStatus?: "attending";
+    } = {};
     if (signup && ctx.user.signupId !== signup._id) {
-      await ctx.db.patch(ctx.user._id, {
-        signupId: signup._id,
-        name: ctx.user.name ?? signup.fullName,
-      });
+      patch.signupId = signup._id;
+      patch.name = ctx.user.name ?? signup.fullName;
+    }
+    if (
+      (ctx.user.onboardingComplete || ctx.user.role === "admin") &&
+      ctx.user.attendanceStatus !== "cancelled" &&
+      ctx.user.attendanceStatus !== "attending"
+    ) {
+      patch.attendanceStatus = "attending";
+    }
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(ctx.user._id, patch);
     }
     const githubUrl = urlOf(signup?.urls, "github");
     const xUrl = urlOf(signup?.urls, "x");
@@ -140,7 +155,8 @@ export const attachAfterLogin = authedMutation({
       ctx.user._id,
       ctx.user.email,
       signup?._id ?? ctx.user.signupId,
-      signup?.githubUsername ??
+      ctx.user.githubUsername ??
+        signup?.githubUsername ??
         (githubUrl ? normalizeGithub(githubUrl) : undefined),
       signup?.twitterHandle ?? (xUrl ? normalizeTwitter(xUrl) : undefined),
     );
@@ -149,7 +165,9 @@ export const attachAfterLogin = authedMutation({
 });
 
 export const setAttendance = onboardedMutation({
-  args: { attendanceStatus: attendanceValidator },
+  args: {
+    attendanceStatus: v.union(v.literal("attending"), v.literal("cancelled")),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(ctx.user._id, {

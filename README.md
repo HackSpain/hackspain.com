@@ -25,9 +25,10 @@ The dashboard needs a Convex development deployment (`bun dev:convex` / `npx con
 
 | Command | Description |
 | :------ | :---------- |
-| `bun dev` / `bun dev:web` | Landing dev server |
+| `bun dev` / `bun dev:web` | Landing only |
 | `bun dev:app` | Dashboard Next.js server |
 | `bun dev:convex` | Convex functions + codegen (development only) |
+| `bun dev:all` | Landing + dashboard + Convex in one terminal |
 | `bun build` / `bun build:app` | Production builds |
 | `bun preview` | Preview the landing build |
 | `bun check` | Astro + TypeScript checks |
@@ -50,6 +51,10 @@ npx convex env set AUTH_EMAIL "HackSpain <onboarding@resend.dev>"
 npx convex env set ALLOW_PHONE_STUB true
 # dev only: 00000000 also works as the email sign-in code (ignored if AUTH_RESEND_KEY is set).
 npx convex env set ALLOW_EMAIL_OTP_STUB true
+# GitHub account linking (optional). Create a GitHub OAuth App whose callback URL is
+# <your deployment>.convex.site/github/callback, then:
+npx convex env set GITHUB_CLIENT_ID Iv1...
+npx convex env set GITHUB_CLIENT_SECRET ...
 ```
 
 3. Copy the printed `CONVEX_URL` into `apps/app/.env.local` as `NEXT_PUBLIC_CONVEX_URL`.
@@ -85,4 +90,36 @@ Landing and dashboard share these tokens:
 
 ## Deploy
 
-Point separate Vercel projects at `apps/web` and `apps/app`. Keep Convex on a development deployment until you are ready for a production deploy.
+Two Vercel projects, both linked to this repo. Set **Root Directory** before the first production deploy of the monorepo or the landing build will look for Astro at the repo root and fail.
+
+| Project | Root Directory | Domain | Build |
+| --- | --- | --- | --- |
+| Landing (existing) | `apps/web` | hackspain.com | `bun run build` (in `apps/web/vercel.json`) |
+| Dashboard (new) | `apps/app` | e.g. app.hackspain.com | `bun run vercel-build` — deploys Convex, then Next.js |
+
+Vercel reads `bun.lock` from the repo root (`installCommand` is `cd ../.. && bun install`). A change that only touches the other app is skipped (`scripts/vercel-ignore.sh`).
+
+### Convex on merge
+
+`apps/app` build runs `convex deploy --cmd 'bun run build'`. That needs `CONVEX_DEPLOY_KEY` in Vercel, not a local `npx convex deploy`.
+
+1. Convex dashboard → project → create a **production** deployment if you do not have one.
+2. Production deployment → Settings → Deploy Keys → **Generate Production Deploy Key** (`deployment:deploy`).
+3. Vercel dashboard project → Environment Variables:
+   - `CONVEX_DEPLOY_KEY` = production key. Environment: **Production** only.
+   - Optional: a **Preview** deploy key (project Settings → Generate Preview Deploy Key) as `CONVEX_DEPLOY_KEY` for Preview only. That gives each PR its own Convex backend.
+4. On the Convex **production** deployment (`npx convex env set` from `apps/app` after `npx convex deploy` once, or the dashboard Env vars UI):
+
+```sh
+npx convex env set SITE_URL https://app.hackspain.com
+npx convex env set ADMIN_EMAILS you@example.com
+npx convex env set AUTH_RESEND_KEY re_...
+npx convex env set AUTH_EMAIL "HackSpain <onboarding@resend.dev>"
+npx convex env set MIGRATION_SECRET "$(openssl rand -hex 24)"
+```
+
+Do **not** set `ALLOW_PHONE_STUB` or `ALLOW_EMAIL_OTP_STUB` on production. Do **not** put `.env` / `.env.local` in git.
+
+`convex deploy --cmd` injects `NEXT_PUBLIC_CONVEX_URL` for the Next.js build. You do not need to paste the prod Convex URL into Vercel unless you skip the deploy-key flow.
+
+Landing Vercel env stays as today (`DATABASE_URL`, `RESEND_*`, `SHORTLIST_PASSWORD`, `SENTRY_*`, …). Those are not Convex.

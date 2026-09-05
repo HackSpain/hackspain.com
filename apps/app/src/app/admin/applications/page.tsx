@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { claimStatusLabel, perkName } from "@/lib/utils";
 
 export default function AdminApplicationsPage() {
   const [status, setStatus] = useState<"all" | "pending" | "added" | "rejected">(
@@ -32,7 +33,7 @@ export default function AdminApplicationsPage() {
   const setApplicationStatus = useMutation(api.perks.adminSetApplicationStatus);
 
   return (
-    <Page title="Perk applications">
+    <Page title="Solicitudes de perks">
       <Select
         value={status}
         onValueChange={(value) =>
@@ -43,17 +44,17 @@ export default function AdminApplicationsPage() {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All</SelectItem>
-          <SelectItem value="pending">Pending</SelectItem>
-          <SelectItem value="added">Added</SelectItem>
-          <SelectItem value="rejected">Rejected</SelectItem>
+          <SelectItem value="all">Todas</SelectItem>
+          <SelectItem value="pending">Pendientes</SelectItem>
+          <SelectItem value="added">Añadidas</SelectItem>
+          <SelectItem value="rejected">Rechazadas</SelectItem>
         </SelectContent>
       </Select>
       {!rows ? (
         <LoadingText />
       ) : rows.length === 0 ? (
-        <EmptyState title="No applications">
-          Nothing in this status yet.
+        <EmptyState title="No hay solicitudes">
+          Nada en este estado todavía.
         </EmptyState>
       ) : (
         <RecordList
@@ -61,9 +62,9 @@ export default function AdminApplicationsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Applicant</TableHead>
+                  <TableHead>Solicitante</TableHead>
                   <TableHead>Perk</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -76,10 +77,10 @@ export default function AdminApplicationsPage() {
                       <span className="text-xs text-hs-brown">{row.email}</span>
                     </TableCell>
                     <TableCell>
-                      {row.company} · {row.title}
+                      {perkName(row.company, row.title)}
                     </TableCell>
                     <TableCell>
-                      <Badge>{row.status}</Badge>
+                      <Badge>{claimStatusLabel(row.status)}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
@@ -91,7 +92,7 @@ export default function AdminApplicationsPage() {
                             })
                           }
                         >
-                          Mark added
+                          Marcar añadida
                         </Button>
                         <Button
                           variant="outline"
@@ -102,7 +103,7 @@ export default function AdminApplicationsPage() {
                             })
                           }
                         >
-                          Reject
+                          Rechazar
                         </Button>
                       </div>
                     </TableCell>
@@ -128,7 +129,7 @@ export default function AdminApplicationsPage() {
                       })
                     }
                   >
-                    Mark added
+                    Marcar añadida
                   </Button>
                   <Button
                     className="w-full"
@@ -140,15 +141,15 @@ export default function AdminApplicationsPage() {
                       })
                     }
                   >
-                    Reject
+                    Rechazar
                   </Button>
                 </>
               }
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>{row.status}</Badge>
+                <Badge>{claimStatusLabel(row.status)}</Badge>
                 <span className="text-sm text-hs-brown">
-                  {row.company} · {row.title}
+                  {perkName(row.company, row.title)}
                 </span>
               </div>
             </RecordCard>

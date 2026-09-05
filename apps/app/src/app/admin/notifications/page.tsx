@@ -28,14 +28,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { notificationStatusLabel } from "@/lib/utils";
 
 type Audience = "all" | "accepted" | "attending" | "user";
 
 const AUDIENCE_LABEL: Record<Audience, string> = {
-  all: "All consenting users",
-  accepted: "Accepted hackers",
-  attending: "Attending hackers",
-  user: "Single user",
+  all: "Quien ha dado consentimiento",
+  accepted: "Hackers aceptados",
+  attending: "Hackers que asisten",
+  user: "Un usuario",
 };
 
 export default function AdminNotificationsPage() {
@@ -59,7 +60,7 @@ export default function AdminNotificationsPage() {
     setNotice(null);
     if (count === undefined || count === 0) return;
     const ok = window.confirm(
-      `Email "${subject.trim()}" to ${count} recipient${count === 1 ? "" : "s"}?`,
+      `¿Enviar «${subject.trim()}» a ${count} destinatario${count === 1 ? "" : "s"}?`,
     );
     if (!ok) return;
     setPending(true);
@@ -70,11 +71,11 @@ export default function AdminNotificationsPage() {
         audience,
         recipientEmail: audience === "user" ? recipientEmail : undefined,
       });
-      setNotice(`Queued for ${count} recipient${count === 1 ? "" : "s"}.`);
+      setNotice(`En cola para ${count} destinatario${count === 1 ? "" : "s"}.`);
       setSubject("");
       setBody("");
     } catch (err) {
-      setError(errorMessage(err, "Could not send the notification"));
+      setError(errorMessage(err, "No se ha podido enviar el aviso"));
     } finally {
       setPending(false);
     }
@@ -82,28 +83,28 @@ export default function AdminNotificationsPage() {
 
   return (
     <Page
-      title="Notifications"
-      description="Email users who consented to operational notifications."
+      title="Avisos"
+      description="Email a quien ha dado consentimiento para avisos operativos."
     >
       <Card className="hs-enter">
         <CardHeader>
-          <CardTitle>Compose</CardTitle>
+          <CardTitle>Redactar</CardTitle>
           <CardDescription>
-            Plain-text email sent from the HackSpain address. Only users with
-            notification consent receive it.
+            Email en texto plano desde la dirección de HackSpain. Solo llega a
+            quien ha dado consentimiento.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <FormError message={error} />
           <FormNotice message={notice} />
-          <Field label="Subject" htmlFor="notif-subject">
+          <Field label="Asunto" htmlFor="notif-subject">
             <Input
               id="notif-subject"
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
             />
           </Field>
-          <Field label="Body" htmlFor="notif-body">
+          <Field label="Mensaje" htmlFor="notif-body">
             <Textarea
               id="notif-body"
               rows={6}
@@ -112,7 +113,7 @@ export default function AdminNotificationsPage() {
             />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Audience">
+            <Field label="Destinatarios">
               <Select
                 value={audience}
                 onValueChange={(next) => setAudience(next as Audience)}
@@ -133,7 +134,7 @@ export default function AdminNotificationsPage() {
               </Select>
             </Field>
             {audience === "user" ? (
-              <Field label="User email" htmlFor="notif-email">
+              <Field label="Email del usuario" htmlFor="notif-email">
                 <Input
                   id="notif-email"
                   type="email"
@@ -155,23 +156,23 @@ export default function AdminNotificationsPage() {
               }
               onClick={() => void submit()}
             >
-              {pending ? "Sending…" : "Send"}
+              {pending ? "Enviando…" : "Enviar"}
             </Button>
             <p className="text-sm text-hs-brown">
               {count === undefined
-                ? "Counting recipients…"
-                : `Will reach ${count} recipient${count === 1 ? "" : "s"}.`}
+                ? "Contando destinatarios…"
+                : `Llegará a ${count} destinatario${count === 1 ? "" : "s"}.`}
             </p>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-4">
-        <h2 className="font-bungee text-lg">Past sends</h2>
+        <h2 className="font-bungee text-lg">Envíos anteriores</h2>
         {history === undefined ? (
-          <p className="text-sm text-hs-brown">Loading…</p>
+          <p className="text-sm text-hs-brown">Cargando…</p>
         ) : history.length === 0 ? (
-          <p className="text-sm text-hs-brown">Nothing sent yet.</p>
+          <p className="text-sm text-hs-brown">Aún no hay envíos.</p>
         ) : (
           history.map((item) => (
             <Card key={item._id} className="gap-3">
@@ -179,30 +180,30 @@ export default function AdminNotificationsPage() {
                 <CardTitle className="text-base">{item.subject}</CardTitle>
                 <CardDescription>
                   {new Date(item.sentAt).toLocaleString()}
-                  {item.sentByEmail ? ` · by ${item.sentByEmail}` : ""}
+                  {item.sentByEmail ? ` · por ${item.sentByEmail}` : ""}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <p className="whitespace-pre-wrap break-words">{item.body}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={item.status === "sent" ? "gold" : "default"}>
-                    {item.status}
+                    {notificationStatusLabel(item.status)}
                   </Badge>
                   <Badge>
                     {AUDIENCE_LABEL[item.audience]}
                     {item.recipientEmail ? ` · ${item.recipientEmail}` : ""}
                   </Badge>
                   <span>
-                    {item.sentCount}/{item.recipientCount} delivered
+                    {item.sentCount}/{item.recipientCount} entregados
                     {item.failures.length > 0
-                      ? ` · ${item.failures.length} failed`
+                      ? ` · ${item.failures.length} fallidos`
                       : ""}
                   </span>
                 </div>
                 {item.failures.length > 0 ? (
                   <details className="text-xs text-hs-brown">
                     <summary className="cursor-pointer font-bungee">
-                      Failures
+                      Fallos
                     </summary>
                     <ul className="mt-1 space-y-1">
                       {item.failures.map((failure) => (

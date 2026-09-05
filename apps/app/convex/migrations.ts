@@ -6,6 +6,7 @@ import {
   signupFieldsValidator,
 } from "./lib/validators";
 import { normalizeEmail, normalizeGithub, normalizeTwitter } from "./lib/normalize";
+import { formatDietaryRestrictions } from "./lib/dietary";
 import { urlOf, urlsFromRecord } from "./lib/urls";
 import type { Id } from "./_generated/dataModel";
 
@@ -14,16 +15,31 @@ async function attachSignupToUser(
   email: string,
   signupId: Id<"signups">,
   fullName: string,
+  diet: { dietaryRestrictions?: string; dietaryDetails?: string },
 ): Promise<void> {
   const user = await ctx.db
     .query("users")
     .withIndex("email", (q) => q.eq("email", email))
     .unique();
-  if (user && !user.signupId) {
-    await ctx.db.patch(user._id, {
-      signupId,
-      name: user.name ?? fullName,
-    });
+  if (!user) return;
+  const patch: {
+    signupId?: Id<"signups">;
+    name?: string;
+    dietaryRestrictions?: string;
+    dietaryDetails?: string;
+  } = {};
+  if (!user.signupId) {
+    patch.signupId = signupId;
+    patch.name = user.name ?? fullName;
+  }
+  if (!user.dietaryRestrictions && diet.dietaryRestrictions) {
+    patch.dietaryRestrictions = diet.dietaryRestrictions;
+  }
+  if (!user.dietaryDetails && diet.dietaryDetails) {
+    patch.dietaryDetails = diet.dietaryDetails;
+  }
+  if (Object.keys(patch).length > 0) {
+    await ctx.db.patch(user._id, patch);
   }
 }
 
@@ -73,6 +89,8 @@ export const importSignups = mutation({
         freeTime?: string;
         ambassadorMotivation?: string;
         ambassadorStudyWhere?: string;
+        dietaryRestrictions?: string;
+        dietaryDetails?: string;
       } = {};
       if (raw.achievements) optionalFields.achievements = raw.achievements;
       if (raw.freeTime) optionalFields.freeTime = raw.freeTime;
@@ -82,6 +100,12 @@ export const importSignups = mutation({
       if (raw.ambassadorStudyWhere) {
         optionalFields.ambassadorStudyWhere = raw.ambassadorStudyWhere;
       }
+      if (raw.dietaryRestrictionIds !== undefined) {
+        optionalFields.dietaryRestrictions = formatDietaryRestrictions(
+          raw.dietaryRestrictionIds,
+        );
+      }
+      if (raw.dietaryDetails) optionalFields.dietaryDetails = raw.dietaryDetails;
       const fields = {
         email,
         fullName: raw.fullName,
@@ -99,14 +123,20 @@ export const importSignups = mutation({
           accepted: existing.accepted === true || raw.accepted === true,
         });
         updated += 1;
-        await attachSignupToUser(ctx, email, existing._id, fields.fullName);
+        await attachSignupToUser(ctx, email, existing._id, fields.fullName, {
+          dietaryRestrictions: optionalFields.dietaryRestrictions,
+          dietaryDetails: optionalFields.dietaryDetails,
+        });
       } else {
         const signupId = await ctx.db.insert("signups", {
           ...fields,
           accepted: raw.accepted === true,
         });
         inserted += 1;
-        await attachSignupToUser(ctx, email, signupId, fields.fullName);
+        await attachSignupToUser(ctx, email, signupId, fields.fullName, {
+          dietaryRestrictions: optionalFields.dietaryRestrictions,
+          dietaryDetails: optionalFields.dietaryDetails,
+        });
       }
     }
     return { inserted, updated };
@@ -193,6 +223,8 @@ export const rewriteLegacyUrls = mutation({
         ambassadorMotivation: signup.ambassadorMotivation,
         ambassadorStudyWhere: signup.ambassadorStudyWhere,
         accepted: signup.accepted === true,
+        dietaryRestrictions: signup.dietaryRestrictions,
+        dietaryDetails: signup.dietaryDetails,
         createdAt: signup.createdAt,
         neonId: signup.neonId,
       });

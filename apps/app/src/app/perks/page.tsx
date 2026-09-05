@@ -4,9 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@convex/_generated/api";
 import { EmptyState, FormError, LoadingText, Page, errorMessage } from "@/components/page";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Frame } from "@/components/ui/card";
+import { PerkCard } from "@/components/perk-card";
 
 export default function PerksPage() {
   const catalog = useQuery(api.perks.listCatalog);
@@ -18,50 +16,27 @@ export default function PerksPage() {
   return (
     <Page
       title="Perks"
-      description="Claim partner benefits. Email perks become applications. Code perks assign you a unique code."
+      description="Reclama beneficios de partners. Los de email se convierten en solicitud. Los de código te dan uno único."
     >
       <FormError message={error} />
       {catalog.length === 0 ? (
-        <EmptyState title="No perks yet">
-          Partner benefits will show up here when organizers publish them.
+        <EmptyState title="Aún no hay perks">
+          Los beneficios de partners aparecerán aquí cuando la organización los publique.
         </EmptyState>
       ) : (
         <div className="hs-stagger grid gap-4 sm:grid-cols-2">
           {catalog.map(({ perk, claim: existing }) => (
-            <Card key={perk._id}>
-              <CardHeader>
-                <CardTitle>{perk.title}</CardTitle>
-                <CardDescription>
-                  {perk.company} · {perk.value}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm">{perk.description}</p>
-                <Badge>{perk.type === "code" ? "Code grant" : "Email application"}</Badge>
-                {existing ? (
-                  <Frame tone="navy">
-                    <p className="font-bungee text-xs uppercase">{existing.status}</p>
-                    {existing.code ? (
-                      <p className="mt-1 break-all font-mono text-base">{existing.code}</p>
-                    ) : (
-                      <p>Your application is with the organizers.</p>
-                    )}
-                  </Frame>
-                ) : (
-                  <Button
-                    className="w-full sm:w-auto"
-                    onClick={() => {
-                      setError(null);
-                      void claim({ perkId: perk._id }).catch((err: unknown) =>
-                        setError(errorMessage(err, "Could not claim")),
-                      );
-                    }}
-                  >
-                    Claim
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            <PerkCard
+              key={perk._id}
+              perk={perk}
+              claim={existing}
+              onClaim={() => {
+                setError(null);
+                void claim({ perkId: perk._id }).catch((err: unknown) =>
+                  setError(errorMessage(err, "No se ha podido reclamar")),
+                );
+              }}
+            />
           ))}
         </div>
       )}

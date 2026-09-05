@@ -9,7 +9,53 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useGithubLink } from "@/components/github-link-banner";
 import { phoneVerifyMessage } from "@/lib/utils";
+
+function GithubCard({
+  linked,
+  username,
+}: {
+  linked: boolean;
+  username?: string;
+}) {
+  const { link, pending, error } = useGithubLink();
+  const unlink = useMutation(api.github.unlink);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>GitHub</CardTitle>
+        <CardDescription>
+          {linked && username
+            ? `Vinculado como @${username}.`
+            : "Vincula tu cuenta para que te encontremos en tu equipo y ligar tu proyecto."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <FormError message={error} />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            className="w-full sm:w-auto"
+            variant={linked ? "outline" : "default"}
+            disabled={pending}
+            onClick={() => void link()}
+          >
+            {pending ? "Abriendo GitHub…" : linked ? "Volver a vincular" : "Vincular GitHub"}
+          </Button>
+          {linked ? (
+            <Button
+              className="w-full sm:w-auto"
+              variant="outline"
+              onClick={() => void unlink({})}
+            >
+              Desvincular
+            </Button>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ProfilePage() {
   const me = useQuery(api.users.me);
@@ -36,13 +82,15 @@ export default function ProfilePage() {
   if (!me) return <LoadingText />;
 
   return (
-    <Page title="Profile" description="Edit the details you confirmed after acceptance.">
+    <Page title="Perfil" description="Edita los datos que confirmaste al ser aceptado.">
       <FormError message={error} />
       <FormNotice message={message} />
       <Card>
         <CardHeader>
-          <CardTitle>Attendance</CardTitle>
-          <CardDescription>Tell us if you are coming. You can cancel here.</CardDescription>
+          <CardTitle>Asistencia</CardTitle>
+          <CardDescription>
+            Contamos con que vienes. Cancela aquí si no puedes asistir.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row">
           <Button
@@ -50,49 +98,50 @@ export default function ProfilePage() {
             variant={me.attendanceStatus === "attending" ? "default" : "outline"}
             onClick={() =>
               void setAttendance({ attendanceStatus: "attending" }).then(() =>
-                setMessage("Marked as attending"),
+                setMessage("Marcado como asistiré"),
               )
             }
           >
-            Attending
+            Asistiré
           </Button>
           <Button
             className="w-full sm:w-auto"
             variant={me.attendanceStatus === "cancelled" ? "teal" : "outline"}
             onClick={() =>
               void setAttendance({ attendanceStatus: "cancelled" }).then(() =>
-                setMessage("Marked as cancelled"),
+                setMessage("Marcado como cancelado"),
               )
             }
           >
-            Cancelled
+            Cancelo
           </Button>
         </CardContent>
       </Card>
+      <GithubCard linked={me.githubLinked} username={me.githubUsername} />
       <Card>
         <CardHeader>
-          <CardTitle>Diet and travel</CardTitle>
+          <CardTitle>Dieta y viaje</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Field label="Dietary restrictions" htmlFor="dietary">
+          <Field label="Restricciones alimentarias" htmlFor="dietary">
             <Input
               id="dietary"
-              placeholder="None, vegetarian, vegan, allergies…"
+              placeholder="Ninguna, vegetariano, vegano, alergias…"
               value={dietaryRestrictions}
               onChange={(event) => setDietaryDraft(event.target.value)}
             />
           </Field>
-          <Field label="Dietary details (optional)" htmlFor="dietary-details">
+          <Field label="Detalles de dieta (opcional)" htmlFor="dietary-details">
             <Textarea
               id="dietary-details"
               value={dietaryDetails}
               onChange={(event) => setDietaryDetailsDraft(event.target.value)}
             />
           </Field>
-          <Field label="Where do you travel from?" htmlFor="travel-origin">
+          <Field label="¿Desde dónde viajas?" htmlFor="travel-origin">
             <Input
               id="travel-origin"
-              placeholder="City or region"
+              placeholder="Ciudad o región"
               value={travelOrigin}
               onChange={(event) => setTravelDraft(event.target.value)}
             />
@@ -106,19 +155,19 @@ export default function ProfilePage() {
                 dietaryDetails: dietaryDetails || undefined,
                 travelOrigin,
               })
-                .then(() => setMessage("Diet and travel saved"))
+                .then(() => setMessage("Dieta y viaje guardados"))
                 .catch((err: unknown) =>
-                  setError(errorMessage(err, "Could not save details")),
+                  setError(errorMessage(err, "No se han podido guardar")),
                 );
             }}
           >
-            Save diet and travel
+            Guardar dieta y viaje
           </Button>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle>Avisos</CardTitle>
         </CardHeader>
         <CardContent>
           <label className="flex items-start gap-3 text-sm">
@@ -126,23 +175,23 @@ export default function ProfilePage() {
               checked={me.notificationConsent}
               onCheckedChange={(value) =>
                 void setConsent({ consent: value === true }).then(() =>
-                  setMessage("Notification preference saved"),
+                  setMessage("Preferencia de avisos guardada"),
                 )
               }
             />
-            <span>I want operational notifications from HackSpain.</span>
+            <span>Quiero avisos operativos de HackSpain.</span>
           </label>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Phone</CardTitle>
+          <CardTitle>Teléfono</CardTitle>
           <CardDescription>
-            Current: {me.phone ?? "not set"} {me.phoneConfirmed ? "(confirmed)" : ""}
+            Actual: {me.phone ?? "sin número"} {me.phoneConfirmed ? "(confirmado)" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Field label="New number" htmlFor="phone">
+          <Field label="Número nuevo" htmlFor="phone">
             <Input
               id="phone"
               value={phone}
@@ -158,17 +207,17 @@ export default function ProfilePage() {
               void requestPhoneCode({ phone })
                 .then((result) => {
                   setDebugCode(result.debugCode ?? null);
-                  setMessage("Enter the confirmation code");
+                  setMessage("Introduce el código de confirmación");
                 })
-                .catch((err: unknown) => setError(errorMessage(err, "Could not send code")));
+                .catch((err: unknown) => setError(errorMessage(err, "No hemos podido enviar el código")));
             }}
           >
-            Send confirmation code
+            Enviar código
           </Button>
           {debugCode ? (
-            <p className="font-bungee text-sm text-hs-navy">Stub code: {debugCode}</p>
+            <p className="font-bungee text-sm text-hs-navy">Código de prueba: {debugCode}</p>
           ) : null}
-          <Field label="Code" htmlFor="code">
+          <Field label="Código" htmlFor="code">
             <Input id="code" value={code} onChange={(event) => setCode(event.target.value)} />
           </Field>
           <Button
@@ -178,17 +227,17 @@ export default function ProfilePage() {
               void verifyPhoneCode({ code })
                 .then((result) => {
                   if (result.ok) {
-                    setMessage("Phone confirmed");
+                    setMessage("Teléfono confirmado");
                     setCode("");
                     setDebugCode(null);
                   } else {
                     setError(phoneVerifyMessage(result.reason));
                   }
                 })
-                .catch((err: unknown) => setError(errorMessage(err, "Could not verify")));
+                .catch((err: unknown) => setError(errorMessage(err, "No hemos podido verificar")));
             }}
           >
-            Confirm phone
+            Confirmar teléfono
           </Button>
         </CardContent>
       </Card>

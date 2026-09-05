@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { perkName, perkTypeLabel } from "@/lib/utils";
 
 function lines(value: string): string[] {
   return value
@@ -38,27 +39,27 @@ export default function AdminPerksPage() {
   const [extraCodes, setExtraCodes] = useState<Record<string, string>>({});
 
   return (
-    <Page title="Perk admin">
+    <Page title="Admin de perks">
       <Card>
         <CardHeader>
-          <CardTitle>Create perk</CardTitle>
+          <CardTitle>Crear perk</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Company">
+            <Field label="Empresa">
               <Input value={company} onChange={(event) => setCompany(event.target.value)} />
             </Field>
-            <Field label="Title">
+            <Field label="Título">
               <Input value={title} onChange={(event) => setTitle(event.target.value)} />
             </Field>
-            <Field label="Value">
+            <Field label="Valor">
               <Input
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                placeholder="$100 Cursor credits"
+                placeholder="100 créditos de Cursor"
               />
             </Field>
-            <Field label="Type">
+            <Field label="Tipo">
               <Select
                 value={type}
                 onValueChange={(next) => setType(next as "email" | "code")}
@@ -67,20 +68,20 @@ export default function AdminPerksPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="email">Email application</SelectItem>
-                  <SelectItem value="code">Code pool</SelectItem>
+                  <SelectItem value="email">Solicitud por email</SelectItem>
+                  <SelectItem value="code">Bolsa de códigos</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
           </div>
-          <Field label="Description">
+          <Field label="Descripción">
             <Textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
           </Field>
           {type === "code" ? (
-            <Field label="Codes (one per line)">
+            <Field label="Códigos (uno por línea)">
               <Textarea
                 value={codes}
                 onChange={(event) => setCodes(event.target.value)}
@@ -107,7 +108,7 @@ export default function AdminPerksPage() {
               })
             }
           >
-            Create perk
+            Crear perk
           </Button>
         </CardContent>
       </Card>
@@ -117,18 +118,18 @@ export default function AdminPerksPage() {
           <Card key={perk._id}>
             <CardHeader>
               <CardTitle>
-                {perk.company} · {perk.title}
+                {perkName(perk.company, perk.title)}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <p>{perk.description}</p>
               <div className="flex flex-wrap gap-2">
-                <Badge>{perk.type}</Badge>
+                <Badge>{perkTypeLabel(perk.type)}</Badge>
                 <Badge variant="gold">{perk.value}</Badge>
                 <span>
-                  {perk.claimCount} claims
+                  {perk.claimCount} reclamaciones
                   {perk.type === "code"
-                    ? ` · ${perk.availableCodes}/${perk.codeCount} codes left`
+                    ? ` · ${perk.availableCodes}/${perk.codeCount} códigos libres`
                     : ""}
                 </span>
               </div>
@@ -137,10 +138,10 @@ export default function AdminPerksPage() {
                 className="w-full sm:w-auto"
                 onClick={() => void update({ perkId: perk._id, active: !perk.active })}
               >
-                {perk.active ? "Deactivate" : "Activate"}
+                {perk.active ? "Desactivar" : "Activar"}
               </Button>
               {perk.type === "code" ? (
-                <Field label="Add more codes">
+                <Field label="Añadir más códigos">
                   <Textarea
                     value={extraCodes[perk._id] ?? ""}
                     onChange={(event) =>
@@ -166,7 +167,7 @@ export default function AdminPerksPage() {
                       )
                     }
                   >
-                    Add codes
+                    Añadir códigos
                   </Button>
                 </Field>
               ) : null}

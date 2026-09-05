@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Field, FormError, FormNotice, LoadingText, Page, errorMessage } from "@/components/page";
@@ -13,13 +13,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { urlOf, type UrlEntry } from "@/lib/urls";
+import { perkName } from "@/lib/utils";
 
 type TrackRow = {
   _id: Id<"tracks">;
+  slug: string;
   label: string;
   body: string;
   note: string;
 };
+
+const PLACEHOLDER_SLUGS = new Set(["ml", "non-tech"]);
 
 type SubmissionRow = {
   name: string;
@@ -39,6 +43,16 @@ export default function TracksPage() {
   const settings = useQuery(api.tracks.settings);
   const mine = useQuery(api.submissions.mine);
   const catalog = useQuery(api.perks.listCatalog);
+  const ensureCatalog = useMutation(api.tracks.ensureCatalog);
+
+  useEffect(() => {
+    if (tracks === undefined) return;
+    const stale =
+      tracks.length === 0 || tracks.some((track) => PLACEHOLDER_SLUGS.has(track.slug));
+    if (stale) {
+      void ensureCatalog({});
+    }
+  }, [tracks, ensureCatalog]);
 
   if (tracks === undefined || settings === undefined || mine === undefined) {
     return <LoadingText />;
@@ -105,14 +119,14 @@ function TracksReady({
 
   return (
     <Page
-      title="Tracks"
-      description="One project. Enter it in as many challenges as you want."
+      title="Retos"
+      description="Un proyecto. Entra en tantos retos como quieras."
     >
       <FormError message={error} />
       <FormNotice message={message} />
 
       {tracks.length === 0 ? (
-        <p className="text-hs-brown">Seeding tracks…</p>
+        <p className="text-hs-brown">Cargando retos…</p>
       ) : (
         <div className="hs-stagger grid gap-4 md:grid-cols-2">
           {tracks.map((track) => (
@@ -125,7 +139,7 @@ function TracksReady({
                 <p>{track.body}</p>
                 {entered.has(track._id) ? (
                   <Badge variant="gold">
-                    {mine?.status === "submitted" ? "Submitted" : "Draft entered"}
+                    {mine?.status === "submitted" ? "Enviado" : "En el borrador"}
                   </Badge>
                 ) : null}
               </CardContent>
@@ -136,13 +150,13 @@ function TracksReady({
 
       <Card>
         <CardHeader>
-          <CardTitle>Project</CardTitle>
+          <CardTitle>Proyecto</CardTitle>
           <CardDescription>
-            Fill the project once, then pick every challenge it should enter.
+            Rellena el proyecto una vez y elige todos los retos en los que entra.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Project name" htmlFor="project-name">
+          <Field label="Nombre del proyecto" htmlFor="project-name">
             <Input
               id="project-name"
               value={name}
@@ -150,7 +164,7 @@ function TracksReady({
               onChange={(event) => setName(event.target.value)}
             />
           </Field>
-          <Field label="Description" htmlFor="project-description">
+          <Field label="Descripción" htmlFor="project-description">
             <Textarea
               id="project-description"
               value={description}
@@ -159,7 +173,7 @@ function TracksReady({
             />
           </Field>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Repo URL" htmlFor="repo-url">
+            <Field label="URL del repo" htmlFor="repo-url">
               <Input
                 id="repo-url"
                 value={repoUrl}
@@ -168,7 +182,7 @@ function TracksReady({
                 onChange={(event) => setRepoUrl(event.target.value)}
               />
             </Field>
-            <Field label="Demo URL" htmlFor="demo-url">
+            <Field label="URL de la demo" htmlFor="demo-url">
               <Input
                 id="demo-url"
                 value={demoUrl}
@@ -180,7 +194,7 @@ function TracksReady({
           </div>
 
           <div className="space-y-2">
-            <p className="font-bungee text-xs">Challenges</p>
+            <p className="font-bungee text-xs">Retos</p>
             {tracks.map((track) => (
               <label key={track._id} className="flex items-start gap-3 text-sm">
                 <Checkbox
@@ -197,11 +211,11 @@ function TracksReady({
           </div>
 
           <div className="space-y-2">
-            <p className="font-bungee text-xs">Partner tools used</p>
+            <p className="font-bungee text-xs">Herramientas de partners</p>
             {!catalog ? (
-              <p className="text-sm text-hs-brown">Loading partners…</p>
+              <p className="text-sm text-hs-brown">Cargando partners…</p>
             ) : catalog.length === 0 ? (
-              <p className="text-sm text-hs-brown">No partner tools published yet.</p>
+              <p className="text-sm text-hs-brown">Aún no hay herramientas de partners.</p>
             ) : (
               catalog.map(({ perk }) => (
                 <label key={perk._id} className="flex items-start gap-3 text-sm">
@@ -210,16 +224,14 @@ function TracksReady({
                     disabled={locked}
                     onCheckedChange={() => togglePerk(perk._id)}
                   />
-                  <span>
-                    {perk.company} · {perk.title}
-                  </span>
+                  <span>{perkName(perk.company, perk.title)}</span>
                 </label>
               ))
             )}
           </div>
 
           {locked ? (
-            <p className="text-sm text-hs-brown">This project is submitted and locked.</p>
+            <p className="text-sm text-hs-brown">Este proyecto ya está enviado y bloqueado.</p>
           ) : (
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
@@ -230,14 +242,14 @@ function TracksReady({
                   setError(null);
                   setSaving(true);
                   void saveDraft(payload)
-                    .then(() => setMessage("Draft saved"))
+                    .then(() => setMessage("Borrador guardado"))
                     .catch((err: unknown) =>
-                      setError(errorMessage(err, "Could not save draft")),
+                      setError(errorMessage(err, "No se ha podido guardar el borrador")),
                     )
                     .finally(() => setSaving(false));
                 }}
               >
-                Save draft
+                Guardar borrador
               </Button>
               <Button
                 className="w-full sm:w-auto"
@@ -245,21 +257,21 @@ function TracksReady({
                 title={
                   submissionsOpen
                     ? undefined
-                    : "Project submissions are not open yet"
+                    : "El envío de proyectos aún no está abierto"
                 }
                 onClick={() => {
                   if (!submissionsOpen) return;
                   setError(null);
                   setSaving(true);
                   void submit(payload)
-                    .then(() => setMessage("Project submitted"))
+                    .then(() => setMessage("Proyecto enviado"))
                     .catch((err: unknown) =>
-                      setError(errorMessage(err, "Could not submit")),
+                      setError(errorMessage(err, "No se ha podido enviar")),
                     )
                     .finally(() => setSaving(false));
                 }}
               >
-                Submit project
+                Enviar proyecto
               </Button>
             </div>
           )}
@@ -269,8 +281,8 @@ function TracksReady({
       <Alert>
         <AlertDescription>
           {submissionsOpen
-            ? "Submissions are open. One project can enter multiple challenges."
-            : "Project submission is not open yet. You can save a draft — including challenges and partner tools — and submit later."}
+            ? "El envío está abierto. Un proyecto puede entrar en varios retos."
+            : "El envío de proyectos aún no está abierto. Puedes guardar un borrador — retos y partners incluidos — y enviarlo después."}
         </AlertDescription>
       </Alert>
     </Page>

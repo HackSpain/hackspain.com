@@ -99,9 +99,9 @@ async function resolveChallengeIds(
   const unique = uniqueIds(challengeIds);
   for (const trackId of unique) {
     const track = await ctx.db.get(trackId);
-    if (!track) throw new Error("Challenge not found");
+    if (!track) throw new Error("Reto no encontrado");
     if (requireActive && !track.active) {
-      throw new Error(`${track.label} is not open`);
+      throw new Error(`${track.label} no está abierto`);
     }
   }
   return unique;
@@ -114,7 +114,7 @@ async function resolvePerkIds(
   const unique = uniqueIds(perkIds);
   for (const perkId of unique) {
     const perk = await ctx.db.get(perkId);
-    if (!perk) throw new Error("Partner perk not found");
+    if (!perk) throw new Error("Perk de partner no encontrado");
   }
   return unique;
 }
@@ -159,7 +159,7 @@ async function upsertProject(
 ) {
   const existing = await findOwnedSubmission(ctx, ctx.user._id);
   if (existing && existing.status === "submitted") {
-    throw new Error("This project has already been submitted");
+    throw new Error("Este proyecto ya está enviado");
   }
 
   const name = args.name.trim();
@@ -173,14 +173,14 @@ async function upsertProject(
 
   if (mode === "submit") {
     if (!(await submissionsAreOpen(ctx))) {
-      throw new Error("Project submissions are not open yet");
+      throw new Error("El envío de proyectos aún no está abierto");
     }
-    if (name.length < 2) throw new Error("Project name is required");
+    if (name.length < 2) throw new Error("El nombre del proyecto es obligatorio");
     if (description.length < 10) {
-      throw new Error("Add a short project description");
+      throw new Error("Añade una descripción breve del proyecto");
     }
     if (challengeIds.length === 0) {
-      throw new Error("Pick at least one challenge");
+      throw new Error("Elige al menos un reto");
     }
   }
 

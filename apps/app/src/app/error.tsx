@@ -15,17 +15,17 @@ export default function ErrorBoundary({
     <div className="flex min-h-screen items-center justify-center bg-hs-paper px-4">
       <Card className="hs-enter w-full max-w-md">
         <CardHeader>
-          <CardTitle>Something went wrong</CardTitle>
+          <CardTitle>Algo ha fallado</CardTitle>
           <CardDescription>
-            {error.message || "An unexpected error occurred."}
+            {error.message || "Ha ocurrido un error inesperado."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row">
           <Button className="w-full sm:w-auto" onClick={() => reset()}>
-            Try again
+            Reintentar
           </Button>
           <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/">Go home</Link>
+            <Link href="/">Ir al inicio</Link>
           </Button>
         </CardContent>
       </Card>
