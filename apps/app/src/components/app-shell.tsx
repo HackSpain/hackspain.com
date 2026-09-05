@@ -164,6 +164,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="h-auto w-20 sm:h-10 sm:w-auto"
             />
           </Link>
+          <div className="flex items-center justify-center gap-3 sm:gap-5">
           <Link
             href="/insights"
             aria-current={pathname === "/insights" ? "page" : undefined}
@@ -176,6 +177,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Insights en vivo
             <ChevronRight className="size-4 shrink-0" aria-hidden />
           </Link>
+          <Link
+            href="/feed"
+            aria-current={pathname === "/feed" ? "page" : undefined}
+            className={cn(
+              "inline-flex min-h-11 items-center justify-center gap-1.5 text-xs font-semibold whitespace-nowrap text-hs-navy underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hs-navy sm:gap-2 sm:text-sm",
+              pathname === "/feed" && "underline",
+            )}
+          >
+            Feed
+          </Link>
+          </div>
           <div className="justify-self-end">
             <AccountMenu
               pathname={pathname}
