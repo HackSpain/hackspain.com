@@ -618,7 +618,11 @@ function TeamDetails({ team, samples }: { team: TeamRow; samples: Sample[] }) {
   );
 }
 
-export default function InsightsPage() {
+export function InsightsView({
+  showBackLink = true,
+}: {
+  showBackLink?: boolean;
+}) {
   // TODO: Replace simulated insights with real event data, including usage,
   // concurrent agents, team milestones, and declared technology stacks.
   const [activeTab, setActiveTab] = useState("overview");
@@ -698,17 +702,18 @@ export default function InsightsPage() {
   }
 
   return (
-    <div className="min-w-0 space-y-5 pb-4 tabular-nums [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-hs-navy">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="space-y-5 pb-4 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-hs-navy">
+      {showBackLink ? (
         <Link
           href="/"
-          className="inline-flex min-h-11 items-center sm:min-h-10 gap-2 text-xs font-medium text-hs-brown hover:underline"
+          className="inline-flex min-h-11 w-auto min-w-max shrink-0 items-center gap-2 text-sm font-medium whitespace-nowrap text-hs-brown underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hs-navy"
         >
           <ArrowLeft className="size-4" aria-hidden />
           Volver al dashboard
         </Link>
-      </div>
+      ) : null}
 
+      <div className="min-w-0 space-y-5 tabular-nums">
       <section
         className="flex flex-col items-center px-2 pt-5 pb-7 text-center sm:pt-8 sm:pb-10"
         aria-labelledby="insights-title"
@@ -925,6 +930,11 @@ export default function InsightsPage() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
+}
+
+export default function InsightsPage() {
+  return <InsightsView />;
 }

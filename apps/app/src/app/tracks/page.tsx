@@ -132,16 +132,18 @@ function TracksReady({
           {tracks.map((track) => (
             <Card key={track._id}>
               <CardHeader>
-                <CardTitle className="text-xl">{track.label}</CardTitle>
+                <CardTitle className="flex flex-wrap items-center gap-2 text-xl">
+                  <span>{track.label}</span>
+                  {entered.has(track._id) ? (
+                    <Badge variant="gold" className="whitespace-nowrap">
+                      {mine?.status === "submitted" ? "Enviado" : "En el borrador"}
+                    </Badge>
+                  ) : null}
+                </CardTitle>
                 <CardDescription>{track.note}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent>
                 <p>{track.body}</p>
-                {entered.has(track._id) ? (
-                  <Badge variant="gold">
-                    {mine?.status === "submitted" ? "Enviado" : "En el borrador"}
-                  </Badge>
-                ) : null}
               </CardContent>
             </Card>
           ))}

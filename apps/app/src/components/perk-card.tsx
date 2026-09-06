@@ -1,10 +1,12 @@
 "use client";
 
 import type { FunctionReturnType } from "convex/server";
+import { ArrowUpRightIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { answerFor } from "@/lib/perks";
 import { claimStatusLabel, cn, joinDotLabel, perkName, perkTypeLabel } from "@/lib/utils";
 
 type CatalogEntry = FunctionReturnType<typeof api.perks.listCatalog>[number];
@@ -25,14 +27,46 @@ export function PerkCard({
   const headline = company || perkName(perk.company, perk.title);
   const offer = joinDotLabel(company ? perk.title : null, perk.value);
   const description = perk.description.trim();
+  const answered = claim
+    ? perk.inputs
+        .map((input) => ({ label: input.label, value: answerFor(claim.answers, input.key) }))
+        .filter((entry) => entry.value.length > 0)
+    : [];
 
   return (
     <Card className="gap-0 py-0">
       <div className="flex flex-1 flex-col gap-1.5 px-4 pt-4 pb-5">
-        <h3 className="font-bungee text-xl leading-none text-balance">{headline}</h3>
+        <h3 className="font-bungee text-xl leading-none text-balance">
+          {perk.sponsorUrl ? (
+            <a
+              href={perk.sponsorUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-baseline gap-1 underline decoration-hs-ink/30 decoration-[3px] underline-offset-4 outline-none hover:decoration-hs-ink focus-visible:decoration-hs-navy"
+            >
+              {headline}
+              <ArrowUpRightIcon className="size-4 shrink-0 self-center" strokeWidth={2.5} aria-hidden />
+              <span className="sr-only"> (abre la web del sponsor)</span>
+            </a>
+          ) : (
+            headline
+          )}
+        </h3>
         {offer ? <p className="text-base leading-snug font-medium">{offer}</p> : null}
         {description ? (
           <p className="mt-1.5 text-sm leading-relaxed text-hs-brown/80">{description}</p>
+        ) : null}
+        {answered.length > 0 ? (
+          <dl className="mt-3 grid gap-2 border-t border-hs-ink/20 pt-3">
+            {answered.map((entry) => (
+              <div key={entry.label} className="min-w-0">
+                <dt className="font-bungee text-[11px] leading-none tracking-[0.06em] uppercase text-hs-brown">
+                  {entry.label}
+                </dt>
+                <dd className="mt-0.5 text-sm leading-snug break-words">{entry.value}</dd>
+              </div>
+            ))}
+          </dl>
         ) : null}
       </div>
       <div className="mt-auto flex min-h-[4.5rem] items-center justify-between gap-4 border-t-[3px] border-hs-ink bg-hs-sand px-4 py-3">

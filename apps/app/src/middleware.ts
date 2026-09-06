@@ -7,11 +7,16 @@ import {
 // /api/cli/* authenticates with a bearer token, not the cookie session.
 // /api/files/* accepts either and does its own redirect, so image links from
 // the CLI work in a browser.
+// /tv is the public venue screen: no login, reads a public Convex query.
+// /cli-auth is public at the middleware level so the ?code= survives a
+// server-side redirect; AuthGate stashes it and routes visitors via /login.
 const isPublicRoute = createRouteMatcher([
   "/login",
+  "/cli-auth",
   "/api/login-check",
   "/api/cli(.*)",
   "/api/files(.*)",
+  "/tv",
 ]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {

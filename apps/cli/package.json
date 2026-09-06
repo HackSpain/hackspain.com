@@ -12,10 +12,11 @@
   },
   "scripts": {
     "dev": "bun src/index.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "lint": "ultracite check",
     "fix": "ultracite fix",
     "test": "bun test",
+    "check": "tsgo --noEmit && ultracite check && bun test",
     "build:bin:host": "bash scripts/build-all.sh --host",
     "build:bin": "bash scripts/build-all.sh"
   },

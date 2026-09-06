@@ -6,40 +6,40 @@ Monorepo for [HackSpain](https://hackspain.com) (Hack Spain 2026, Madrid).
 | --- | --- | --- |
 | `apps/web` | Astro 6, React islands, Tailwind v4, Neon/Drizzle | [localhost:4321](http://localhost:4321) |
 | `apps/app` | Next.js, Convex, Convex Auth, shadcn | [localhost:3000](http://localhost:3000) |
-| `apps/cli` | Bun, Commander, clack; `hackspain` binary for participants | `bun dev:cli -- --help` |
+| `apps/cli` | Bun runtime, Commander, clack; `hackspain` binary for participants | `pnpm dev:cli -- --help` |
 
-Package manager is Bun. Node.js ≥ 22.12.
+Package manager is pnpm (`packageManager` in the root `package.json`). Node.js ≥ 22.12. The CLI still compiles and tests with Bun.
 
 ## Setup
 
 ```sh
-bun install
+pnpm install
 cp apps/web/.env.example apps/web/.env
 cp apps/app/.env.example apps/app/.env.local
 ```
 
 Landing static pages run without a database. Signup and ambassador APIs need `DATABASE_URL` (Neon PostgreSQL). Optional `DISCORD_WEBHOOK_URL` notifies Discord on new submissions. `SHORTLIST_PASSWORD` gates the internal `/shortlist` review page; without it the page renders no data.
 
-The dashboard needs a Convex development deployment (`bun dev:convex` / `npx convex dev`). Do not use `npx convex deploy` unless you are shipping production. Dashboard env lives in `apps/app/.env.example`.
+The dashboard needs a Convex development deployment (`pnpm dev:convex` / `npx convex dev`). Do not use `npx convex deploy` unless you are shipping production. Dashboard env lives in `apps/app/.env.example`.
 
 ## Commands
 
 | Command | Description |
 | :------ | :---------- |
-| `bun dev` / `bun dev:web` | Landing only |
-| `bun dev:app` | Dashboard Next.js server |
-| `bun dev:convex` | Convex functions + codegen (development only) |
-| `bun dev:all` | Landing + dashboard + Convex in one terminal |
-| `bun build` / `bun build:app` | Production builds |
-| `bun preview` | Preview the landing build |
-| `bun check` | Astro + TypeScript checks |
-| `bun migrate:convex` | Import Neon signups/ambassadors into Convex |
-| `bun dev:cli -- <args>` / `bun test:cli` / `bun build:cli` | Run, test, or compile the `hackspain` CLI (participants install it with `curl -fsSL https://hackspain.com/install.sh \| sh`) |
-| `bun db:generate` / `bun db:migrate` / `bun db:push` | Landing Drizzle |
+| `pnpm dev` / `pnpm dev:web` | Landing only |
+| `pnpm dev:app` | Dashboard Next.js server |
+| `pnpm dev:convex` | Convex functions + codegen (development only) |
+| `pnpm dev:all` | Landing + dashboard + Convex in one terminal |
+| `pnpm build` / `pnpm build:app` | Production builds |
+| `pnpm preview` | Preview the landing build |
+| `pnpm check` | Astro + TypeScript checks |
+| `pnpm migrate:convex` | Import Neon signups/ambassadors into Convex |
+| `pnpm dev:cli -- <args>` / `pnpm test:cli` / `pnpm build:cli` | Run, test, or compile the `hackspain` CLI (participants install it with `curl -fsSL https://hackspain.com/install.sh \| sh`) |
+| `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:push` | Landing Drizzle |
 
 ## Convex auth and admin
 
-1. From the repo root, run `bun dev:convex`. From `apps/app`, run `bun run dev:convex`. Create or select a **dev** project. Leave it running.
+1. From the repo root, run `pnpm dev:convex`. From `apps/app`, run `pnpm convex:dev`. Create or select a **dev** project. Leave it running.
 2. Set Convex env (in another terminal, still from `apps/app`):
 
 ```sh
@@ -75,7 +75,7 @@ Accepted hackers confirm phone (E.164 + code), dietary restrictions, travel orig
 
 ## Migrating Neon to Convex
 
-`bun migrate:convex` from the repo root. Idempotent on email. Safe to re-run. Do not run it unless you mean to import.
+`pnpm migrate:convex` from the repo root. Idempotent on email. Safe to re-run. Do not run it unless you mean to import.
 
 It loads `DATABASE_URL` from `apps/web/.env`, and `NEXT_PUBLIC_CONVEX_URL` plus `MIGRATION_SECRET` from `apps/app/.env.local`. Shell exports win if already set. `MIGRATION_SECRET` must match the Convex deployment env.
 
@@ -96,14 +96,14 @@ Two Vercel projects, both linked to this repo. Set **Root Directory** before the
 
 | Project | Root Directory | Domain | Build |
 | --- | --- | --- | --- |
-| Landing (existing) | `apps/web` | hackspain.com | `bun run build` (in `apps/web/vercel.json`) |
-| Dashboard (new) | `apps/app` | e.g. app.hackspain.com | `bun run vercel-build` — deploys Convex, then Next.js |
+| Landing (existing) | `apps/web` | hackspain.com | `pnpm run build` (in `apps/web/vercel.json`) |
+| Dashboard (new) | `apps/app` | e.g. app.hackspain.com | `pnpm run vercel-build` — deploys Convex, then Next.js |
 
-Vercel reads `bun.lock` from the repo root (`installCommand` is `cd ../.. && bun install`). A change that only touches the other app is skipped (`scripts/vercel-ignore.sh`).
+Vercel reads `pnpm-lock.yaml` from the repo root (`installCommand` is `cd ../.. && pnpm install --frozen-lockfile`). A change that only touches the other app is skipped (`scripts/vercel-ignore.sh`).
 
 ### Convex on merge
 
-`apps/app` build runs `convex deploy --cmd 'bun run build'`. That needs `CONVEX_DEPLOY_KEY` in Vercel, not a local `npx convex deploy`.
+`apps/app` build runs `convex deploy --cmd 'pnpm run build'`. That needs `CONVEX_DEPLOY_KEY` in Vercel, not a local `npx convex deploy`.
 
 1. Convex dashboard → project → create a **production** deployment if you do not have one.
 2. Production deployment → Settings → Deploy Keys → **Generate Production Deploy Key** (`deployment:deploy`).

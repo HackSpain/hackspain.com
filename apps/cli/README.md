@@ -16,8 +16,10 @@ Windows: download `hackspain-windows-x64.exe` from the
 Binaries are self-contained; nothing else to install.
 
 ```
-hackspain                       # where you stand and what to do next
-hackspain auth login            # email + 8-digit code; then asks for a missing name, phone or GitHub
+hackspain                       # where you stand, then a navigable menu (interactive terminals only)
+hackspain auth login            # sign in via the browser (approve on the dashboard's /cli-auth page),
+                                # or --email/--code for the 8-digit email code; then asks for a missing
+                                # name, phone or GitHub
 hackspain auth status | logout
 
 hackspain profile               # name, diet, travel, phone, notices, GitHub
@@ -98,10 +100,10 @@ onboarding fail fast with the next step to take.
 ## Develop
 
 ```sh
-bun dev:app                                        # the CLI talks to localhost:3000 in dev
-bun dev:cli -- auth login --email you@example.com --code 00000000
-bun run typecheck && bun run lint && bun test      # from apps/cli
-bun run build:bin:host && ./dist/hackspain --version
+pnpm dev:app                                       # the CLI talks to localhost:3000 in dev
+pnpm dev:cli -- auth login --email you@example.com --code 00000000
+pnpm typecheck && pnpm lint && pnpm test           # from apps/cli
+pnpm build:bin:host && ./dist/hackspain --version
 HACKSPAIN_SMOKE_EMAIL=… scripts/smoke.sh           # end-to-end through the local dashboard
 ```
 
@@ -115,7 +117,7 @@ HACKSPAIN_SMOKE_EMAIL=… scripts/smoke.sh           # end-to-end through the lo
 - Backend types come from `apps/app/convex/_generated/api.d.ts` (type-only import). At runtime
   `api.teams.join` is just the function name sent to `/api/cli/rpc`; the server keeps an
   allowlist in `apps/app/src/app/api/cli/_lib/functions.ts`. Add a function there when a new
-  command needs it. Run `bun dev:convex` after backend changes so the types update.
+  command needs it. Run `pnpm dev:convex` after backend changes so the types update.
 
 ## Release
 
