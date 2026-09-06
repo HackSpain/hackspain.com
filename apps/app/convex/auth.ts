@@ -1,11 +1,34 @@
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
 import { convexAuth, type Tokens } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
+import type { DataModel } from "./_generated/dataModel";
 import { action, type ActionCtx } from "./_generated/server";
 import { ResendOTP } from "./ResendOTP";
 import { STUB_CODE, emailOtpStubEnabled } from "./devOtp";
 import { adminEmailAllowlist, normalizeEmail } from "./lib/normalize";
 import { findSignupByEmail, findUserByEmail } from "./lib/auth";
+
+// Redeems an approved CLI device code (convex/cliAuth.ts) for a session.
+// Only /api/cli/auth/device/poll calls this, with the code plus the secret
+// the CLI generated at start, so tokens never go to anyone else.
+const CliDevice = ConvexCredentials<DataModel>({
+  id: "cli-device",
+  authorize: async (credentials, ctx) => {
+    const code =
+      typeof credentials.code === "string" ? credentials.code : "";
+    const secret =
+      typeof credentials.secret === "string" ? credentials.secret : "";
+    if (!code || !secret) {
+      return null;
+    }
+    const userId = await ctx.runMutation(internal.cliAuth.redeem, {
+      code,
+      secret,
+    });
+    return userId ? { userId } : null;
+  },
+});
 
 // `signIn` below wraps the library action so a dev stub code can be swapped
 // for the real one. The client always calls `auth:signIn`.
@@ -16,7 +39,7 @@ export const {
   store,
   isAuthenticated,
 } = convexAuth({
-  providers: [ResendOTP],
+  providers: [ResendOTP, CliDevice],
   callbacks: {
     async createOrUpdateUser(ctx, args) {
       const rawEmail =
@@ -84,10 +107,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-async function resolveStubCode(ctx: ActionCtx, params: unknown): Promise<unknown> {
+// Convex Auth keeps one single-use code per account: a second "send code"
+// (another tab, the CLI, an e2e run) replaces it and any verify attempt
+// consumes it. The remembered code can therefore be dead by the time someone
+// types the stub, which surfaces as "Could not verify code". Issue a fresh
+// code right before swapping so the stub always matches the live one.
+async function resolveStubCode(
+  ctx: ActionCtx,
+  provider: string | undefined,
+  params: unknown,
+): Promise<unknown> {
   if (!emailOtpStubEnabled() || !isRecord(params)) return params;
+  if (provider !== ResendOTP.id) return params;
   if (params.code !== STUB_CODE || typeof params.email !== "string") return params;
-  const code = await ctx.runQuery(internal.devOtp.lookup, { email: params.email });
+  const email = params.email;
+  await ctx.runAction(api.auth.signInWithProvider, {
+    provider: ResendOTP.id,
+    params: { email },
+  });
+  const code = await ctx.runQuery(internal.devOtp.lookup, { email });
   return code ? { ...params, code } : params;
 }
 
@@ -107,7 +145,7 @@ export const signIn = action({
     calledBy: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SignInResult> => {
-    const params: unknown = await resolveStubCode(ctx, args.params);
+    const params: unknown = await resolveStubCode(ctx, args.provider, args.params);
     return await ctx.runAction(api.auth.signInWithProvider, { ...args, params });
   },
 });

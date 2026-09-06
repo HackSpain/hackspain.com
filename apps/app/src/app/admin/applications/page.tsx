@@ -76,8 +76,9 @@ export default function AdminApplicationsPage() {
                       <br />
                       <span className="text-xs text-hs-brown">{row.email}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-normal">
                       {perkName(row.company, row.title)}
+                      <Answers answers={row.answers} />
                     </TableCell>
                     <TableCell>
                       <Badge>{claimStatusLabel(row.status)}</Badge>
@@ -118,6 +119,7 @@ export default function AdminApplicationsPage() {
               key={row._id}
               title={row.name ?? "—"}
               subtitle={row.email}
+              badges={<Badge>{claimStatusLabel(row.status)}</Badge>}
               actions={
                 <>
                   <Button
@@ -146,16 +148,28 @@ export default function AdminApplicationsPage() {
                 </>
               }
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge>{claimStatusLabel(row.status)}</Badge>
-                <span className="text-sm text-hs-brown">
-                  {perkName(row.company, row.title)}
-                </span>
-              </div>
+              <p className="text-sm text-hs-brown">
+                {perkName(row.company, row.title)}
+              </p>
+              <Answers answers={row.answers} />
             </RecordCard>
           ))}
         </RecordList>
       )}
     </Page>
+  );
+}
+
+function Answers({ answers }: { answers: Array<{ label: string; value: string }> }) {
+  if (answers.length === 0) return null;
+  return (
+    <dl className="mt-1 grid gap-0.5 text-xs">
+      {answers.map((answer) => (
+        <div key={answer.label} className="flex min-w-0 gap-1.5">
+          <dt className="shrink-0 font-bungee uppercase text-hs-brown">{answer.label}</dt>
+          <dd className="min-w-0 break-words">{answer.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

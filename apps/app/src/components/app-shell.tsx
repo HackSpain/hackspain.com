@@ -25,6 +25,7 @@ const ADMIN_NAV = [
   { href: "/admin/applications", label: "Solicitudes" },
   { href: "/admin/tracks", label: "Retos" },
   { href: "/admin/notifications", label: "Avisos" },
+  { href: "/admin/tv", label: "TV" },
 ] as const;
 
 function adminNavActive(pathname: string, href: string) {
@@ -130,8 +131,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isAuthenticated } = useConvexAuth();
   const me = useQuery(api.users.me, isAuthenticated ? {} : "skip");
+
+  // The public venue screen brings its own full-screen layout.
+  if (pathname === "/tv") {
+    return <>{children}</>;
+  }
+
   const hideChrome =
     pathname === "/login" ||
+    pathname === "/cli-auth" ||
     pathname === "/onboarding" ||
     pathname === "/unregistered" ||
     pathname === "/pending";
@@ -146,6 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     me !== undefined &&
     me !== null &&
     !me.githubLinked &&
+    !pathname.startsWith("/admin") &&
     (isAdmin || (me.accepted && me.onboardingComplete));
 
   return (
@@ -166,26 +175,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <div className="flex items-center justify-center gap-3 sm:gap-5">
           <Link
-            href="/insights"
-            aria-current={pathname === "/insights" ? "page" : undefined}
+            href="/tv?from=app"
+            aria-current={pathname === "/tv" ? "page" : undefined}
             className={cn(
               "inline-flex min-h-11 items-center justify-center gap-1.5 text-xs font-semibold whitespace-nowrap text-hs-red underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hs-red sm:gap-2 sm:text-sm",
-              pathname === "/insights" && "underline",
+              pathname === "/tv" && "underline",
             )}
           >
             <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden />
-            Insights en vivo
+            TV en vivo
             <ChevronRight className="size-4 shrink-0" aria-hidden />
           </Link>
           <Link
-            href="/feed"
-            aria-current={pathname === "/feed" ? "page" : undefined}
+            href="/cli"
+            aria-current={pathname === "/cli" ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-11 items-center justify-center gap-1.5 text-xs font-semibold whitespace-nowrap text-hs-navy underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hs-navy sm:gap-2 sm:text-sm",
-              pathname === "/feed" && "underline",
+              "inline-flex min-h-11 items-center justify-center gap-1.5 text-xs font-semibold whitespace-nowrap text-hs-teal underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hs-teal sm:gap-2 sm:text-sm",
+              pathname === "/cli" && "underline",
             )}
           >
-            Feed
+            CLI
           </Link>
           </div>
           <div className="justify-self-end">
