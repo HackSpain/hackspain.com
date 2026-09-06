@@ -12,7 +12,6 @@ import miguelGonzalezPhoto from "../assets/judges/miguel-gonzalez.jpg";
 import nicolasDeOryPhoto from "../assets/judges/nicolas-de-ory.jpg";
 import pabloMenendezPhoto from "../assets/judges/pablo-menendez.jpg";
 import quiliPenaPhoto from "../assets/judges/quili-pena.jpg";
-import valentinDeMatosPhoto from "../assets/judges/valentin-de-matos.jpg";
 
 export interface Judge {
   company: string;
@@ -110,12 +109,6 @@ export const GENERAL_JUDGES: Judge[] = [
     id: "maria-munoz",
     name: "María Muñoz",
     photoSrc: mariaMunozPhoto.src,
-  },
-  {
-    company: "Delphi",
-    id: "valentin-de-matos",
-    name: "Valentin De Matos",
-    photoSrc: valentinDeMatosPhoto.src,
   },
   {
     company: "Autonomous Alliance, Inc",
