@@ -1,0 +1,177 @@
+---
+export const prerender = false;
+
+import "../styles/global.css";
+import "../styles/shortlist.css";
+import ShortlistPage from "../components/pages/shortlist-page";
+import {
+  isShortlistAuthorized,
+  SHORTLIST_COOKIE_NAME,
+  shortlistExpectedToken,
+  shortlistPassword,
+} from "../lib/shortlist-auth";
+import { listPendingShortlistParticipants } from "../lib/shortlist-server";
+import type { ShortlistParticipant } from "../lib/shortlist-types";
+
+const password = shortlistPassword();
+const configured = password !== null;
+const expectedToken = configured ? await shortlistExpectedToken(password) : null;
+
+let loginError = false;
+
+if (configured && Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const attempt = form.get("password");
+  if (typeof attempt === "string" && attempt === password) {
+    Astro.cookies.set(SHORTLIST_COOKIE_NAME, expectedToken!, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: import.meta.env.PROD,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 14,
+    });
+    return Astro.redirect("/shortlist", 303);
+  }
+  loginError = true;
+}
+
+const authorized = await isShortlistAuthorized(
+  Astro.cookies.get(SHORTLIST_COOKIE_NAME)?.value
+);
+
+let initialLoadError: string | null = null;
+let initialParticipants: ShortlistParticipant[] = [];
+if (authorized) {
+  try {
+    initialParticipants = await listPendingShortlistParticipants();
+  } catch (error: unknown) {
+    initialLoadError =
+      "The shortlist could not load. Check the local database connection and apply the latest migration.";
+    console.error(
+      "[shortlist] Failed to render pending applicants",
+      error instanceof Error ? error.message : "unknown error"
+    );
+  }
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#f4ecd8">
+    <link rel="icon" type="image/png" href="/hs-icon.png">
+    <title>Shortlist · HackSpain internal</title>
+  </head>
+  <body>
+    {
+      authorized ? (
+        <ShortlistPage
+          client:load
+          initialLoadError={initialLoadError}
+          initialParticipants={initialParticipants}
+        />
+      ) : (
+        <div class="sl-gate">
+          <div class="sl-gate-card">
+            <h1>Shortlist</h1>
+            <p>Internal applicant review. Enter the team password to continue.</p>
+            {!configured ? (
+              <p class="sl-gate-error">
+                SHORTLIST_PASSWORD is not configured on the server.
+              </p>
+            ) : (
+              <form method="post">
+                {loginError ? (
+                  <p class="sl-gate-error">Wrong password.</p>
+                ) : null}
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  autofocus
+                  autocomplete="current-password"
+                  placeholder="Password"
+                />
+                <button type="submit">Enter</button>
+              </form>
+            )}
+          </div>
+        </div>
+      )
+    }
+  </body>
+</html>
+
+<style>
+  .sl-gate {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: #f4ecd8;
+    font-family: "DM Sans", system-ui, sans-serif;
+    color: #1b2430;
+  }
+
+  .sl-gate-card {
+    width: 100%;
+    max-width: 22rem;
+    border: 1px solid rgba(74, 44, 31, 0.1);
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1.75rem 1.5rem;
+  }
+
+  .sl-gate-card h1 {
+    margin: 0;
+    font-family: Bungee, sans-serif;
+    font-size: 1.375rem;
+    line-height: 1;
+    color: #1b2a4a;
+  }
+
+  .sl-gate-card p {
+    margin: 0.5rem 0 0;
+    font-size: 0.8125rem;
+    color: rgba(74, 44, 31, 0.7);
+  }
+
+  .sl-gate-error {
+    margin-top: 1rem !important;
+    border-radius: 0.5rem;
+    background: rgba(196, 64, 48, 0.1);
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    color: #c44030 !important;
+  }
+
+  .sl-gate-card form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+
+  .sl-gate-card input {
+    width: 100%;
+    border: 1px solid rgba(74, 44, 31, 0.12);
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .sl-gate-card button {
+    border: 0;
+    border-radius: 0.5rem;
+    background: #1b2a4a;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>

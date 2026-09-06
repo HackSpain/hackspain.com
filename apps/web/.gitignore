@@ -1,11 +1,8 @@
 # build output
 dist/
-.agents/*
-!.agents/skills/
-.agents/skills/*
-!.agents/skills/make-interfaces-feel-better/
-.next/
-out/
+.agents/
+
+.vscode/
 
 # generated types
 .astro/
@@ -18,15 +15,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.pnpm-store/
 
 # environment variables
-.env
-.env.local
+.env*
 .env.production
-.env*.local
-
-# Internal shortlist snapshot (PII). Latest shortlist loads from Neon.
-apps/web/src/data/shortlistApplicants.json
 
 # macOS-specific files
 .DS_Store
@@ -35,3 +28,10 @@ apps/web/src/data/shortlistApplicants.json
 .idea/
 
 .vercel/
+
+# ai
+.claude
+.agents
+.cursor
+skills-lock.json
+/.swc
